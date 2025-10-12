@@ -1,0 +1,55 @@
+# 🐍 Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+instance/
+.env
+.env.*
+*.log
+
+# Entorno virtual
+env/
+venv/
+ENV/
+.venv/
+
+# Archivos temporales y de compilación
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Archivos de configuración local (VSCode, PyCharm, etc.)
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos de test / coverage
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.cache
+.pytest_cache/
+
+# 📦 Node / TailwindCSS
+node_modules/
+package-lock.json
+
+# Archivos generados por TailwindCSS (opcional, si se compilan en cada entorno)
+app/static/css/style.css
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de Flask en modo debug
+*.pid
+flask_session/
+
