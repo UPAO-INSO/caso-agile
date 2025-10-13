@@ -1,3 +1,45 @@
-<nav class="bg-blue-600 text-white p-4">
-  <h1 class="text-2xl font-bold">Mi sitio Flask - Gota a Gota</h1>
+<nav class="navbar">
+  <div class="navbar__brand">
+    <div class="navbar__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M4 10.5L12 6l8 4.5v7a.5.5 0 01-.5.5h-15a.5.5 0 01-.5-.5v-7z"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M9.5 17v-3.5a.5.5 0 01.5-.5h4a.5.5 0 01.5.5V17"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
+    <div>
+      <p class="navbar__title">Prestamos Gota a Gota</p>
+      <p class="navbar__subtitle">Gestión de préstamos el porvenience</p>
+    </div>
+  </div>
+  <div class="navbar__meta">
+    <div class="navbar__date" data-current-date>
+      <span class="navbar__date-label">Fecha Actual:</span>
+      <span class="navbar__date-value" data-current-date-value>
+        Cargando fecha...
+      </span>
+    </div>
+    <button class="navbar__bell" type="button" aria-label="Ver notificaciones">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12 21a2 2 0 002-2H10a2 2 0 002 2z"
+          fill="currentColor"
+        />
+        <path
+          d="M18 15v-3a6 6 0 10-12 0v3l-1.5 1.5a1 1 0 00.7 1.7h13.6a1 1 0 00.7-1.7L18 15z"
+          fill="currentColor"
+        />
+      </svg>
+    </button>
+  </div>
 </nav>
