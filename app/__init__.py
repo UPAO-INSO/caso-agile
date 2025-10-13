@@ -1,12 +1,17 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
-from .models import db
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 # Carga las variables de entorno desde el archivo .env
-load_dotenv()
+load_dotenv() 
+
+db = SQLAlchemy()
+migrate = Migrate()
 
 def create_app():
+    # Inicializa la aplicación Flask
     app = Flask(__name__)
 
     # 1. Configurar la aplicación
@@ -15,15 +20,20 @@ def create_app():
     
     # Configura la URI de la base de datos para SQLAlchemy
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    # Desactiva una función de seguimiento de SQLAlchemy que no necesitamos y consume recursos
+    # Desactiva una función de seguimiento de SQLAlchemy que no necesitamos
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    db.init_app(app)
+    # Inicializa la extensión SQLAlchemy con la aplicación
+    # db.init_app(app)
     
+    db.init_app(app)
+    migrate.init_app(app, db)
+    
+    # Importar modelos aquí (para que Migrate los detecte)
+    from . import models  
+    
+    # Registra blueprints (Si existen)
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
-    with app.app_context():
-        from . import models
-    
     return app

@@ -1,9 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
-import enum
+from . import db
 
-# Creamos la instancia de la base de datos
-db = SQLAlchemy()
+import enum
 
 # Definimos los ENUMs en Python para usarlos en nuestros modelos
 class EstadoPrestamoEnum(enum.Enum):
