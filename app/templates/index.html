@@ -1,14 +1,10 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <section class="loan-page">
   <div class="loan-page__cards">
-    {% include "components/loan/form.html" %}
-    {% include "components/loan/summary.html" %}
+    {% include "components/form.html" %} {% include "components/schedule.html"
+    %}
   </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
 {% endblock %}
