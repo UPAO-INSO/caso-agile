@@ -3,6 +3,7 @@ from flask import Flask
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_mail import Mail
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv() 
@@ -35,5 +36,17 @@ def create_app():
     # Registra blueprints (Si existen)
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
+
+    app = Flask(__name__)
+
+    # Configuración de Gmail
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = 'vbrunelliw1@upao.edu.pe'
+    app.config['MAIL_PASSWORD'] = 'ierw pvxc kybo qrpe'
+    app.config['MAIL_DEFAULT_SENDER'] = 'vbrunelliw1@upao.edu.pe'
+
+    mail = Mail(app)
 
     return app
