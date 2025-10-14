@@ -23,11 +23,17 @@ El proyecto usa una estructura modular, ideal para desarrollo colaborativo y ext
 
 ---
 
+## Crear migraciones
+
+- Inicializar migraciones: `flask db init`
+- Crear migracion: `flask db migrate -m "nombre_migracion"`
+- Actualizar DB: `flask db upgrade`
+
 ## Instalación del proyecto
 
 1. **Clonar el repositorio**
    ```bash
-   git clone
+   git clone tu_repositorio
    cd tu_repositorio
    ```
 2. **Crear entorno virtual**
@@ -35,10 +41,10 @@ El proyecto usa una estructura modular, ideal para desarrollo colaborativo y ext
    ```
    python -m venv env
 
-   env\Scripts\activate
+   env\Scripts\Activate.ps1
    ```
 
-3. **Instalar dependencias de python**
+3. **Instalar dependencias de python y node**
 
    ```
    pip install -r requirements.txt
@@ -46,10 +52,17 @@ El proyecto usa una estructura modular, ideal para desarrollo colaborativo y ext
    npm install
    ```
 
-4. **Ejecucion**
+   **Para actualizar el requirements.txt**
 
-   - Abrir dos terminales
-     Ejecucion en modo watch de tailwindcss (estilos)
+   _Necesario para instalaciones de nuevas dependencias_
+
+   ```
+   pip freeze > requirements.txt
+   ```
+
+4. **Ejecucion (Dos terminales)**
+
+   Ejecucion en modo watch de tailwindcss (estilos)
 
    ```
    npx tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css --watch
