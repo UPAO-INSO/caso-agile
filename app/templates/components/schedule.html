@@ -1,0 +1,34 @@
+<article class="card loan-summary" data-summary>
+  <header class="loan-summary__header">
+    <h2>Resumen del Préstamo</h2>
+  </header>
+
+  <div class="loan-summary__empty" data-summary-empty>
+    <p class="loan-summary__empty-title">Aún no has calculado un préstamo</p>
+    <p class="loan-summary__empty-text">
+      Completa el DNI, nombre, monto y número de cuotas para generar el resumen
+      automáticamente.
+    </p>
+  </div>
+
+  <div class="loan-summary__content is-hidden" data-summary-content>
+    <dl class="loan-summary__totals">
+      <div>
+        <dt>Monto Total del Préstamo</dt>
+        <dd data-summary-total>S/ 0.00 <span class="currency">PEN</span></dd>
+      </div>
+      <div>
+        <dt data-summary-installments-label>Cuota Mensual</dt>
+        <dd class="highlight" data-summary-monthly>S/ 0.00</dd>
+      </div>
+    </dl>
+
+    {% include "components/loan/schedule.html" %}
+
+    <footer class="loan-summary__footer">
+      <button type="button" class="primary-button" disabled>
+        Crear Préstamo
+      </button>
+    </footer>
+  </div>
+</article>
