@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "build:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css",
+    "watch:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
