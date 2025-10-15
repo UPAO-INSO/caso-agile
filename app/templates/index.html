@@ -9,7 +9,7 @@
         <p>Complete los detalles para un nuevo préstamo.</p>
       </header>
 
-      <form class="loan-form" id="loan-form" novalidate>
+      <form class="loan-form" id="loan-form" method="POST" action="{{ url_for('main.enviar_prueba_correo') }}" novalidate>
         <div class="loan-form__group loan-form__group--full">
           <label for="dni">DNI del Cliente</label>
           <div class="input-with-icon">
@@ -68,6 +68,9 @@
             />
           </div>
         </div>
+      <button type="submit" class="primary-button">
+          Enviar Préstamo y Correo de Prueba
+        </button>
       </form>
     </article>
     <article class="card loan-summary" data-summary>
@@ -108,7 +111,7 @@
         </section>
 
         <footer class="loan-summary__footer">
-          <button type="button" class="primary-button" disabled>
+          <button type="submit" class="primary-button" disabled>
             Crear Préstamo
           </button>
         </footer>
