@@ -1,0 +1,19 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<a href="{{ url_for('prestamos.list_clientes_con_prestamos') }}">
+  &larr; Volver a la Lista de Clientes
+</a>
+
+<h2>Préstamos de: {{ cliente.nombre_completo }}</h2>
+
+<ul>
+  {% for p in prestamos %}
+  <li>
+    <a href="{{ url_for('prestamos.detail_prestamo', prestamo_id=p.id) }}">
+      Monto: {{ p.monto }} | Plazo: {{ p.plazo }} meses | Estado: {{ p.estado }}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

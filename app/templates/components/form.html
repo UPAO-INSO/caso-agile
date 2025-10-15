@@ -1,0 +1,61 @@
+<!-- Formulario de registro -->
+<article class="card loan-card">
+  <header class="loan-card__header">
+    <h2>Nueva Solicitud</h2>
+    <p>Complete los detalles para un nuevo préstamo.</p>
+  </header>
+
+  <form class="loan-form" id="loan-form" novalidate>
+    <div class="loan-form__group loan-form__group--full">
+      <label for="dni">DNI del Cliente</label>
+      <div class="input-with-icon">
+        <span class="input-icon" aria-hidden="true">👤</span>
+        <input
+          id="dni"
+          type="text"
+          name="dni"
+          placeholder="XXXXXXXX"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="loan-form__group loan-form__group--full">
+      <label for="nombre">Nombre del Cliente</label>
+      <input
+        id="nombre"
+        type="text"
+        name="nombre"
+        placeholder="Gian Campos"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="loan-form__status" role="status" data-status-message>
+      <span class="loan-form__status-icon" aria-hidden="true">✔</span>
+      <p>Aca debe ir la logica para ver si hay un prestamo existente</p>
+    </div>
+
+    <div class="loan-form__split">
+      <div class="loan-form__group">
+        <label for="monto">Monto del Préstamo</label>
+        <div class="input-with-prefix">
+          <span class="input-prefix">S/</span>
+          <input
+            id="monto"
+            type="number"
+            name="monto"
+            placeholder="00000.00"
+            min="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+
+      <div class="loan-form__group">
+        <label for="cuotas">Número de Cuotas</label>
+        <input id="cuotas" type="number" name="cuotas" min="1" />
+      </div>
+    </div>
+  </form>
+</article>

@@ -1,0 +1,14 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<h2>Consulta de Clientes con Historial de Préstamos</h2>
+<ul>
+  {% for c in clientes %}
+  <li>
+    <a href="{{ url_for('prestamos.list_prestamos_por_cliente', cliente_id=c.id) }}">
+      {{ c.nombre_completo }} (DNI: {{ c.dni }}) 
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

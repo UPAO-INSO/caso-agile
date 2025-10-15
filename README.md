@@ -42,6 +42,8 @@ El proyecto usa una estructura modular, ideal para desarrollo colaborativo y ext
    python -m venv env
 
    env\Scripts\Activate.ps1
+
+   por si no funciona el de arriba: env\Scripts\Activate
    ```
 
 3. **Instalar dependencias de python y node**
