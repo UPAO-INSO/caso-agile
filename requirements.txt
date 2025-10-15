@@ -26,6 +26,11 @@ urllib3==2.0.4
 # Configuration Management
 python-dotenv==1.1.1
 
+# Excel Processing (for PEP dataset)
+pandas==2.1.4
+openpyxl==3.1.2
+xlrd==2.0.1
+
 # Utilities
 python-dateutil==2.9.0.post0
 six==1.17.0
