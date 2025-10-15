@@ -7,15 +7,16 @@ clientes_bp = Blueprint('clientes', __name__, url_prefix='/api/v1/clientes')
 
 @clientes_bp.route('', methods=['POST'])
 def crear_cliente(): # → Endpoint para crear un nuevo cliente
+
     data = request.get_json()
     
     if not data or not data.get('dni'):
         return jsonify({'error': 'El campo DNI es indispensable'}), 400
     
     dni = data.get('dni')
-    pep = data.get('pep', False)
+    pep_declarado = data.get('pep', False)  # Lo que el cajero preguntó al cliente
     
-    cliente, error = crud.crear_cliente(dni, pep)
+    cliente_dict, error = crud.crear_cliente(dni, pep_declarado)
     
     if error:
         if "ya existe" in error:
@@ -25,7 +26,8 @@ def crear_cliente(): # → Endpoint para crear un nuevo cliente
         else:
             return jsonify({'error': error}), 503
     
-    return jsonify(cliente.to_dict()), 201
+    # Retornar información completa incluyendo validación PEP
+    return jsonify(cliente_dict), 201
 
 
 @clientes_bp.route('', methods=['GET'])
@@ -66,25 +68,33 @@ def eliminar_cliente(cliente_id): # → Endpoint para eliminar un cliente
     
     return jsonify({'mensaje': f'Cliente con ID {cliente_id} eliminado correctamente'}), 200
 
-# FUNCIÓN DE PRUEBA - Solo para desarrollo
 
-def probar_api_dni(): # → Función para probar la API de DNI desde consola
-    dni = input("\nIngrese DNI (8 dígitos): ").strip()
-    
+# ------------------ ENDPOINTS DE PRUEBA - Para POSTMAN ----------------------
+
+@clientes_bp.route('/test/dni/<string:dni>', methods=['GET'])
+def test_consultar_dni(dni): # → Endpoint de prueba para consultar DNI en la API de Factiliza
+                             # → Usar en Postman: GET http://127.0.0.1:5000/api/v1/clientes/test/dni/12345678
     if len(dni) != 8 or not dni.isdigit():
-        print("DNI inválido. Debe tener 8 dígitos.")
-        return
+        return jsonify({'error': 'DNI inválido. Debe tener 8 dígitos'}), 400
     
-    from app.clients.crud import consultar_dni_api
-    info, error = consultar_dni_api(dni)
+    info, error = crud.consultar_dni_api(dni)
     
     if error:
-        print(f"{error}")
-    else:
-        print("\nINFORMACIÓN ENCONTRADA")
-        print("="*50)
-        print(f"DNI: {info.get('numero')}")
-        print(f"Nombres: {info.get('nombres')}")
-        print(f"Apellido Paterno: {info.get('apellido_paterno')}")
-        print(f"Apellido Materno: {info.get('apellido_materno')}")
-        print(f"Direccion: {info.get('direccion')}")
+        return jsonify({'error': error}), 400
+    
+    return jsonify({'success': True, 'data': info}), 200
+
+
+@clientes_bp.route('/test/pep/<string:dni>', methods=['GET'])
+def test_validar_pep(dni): # → Endpoint de prueba para validar si un DNI está en el dataset PEP
+                           # → Usar: GET http://127.0.0.1:5000/api/v1/clientes/test/pep/12345678
+    if len(dni) != 8 or not dni.isdigit():
+        return jsonify({'error': 'DNI inválido. Debe tener 8 dígitos'}), 400
+    
+    es_pep = crud.validar_pep_en_dataset(dni)
+    
+    return jsonify({
+        'dni': dni,
+        'es_pep': es_pep,
+        'mensaje': 'Este DNI está en la lista PEP' if es_pep else 'Este DNI NO está en la lista PEP'
+    }), 200
