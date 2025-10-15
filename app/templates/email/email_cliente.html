@@ -1,38 +1,75 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        color: #333;
-        background-color: #f5f7fa;
-        padding: 30px;
-      }
-      .email-container {
-        background: #fff;
-        border-radius: 8px;
-        padding: 25px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        color: #1a237e;
-      }
-      p {
-        line-height: 1.6;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="email-container">
-      <h1>Hola {{ nombre }},</h1>
-      <p>
-        Te enviamos tu <strong>cronograma de pagos</strong> en formato PDF adjunto.
-      </p>
-      <p>
-        Por favor revisa los detalles y conserva el archivo como comprobante.
-      </p>
-      <p>Gracias por confiar en <strong>Préstamos Gota a Gota</strong>.</p>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tu cronograma de pagos</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #f8f9fb;
+      margin: 0;
+      padding: 40px 0;
+      color: #333;
+    }
+    .container {
+      background: white;
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 12px;
+      padding: 30px 40px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    h1 {
+      color: #1f4e79;
+      font-size: 22px;
+      text-align: center;
+    }
+    p {
+      line-height: 1.6;
+    }
+    .highlight {
+      background-color: #e7f1ff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #1f4e79;
+      font-weight: 600;
+      display: inline-block;
+      margin: 10px 0;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-top: 25px;
+    }
+    .button {
+      background-color: #1f4e79;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>¡Hola {{ nombre }}!</h1>
+
+    <p>Te escribimos para confirmarte que tu préstamo ha sido registrado exitosamente.</p>
+
+    <p>Adjunto encontrarás tu <span class="highlight">cronograma de pagos</span>, con los montos y fechas de cada cuota.</p>
+
+    <p>Por favor revisa cuidadosamente el documento y guarda una copia para tu control personal.</p>
+
+    <p>Si tienes dudas o necesitas modificar alguna información, puedes responder directamente a este correo o comunicarte con tu asesor asignado.</p>
+
+    <a href="https://tusitio.com" class="button">Ir a tu cuenta</a>
+
+    <div class="footer">
+      <p>© 2025 Gota a Gota - Gestión de Préstamos. Todos los derechos reservados.</p>
     </div>
-  </body>
+  </div>
+</body>
 </html>
