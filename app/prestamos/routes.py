@@ -1,18 +1,18 @@
-from flask import render_template, request, jsonify, abort
+from flask import render_template, request, jsonify
 from datetime import date
 from decimal import Decimal
 import logging
 
 from pydantic import ValidationError
 
+from app import db
 from app.cuotas.model.cuotas import Cuota
-from app.declaraciones.crud import crear_declaracion
-from app.prestamos.crud import crear_prestamo, listar_prestamos_por_cliente_id, obtener_prestamo_por_id
+from app.prestamos.crud import listar_prestamos_por_cliente_id, obtener_prestamo_por_id
 from app.common.error_handler import ErrorHandler
 
 from .model.prestamos import Prestamo, EstadoPrestamoEnum
 from app.declaraciones.model.declaraciones import DeclaracionJurada, TipoDeclaracionEnum 
-from app.clients.crud import obtener_cliente_por_dni, obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente, crear_o_obtener_cliente
+from app.clients.crud import obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente, crear_o_obtener_cliente
 
 from .schemas import PrestamoCreateDTO
 from . import prestamos_bp
@@ -68,9 +68,9 @@ def registrar_prestamo():
         requiere_dj = True
         tipos_dj.add(TipoDeclaracionEnum.PEP)
 
-    nueva_dj = None
     declaracion_id = None
-    
+    prestamo_creado = None
+
     if requiere_dj:
         if TipoDeclaracionEnum.USO_PROPIO in tipos_dj and TipoDeclaracionEnum.PEP in tipos_dj:
             tipo_declaracion_enum = TipoDeclaracionEnum.AMBOS
@@ -82,48 +82,50 @@ def registrar_prestamo():
         nueva_dj = DeclaracionJurada(
             cliente_id=cliente.cliente_id,
             tipo_declaracion=tipo_declaracion_enum,
-            fecha_firma=date.today(), 
-            firmado=True 
+            fecha_firma=date.today(),
+            firmado=True
         )
-        
-        modelo_declaracion = crear_declaracion(nueva_dj)
+    else:
+        nueva_dj = None
 
     try:
-        if nueva_dj:
-            declaracion_id = modelo_declaracion.declaracion_id
+        with db.session.begin():
+            if nueva_dj:
+                db.session.add(nueva_dj)
+                db.session.flush()
+                declaracion_id = nueva_dj.declaracion_id
 
-        nuevo_prestamo = Prestamo(
-            cliente_id=cliente.cliente_id,
-            monto_total=monto_total,
-            interes_tea=interes_tea,
-            plazo=plazo,
-            f_otorgamiento=f_otorgamiento,
-            requiere_dec_jurada=requiere_dj,
-            declaracion_id=declaracion_id
-        )
-        
-        modelo_prestamo = crear_prestamo(nuevo_prestamo)
-
-        cronograma = generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento)
-        
-        cuotas_a_crear = []
-        for item in cronograma:
-            cuota = Cuota(
-                prestamo_id=modelo_prestamo.prestamo_id,
-                numero_cuota=item['numero_cuota'],
-                fecha_vencimiento=item['fecha_vencimiento'],
-                monto_cuota=item['monto_cuota'],
-                monto_capital=item['monto_capital'],
-                monto_interes=item['monto_interes'],
-                saldo_capital=item['saldo_capital']
+            prestamo = Prestamo(
+                cliente_id=cliente.cliente_id,
+                monto_total=monto_total,
+                interes_tea=interes_tea,
+                plazo=plazo,
+                f_otorgamiento=f_otorgamiento,
+                requiere_dec_jurada=requiere_dj,
+                declaracion_id=declaracion_id
             )
-            cuotas_a_crear.append(cuota)
-        
-        # prestamos_bp.session.add_all(cuotas_a_crear)
 
-        return jsonify({'success': True, 'message': 'Préstamo y cronograma registrados.', 'prestamo_id': nuevo_prestamo.prestamo_id}), 201
+            db.session.add(prestamo)
+            db.session.flush()
+
+            cronograma = generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento)
+
+            for item in cronograma:
+                cuota = Cuota(
+                    prestamo_id=prestamo.prestamo_id,
+                    numero_cuota=item['numero_cuota'],
+                    fecha_vencimiento=item['fecha_vencimiento'],
+                    monto_cuota=item['monto_cuota'],
+                    monto_capital=item['monto_capital'],
+                    monto_interes=item['monto_interes'],
+                    saldo_capital=item['saldo_capital']
+                )
+                db.session.add(cuota)
+
+            prestamo_creado = prestamo
 
     except Exception as exc:
+        db.session.rollback()
         return error_handler.log_and_respond(
             exc,
             "Error fatal en la transacción de registro de préstamo",
@@ -131,6 +133,29 @@ def registrar_prestamo():
             status_code=500,
             log_extra={'dni': dni},
         )
+
+    response_payload = {
+        'success': True,
+        'message': 'Préstamo y cronograma registrados.',
+        'prestamo': {
+            'id': prestamo_creado.prestamo_id,
+            'monto': str(prestamo_creado.monto_total.quantize(Decimal('0.01'))),
+            'plazo': prestamo_creado.plazo,
+            'interes_tea': str(prestamo_creado.interes_tea.quantize(Decimal('0.01'))),
+            'fecha_otorgamiento': prestamo_creado.f_otorgamiento.isoformat(),
+            'estado': prestamo_creado.estado.value,
+        },
+        'cliente': {
+            'id': cliente.cliente_id,
+            'dni': cliente.dni,
+            'nombre_completo': cliente.nombre_completo,
+            'apellido_paterno': cliente.apellido_paterno,
+            'apellido_materno': cliente.apellido_materno,
+            'pep': cliente.pep,
+        }
+    }
+
+    return jsonify(response_payload), 201
 
 @prestamos_bp.route('/', methods=['GET'])
 def list_clientes_con_prestamos():

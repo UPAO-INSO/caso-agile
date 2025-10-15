@@ -223,3 +223,15 @@ def crear_o_obtener_cliente(dni):
     # Obtener el cliente recién creado de la BD
     cliente = Cliente.query.filter_by(dni=dni).first()
     return cliente, None
+
+def paginar_clientes(page=1, per_page=5, dni=None):
+    query = Cliente.query
+    
+    if dni:
+        query = query.filter(Cliente.dni.ilike(f'%{dni}%'))
+        
+    return query.order_by(Cliente.fecha_registro.desc()).paginate(
+        page=page, 
+        per_page=per_page,
+        error_out=False
+    )

@@ -5,18 +5,15 @@
       </div>
       
       <div class="navbar-menu">
-        <a href="/" class="nav-item nav-item--active">
-          <span class="nav-icon">🏠</span>
+        <a href="{{ url_for('main.home') }}" class="nav-item nav-item--active">
           <span class="nav-text">Inicio</span>
         </a>
         
-        <a href="/" class="nav-item">
-          <span class="nav-icon">🔍</span>
+        <a href="{{ url_for('main.buscar_cliente') }}" class="nav-item">
           <span class="nav-text">Buscar Préstamos</span>
         </a>
         
-        <a href="/" class="nav-item">
-          <span class="nav-icon">👥</span>
+        <a href="{{ url_for('main.home') }}" class="nav-item">
           <span class="nav-text">Clientes Actuales</span>
         </a>
       </div>
