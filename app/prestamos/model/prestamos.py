@@ -42,3 +42,17 @@ class Prestamo(db.Model):
 
     def __repr__(self):
         return f"<Prestamo ID {self.prestamo_id} por S/ {self.monto_total}>"
+    
+    def to_dict(self):
+        return {
+            'prestamo_id': self.prestamo_id,
+            'monto_total': float(self.monto_total) if self.monto_total else 0,
+            'interes_tea': float(self.interes_tea) if self.interes_tea else 0,
+            'plazo': self.plazo,
+            'f_otorgamiento': self.f_otorgamiento.isoformat() if self.f_otorgamiento else None,
+            'f_registro': self.f_registro.isoformat() if self.f_registro else None,
+            'estado': self.estado.value if self.estado else None,
+            'requiere_dec_jurada': self.requiere_dec_jurada,
+            'declaracion_id': self.declaracion_id,
+            'cliente_id': self.cliente_id
+        }

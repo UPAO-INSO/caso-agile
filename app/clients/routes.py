@@ -4,6 +4,7 @@ import os
 from app import db
 from app.clients.model.clients import Cliente
 from app.clients import crud
+from app.prestamos.model.prestamos import EstadoPrestamoEnum
 from . import clientes_bp
 
 # → Guardamos la API Key en variables de entorno
@@ -33,6 +34,18 @@ def crear_cliente(): # → Endpoint para crear un nuevo cliente
             return jsonify({'error': error}), 503
     
     return jsonify(cliente_dict), 201
+
+@clientes_bp.route('/verificar_prestamo/<int:cliente_id>', methods=['GET'])
+def verificar_prestamo_cliente(cliente_id):
+    prestamo = crud.prestamo_activo_cliente(cliente_id, EstadoPrestamoEnum.VIGENTE)
+    
+    if not prestamo:
+        return jsonify({'tiene_prestamo_activo': False}), 200
+    
+    return jsonify({
+        'tiene_prestamo_activo': True,
+        'prestamo': prestamo.to_dict()
+    }), 200
 
 
 @clientes_bp.route('', methods=['GET'])

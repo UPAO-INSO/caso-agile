@@ -37,7 +37,6 @@ def registrar_prestamo():
     plazo = dto.plazo
     f_otorgamiento = dto.f_otorgamiento
 
-    # Crear o obtener cliente (si no existe, se registra automáticamente)
     cliente, error_cliente = crear_o_obtener_cliente(dni)
     
     if error_cliente:
@@ -102,7 +101,6 @@ def registrar_prestamo():
         
         modelo_prestamo = crear_prestamo(nuevo_prestamo)
 
-        # 3. Generar cronograma de pagos
         cronograma = generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento)
         
         # 4. Crear cuotas en la base de datos

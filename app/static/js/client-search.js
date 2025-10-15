@@ -32,25 +32,40 @@ async function searchClient() {
     const response = await fetch(`/api/v1/clientes/dni/${dni}`);
 
     if (response.status === 404) {
-      // Cliente no existe, consultar API de RENIEC
       await consultarYRegistrarCliente(dni);
     } else if (response.ok) {
       const cliente = await response.json();
-      // Cliente existe en la BD
       window.currentClient = cliente;
-      displayClientInfo(cliente);
 
-      // Verificar si tiene préstamo activo
-      if (cliente.tiene_prestamo_activo) {
-        showAlert(
-          "⚠️ Este cliente ya tiene un préstamo activo. No se puede otorgar otro crédito.",
-          "warning"
+      try {
+        const prestamoResponse = await fetch(
+          `/api/v1/clientes/verificar_prestamo/${cliente.cliente_id}`
         );
-        // Deshabilitar el formulario de préstamo
-        disableLoanForm(true);
-      } else {
+
+        if (prestamoResponse.ok) {
+          const prestamoData = await prestamoResponse.json();
+
+          displayClientInfo(cliente, prestamoData);
+
+          if (prestamoData.tiene_prestamo_activo) {
+            showAlert(
+              "Este cliente ya tiene un préstamo activo. No se puede otorgar otro crédito.",
+              "warning"
+            );
+            // Deshabilitar el formulario de préstamo
+            disableLoanForm(true);
+          } else {
+            showAlert("Cliente encontrado", "success");
+            // Habilitar el formulario de préstamo
+            disableLoanForm(false);
+          }
+        } else {
+          showAlert("Cliente encontrado", "success");
+          disableLoanForm(false);
+        }
+      } catch (error) {
+        console.warn("No se pudo verificar préstamo activo:", error);
         showAlert("Cliente encontrado", "success");
-        // Habilitar el formulario de préstamo
         disableLoanForm(false);
       }
     } else {
@@ -110,7 +125,7 @@ async function consultarYRegistrarCliente(dni) {
     // Mostrar mensaje informativo
     if (esPep) {
       showAlert(
-        "⚠️ Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Políticamente).",
+        "Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Políticamente).",
         "warning"
       );
     } else {
@@ -121,7 +136,7 @@ async function consultarYRegistrarCliente(dni) {
     }
 
     // Actualizar la interfaz con los datos del cliente
-    displayClientInfo(clienteTemporal);
+    displayClientInfo(clienteTemporal, prestamoData);
 
     // Habilitar el formulario de préstamo
     disableLoanForm(false);
@@ -134,14 +149,14 @@ async function consultarYRegistrarCliente(dni) {
 /**
  * Mostrar información del cliente en la interfaz
  */
-function displayClientInfo(cliente) {
-  // Actualizar DNI
+function displayClientInfo(cliente, prestamoData) {
+  console.log({ prestamoData });
+
   const dniElement = document.getElementById("client-dni");
   if (dniElement) {
     dniElement.textContent = cliente.dni;
   }
 
-  // Actualizar nombre completo
   const nameElement = document.getElementById("client-name");
   if (nameElement) {
     const nombreCompleto = `${cliente.nombre_completo || ""} ${
@@ -150,25 +165,23 @@ function displayClientInfo(cliente) {
     nameElement.textContent = nombreCompleto;
   }
 
-  // Mostrar/ocultar aviso PEP
   const pepNotice = document.querySelector(".pep-notice");
   if (pepNotice) {
     pepNotice.style.display = cliente.pep ? "flex" : "none";
   }
 
-  // Mostrar/ocultar aviso de préstamo activo
   const loanNotice = document.getElementById("loan-active-notice");
   const loanDetailsText = document.getElementById("loan-details-text");
-  if (loanNotice && cliente.tiene_prestamo_activo) {
+  if (loanNotice && prestamoData.tiene_prestamo_activo) {
     loanNotice.classList.add("show");
-    if (loanDetailsText && cliente.prestamo_activo) {
+    if (loanDetailsText && prestamoData.tiene_prestamo_activo) {
       const fechaOtorgamiento = new Date(
-        cliente.prestamo_activo.fecha_otorgamiento
+        prestamoData.prestamo.f_otorgamiento
       ).toLocaleDateString("es-PE");
       loanDetailsText.innerHTML = `
-        <strong>Préstamo #${cliente.prestamo_activo.id}</strong><br>
-        Monto: S/ ${parseFloat(cliente.prestamo_activo.monto).toFixed(2)} | 
-        Plazo: ${cliente.prestamo_activo.plazo} cuotas | 
+        <strong>Préstamo #${prestamoData.prestamo.prestamo_id}</strong><br>
+        Monto: S/ ${parseFloat(prestamoData.prestamo.monto_total).toFixed(2)} | 
+        Plazo: ${prestamoData.prestamo.plazo} cuotas | 
         Fecha: ${fechaOtorgamiento}
       `;
     }
@@ -176,9 +189,8 @@ function displayClientInfo(cliente) {
     loanNotice.classList.remove("show");
   }
 
-  // Actualizar badge de estado
   const statusBadge = document.querySelector(".status-badge");
-  if (statusBadge && cliente.tiene_prestamo_activo) {
+  if (statusBadge && prestamoData.tiene_prestamo_activo) {
     statusBadge.textContent = "Préstamo Activo";
     statusBadge.style.background = "#FFF3CD";
     statusBadge.style.color = "#856404";
@@ -188,20 +200,15 @@ function displayClientInfo(cliente) {
     statusBadge.style.color = "#2E7D32";
   }
 
-  // Mostrar sección de resultados
   const resultsSection = document.querySelector(".results-section");
   if (resultsSection) {
     resultsSection.classList.remove("hidden");
     resultsSection.style.display = "block";
   }
 
-  // Validar si necesita declaración jurada (si es PEP)
   validarMonto();
 }
 
-/**
- * Deshabilitar/habilitar formulario de préstamo
- */
 function disableLoanForm(disable) {
   const montoInput = document.getElementById("monto");
   const cuotasInput = document.getElementById("cuotas");
@@ -225,9 +232,6 @@ function disableLoanForm(disable) {
   }
 }
 
-/**
- * Modal de cliente registrado exitosamente
- */
 function showClientRegisteredModal(cliente) {
   const modalOverlay = document.createElement("div");
   modalOverlay.className = "modal-overlay";
@@ -321,7 +325,7 @@ function validarMonto() {
   if (!montoInput) return;
 
   const monto = parseFloat(montoInput.value);
-  const UIT = 5150; // 1 UIT en soles (2025)
+  const UIT = 5350; // 1 UIT en soles (2025)
 
   // Verificar si el cliente es PEP
   const esPep = window.currentClient && window.currentClient.pep;
@@ -461,12 +465,12 @@ async function crearNuevoPrestamo(event) {
   const cuotas = document.getElementById("cuotas").value;
   const email = document.getElementById("email").value;
 
-  if (!monto || !cuotas) {
+  if (!monto || !cuotas || !email) {
     showAlert("Complete todos los campos requeridos", "error");
     return;
   }
 
-  const UIT = 5150;
+  const UIT = 5350;
   const montoNumerico = parseFloat(monto);
   const esPep = window.currentClient.pep;
   const declaracionContainer = document.getElementById(
@@ -489,15 +493,21 @@ async function crearNuevoPrestamo(event) {
     '<svg class="animate-spin w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creando...';
   saveButton.disabled = true;
 
+  interes_tea = 0.1;
+
   try {
+    const today = new Date();
+    const fechaOtorgamiento = today.toISOString().split("T")[0]; // "2025-10-15"
+
     const prestamoData = {
-      cliente_dni: window.currentClient.dni,
+      dni: window.currentClient.dni,
       monto: parseFloat(monto),
       plazo: parseInt(cuotas),
-      correo_electronico: email || null,
+      interes_tea: interes_tea,
+      f_otorgamiento: fechaOtorgamiento,
     };
 
-    const response = await fetch("/api/v1/prestamos/", {
+    const response = await fetch("/api/v1/prestamos/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

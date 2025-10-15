@@ -11,7 +11,7 @@ class PrestamoCreateDTO(BaseModel):
     plazo: int = Field(..., description="Número de meses del crédito")
     f_otorgamiento: date = Field(..., description="Fecha de otorgamiento del préstamo")
 
-    model_config = ConfigDict(anystr_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     @field_validator("dni")
     @classmethod
