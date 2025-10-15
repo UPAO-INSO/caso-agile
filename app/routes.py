@@ -27,12 +27,11 @@ def enviar_prueba_correo():
         mail.send(msg)
         
         # Opcional: Muestra un mensaje de éxito en la página
-        flash(f"Correo de prueba enviado con éxito a {destinatario}.", 'success')
+        print(f"Correo de prueba enviado con éxito a {destinatario}.")
         
     except Exception as e:
         # Muestra un error si falla el envío
-        flash(f"Error al enviar correo. Revise la configuración de Gmail: {e}", 'error')
-        print(f"Error de Correo: {e}") 
+        print(f"Error de Correo: {e}")
 
     # Redirige al inicio
     return redirect(url_for('main.home'))
