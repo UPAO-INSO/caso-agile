@@ -1,11 +1,13 @@
 from app import db
-from app.clients.model.clients import Cliente
 import requests
 import os
 
+from app.clients.model.clients import Cliente
+from app.prestamos.model.prestamos import Prestamo
+
 # Configuración de API externa
 API_KEY = os.environ.get('DNI_API_KEY')
-API_URL = "https://api.factiliza.com/v1/dni/info/"
+API_URL = os.environ.get('DNI_API_URL')
 
 
 def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del DNI
@@ -14,7 +16,7 @@ def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del
             "Authorization": f"Bearer {API_KEY}",
             "Accept": "application/json"
         }
-        respuesta = requests.get(f"{API_URL}{dni}", headers=headers)
+        respuesta = requests.get(f"{API_URL}/{dni}", headers=headers)
         respuesta.raise_for_status()
         
         api_data = respuesta.json()
@@ -69,6 +71,22 @@ def obtener_cliente_por_id(cliente_id): # → Obtiene un cliente por su ID
 
 def obtener_cliente_por_dni(dni): # → Obtener cliente por DNI
     return Cliente.query.filter_by(dni=dni).first()
+
+
+def prestamo_activo_cliente(cliente_id, estado):
+    return db.session.execute(
+        db.select(Prestamo)
+        .filter_by(cliente_id=cliente_id, estado=estado)
+    ).scalar_one_or_none()
+    
+    
+def obtener_clientes_por_estado_prestamo():
+    return db.session.execute(
+        db.select(Cliente)
+        .join(Prestamo) 
+        .distinct() 
+        .order_by(Cliente.nombre_completo.asc())
+    ).scalars().all()
 
 
 def actualizar_cliente(cliente_id, pep=None): # → Actualizar los datos de un cliente

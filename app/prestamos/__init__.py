@@ -1,8 +1,13 @@
 from flask import Blueprint
 
-bp = Blueprint('prestamos', __name__, url_prefix='/prestamos', template_folder='templates')
-
-from . import routes  # noqa
+prestamos_bp = Blueprint(
+    'prestamos',
+    __name__,
+    url_prefix='/api/v1/prestamos',
+    template_folder='templates'
+)
 
 def init_app(app):
-    app.register_blueprint(bp)
+
+    from . import routes
+    app.register_blueprint(prestamos_bp)

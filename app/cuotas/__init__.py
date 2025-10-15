@@ -1,8 +1,8 @@
 from flask import Blueprint
 
-bp = Blueprint('cuotas', __name__, url_prefix='/cuotas', template_folder='templates')
+from . import routes  # noqa: ensure routes module is loaded
 
-from . import routes  # noqa
 
-def init_app(app):
-    app.register_blueprint(bp)
+def init_app(app, api_prefix='/api'):
+    from .routes import cuotas_bp
+    app.register_blueprint(cuotas_bp, url_prefix=f"{api_prefix}/cuotas")

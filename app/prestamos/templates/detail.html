@@ -1,4 +1,88 @@
 {% extends 'base.html' %} {% block content %}
-<h2>Préstamo ID {{ prestamo.prestamo_id }}</h2>
-<p>Monto: {{ prestamo.monto_total }}</p>
+
+<a
+  href="{{ url_for('prestamos.list_prestamos_por_cliente', cliente_id=prestamo.cliente_id) }}"
+>
+  &larr; Volver a Préstamos del Cliente
+</a>
+
+<h2>Detalle del Préstamo ID {{ prestamo.id }}</h2>
+
+<div
+  style="
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  "
+>
+  <h3>Información General</h3>
+  <p>
+    <strong>Cliente:</strong> {{ prestamo.cliente }} (DNI: {{ prestamo.dni }})
+  </p>
+  <p><strong>Fecha de Otorgamiento:</strong> {{ prestamo.f_otorgamiento }}</p>
+  <p><strong>Estado:</strong> **{{ prestamo.estado }}**</p>
+</div>
+
+<div
+  style="
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  "
+>
+  <h3>Condiciones Financieras</h3>
+  <p><strong>Monto Total Prestado:</strong> {{ prestamo.monto_total }}</p>
+  <p><strong>Tasa (TEA):</strong> {{ prestamo.interes_tea }}</p>
+  <p><strong>Plazo:</strong> {{ prestamo.plazo }} meses</p>
+</div>
+
+<div
+  style="
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  "
+>
+  <h3>Declaración Jurada</h3>
+  <p><strong>DJ Requerida:</strong> {{ prestamo.requiere_dj }}</p>
+  {% if prestamo.requiere_dj == 'Sí' %}
+  <p><strong>Tipo de DJ:</strong> {{ prestamo.tipo_dj }}</p>
+  {% endif %}
+</div>
+
+<h3 style="margin-top: 30px">Cronograma de Pagos (Tabla de Amortización)</h3>
+
+<table
+  border="1"
+  style="width: 100%; text-align: right; border-collapse: collapse"
+>
+  <thead>
+    <tr style="background-color: #f2f2f2">
+      <th style="padding: 8px">N° Cuota</th>
+      <th style="padding: 8px">Vencimiento</th>
+      <th style="padding: 8px">Cuota Fija</th>
+      <th style="padding: 8px">Capital</th>
+      <th style="padding: 8px">Interés</th>
+      <th style="padding: 8px">Saldo Capital</th>
+      <th style="padding: 8px">Pagado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in cronograma %}
+    <tr>
+      <td style="padding: 8px; text-align: center">{{ c.nro }}</td>
+      <td style="padding: 8px; text-align: center">{{ c.vencimiento }}</td>
+      <td style="padding: 8px">{{ c.monto_cuota }}</td>
+      <td style="padding: 8px">{{ c.capital }}</td>
+      <td style="padding: 8px">{{ c.interes }}</td>
+      <td style="padding: 8px">{{ c.saldo }}</td>
+      <td style="padding: 8px; text-align: center">{{ c.pagado }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 {% endblock %}

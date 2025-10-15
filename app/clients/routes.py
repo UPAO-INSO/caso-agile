@@ -1,9 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import request, jsonify
 from app.clients import crud
-
-# Blueprint para el módulo de clientes (API)
-clientes_bp = Blueprint('clientes', __name__, url_prefix='/api/v1/clientes')
-
+from . import clientes_bp
 
 @clientes_bp.route('', methods=['POST'])
 def crear_cliente(): # → Endpoint para crear un nuevo cliente
