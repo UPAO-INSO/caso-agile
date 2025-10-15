@@ -2,10 +2,72 @@ from app import db
 from app.clients.model.clients import Cliente
 import requests
 import os
+import pandas as pd
+from pathlib import Path
 
 # Configuración de API externa
 API_KEY = os.environ.get('DNI_API_KEY')
-API_URL = "https://api.factiliza.com/v1/dni/info/"
+API_URL = os.environ.get('DNI_API_URL')
+
+# Ruta al dataset PEP
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DATASET_PEP_PATH = BASE_DIR / "dataset-pep" / "Autoridades_Electas.xls"
+
+
+def cargar_lista_pep(): # → Cargar la lista de DNIs PEP desde el dataset
+    try:
+        # Leer el archivo Excel
+        df = pd.read_excel(DATASET_PEP_PATH)
+        
+        # Extraer columna de DNI (ajusta el nombre según el Excel)
+        # Verificar los nombres de columnas: 'DNI', 'DOCUMENTO', 'NRO_DOCUMENTO', etc.
+        columnas_posibles = ['DNI', 'DOCUMENTO', 'NRO_DOCUMENTO', 'NUMERO_DOCUMENTO']
+        columna_dni = None
+        
+        for col in columnas_posibles:
+            if col in df.columns:
+                columna_dni = col
+                break
+        
+        if not columna_dni:
+            # Si no encuentra, usar la primera columna que contenga números de 8 dígitos
+            for col in df.columns:
+                if df[col].dtype == 'object' or df[col].dtype == 'int64':
+                    # Verificar si los valores parecen DNIs (8 dígitos)
+                    muestra = df[col].astype(str).str.strip()
+                    if muestra.str.len().mode()[0] == 8:
+                        columna_dni = col
+                        break
+        
+        if not columna_dni:
+            print(f"Advertencia: No se encontró columna de DNI en el dataset PEP")
+            return set()
+        
+        # Convertir DNIs a strings de 8 dígitos y crear set
+        dnis_pep = set(
+            df[columna_dni]
+            .astype(str)
+            .str.strip()
+            .str.zfill(8)  # Rellenar con ceros a la izquierda si es necesario
+        )
+        
+        print(f"Dataset PEP cargado: {len(dnis_pep)} registros")
+        return dnis_pep
+        
+    except FileNotFoundError:
+        print(f"Archivo PEP no encontrado: {DATASET_PEP_PATH}")
+        return set()
+    except Exception as e:
+        print(f"Error al cargar dataset PEP: {e}")
+        return set()
+
+
+# Cargar lista PEP al iniciar el módulo (cache en memoria)
+LISTA_PEP = cargar_lista_pep()
+
+def validar_pep_en_dataset(dni): # → Validar si un DNI está en el dataset PEP
+    dni_normalizado = str(dni).strip().zfill(8)
+    return dni_normalizado in LISTA_PEP
 
 
 def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del DNI
@@ -14,7 +76,9 @@ def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del
             "Authorization": f"Bearer {API_KEY}",
             "Accept": "application/json"
         }
-        respuesta = requests.get(f"{API_URL}{dni}", headers=headers)
+        # Construir URL completa con el DNI
+        url_completa = f"{API_URL}/{dni}"
+        respuesta = requests.get(url_completa, headers=headers)
         respuesta.raise_for_status()
         
         api_data = respuesta.json()
@@ -28,16 +92,22 @@ def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del
         return None, f"Error al consultar el servicio de DNI: {str(e)}"
 
 
-def crear_cliente(dni, pep=False): # → Crea un nuevo cliente consultando la API de DNI
+def crear_cliente(dni, pep_declarado=False): # → Crea un nuevo cliente consultando la API de DNI
     # Validar si ya existe
     cliente_existente = Cliente.query.filter_by(dni=dni).first()
     if cliente_existente:
         return None, "El cliente ya existe"
     
-    # Consultar API
+    # Consultar API de Factiliza
     info_cliente, error = consultar_dni_api(dni)
     if error:
         return None, error
+    
+    # Validar automáticamente contra dataset PEP
+    es_pep_validado = validar_pep_en_dataset(dni)
+    
+    # Si el dataset dice que SÍ es PEP, prevalece la validación automática
+    pep_final = es_pep_validado or pep_declarado
     
     # Crear cliente
     try:
@@ -46,13 +116,26 @@ def crear_cliente(dni, pep=False): # → Crea un nuevo cliente consultando la AP
             nombre_completo=info_cliente.get('nombres', ''),
             apellido_paterno=info_cliente.get('apellido_paterno', ''),
             apellido_materno=info_cliente.get('apellido_materno', ''),
-            pep=pep
+            pep=pep_final
         )
         
         db.session.add(nuevo_cliente)
         db.session.commit()
         
-        return nuevo_cliente, None
+        # Preparar respuesta completa con información de validación
+        cliente_dict = nuevo_cliente.to_dict()
+        cliente_dict['pep_declarado'] = pep_declarado
+        cliente_dict['pep_validado_dataset'] = es_pep_validado
+        cliente_dict['pep_final'] = pep_final
+        
+        if pep_declarado != es_pep_validado:
+            cliente_dict['advertencia'] = (
+                "CUIDADO: El cliente declaró NO ser PEP pero está en el dataset oficial"
+                if es_pep_validado else
+                "El cliente declaró ser PEP pero no está en el dataset oficial (puede ser PEP por otros motivos)"
+            )
+        
+        return cliente_dict, None
         
     except Exception as e:
         db.session.rollback()
