@@ -1,9 +1,16 @@
 {% extends "base.html" %} {% block content %}
-<section class="loan-page">
-  <div class="loan-page__cards">
-    {% include "components/form.html" %} 
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+  <div class="mb-8 text-center">
+    <h1 class="text-4xl font-semibold text-gray-900 mb-2">
+      Sistema de Préstamos
+    </h1>
+    <p class="text-base text-gray-600">
+      Gestione préstamos y consulte información de clientes
+    </p>
   </div>
-</section>
+
+  {% include "components/form.html" %}
+</div>
 {% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
 {% endblock %}

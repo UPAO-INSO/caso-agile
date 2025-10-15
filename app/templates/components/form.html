@@ -1,114 +1,299 @@
-<div class="container">
-  <div class="search-section">
-    <h1>Buscar Cliente</h1>
-    <label class="search-label">DNI del cliente</label>
-    <div class="search-input-wrapper">
-      <div class="input-group">
-        <input 
-          type="text" 
-          class="search-input" 
+<div class="max-w-4xl mx-auto">
+  <!-- Search Section -->
+  <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
+    <h1 class="text-2xl font-semibold text-gray-900 mb-6">Nueva Solicitud</h1>
+    <div class="flex gap-3 flex-wrap">
+      <div class="flex-1 min-w-[250px]">
+        <input
+          type="text"
           id="dni-search"
           placeholder="Ingrese el DNI"
           value=""
-        >
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+        />
       </div>
-      <button class="search-button" type="button">
+      <button
+        type="button"
+        class="search-button px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition duration-200"
+      >
         Buscar
       </button>
     </div>
   </div>
 
-  <div class="results-section">
-    <div class="results-header">
-      <h2>Resultados de la Búsqueda</h2>
-      <span class="status-badge">Préstamo Activo</span>
+  <!-- Results Section -->
+  <div class="results-section bg-white rounded-xl p-6 shadow-sm hidden">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold text-gray-900">
+        Resultados de la Búsqueda
+      </h2>
+      <span
+        class="status-badge bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-semibold"
+      >
+        Préstamo Activo
+      </span>
     </div>
 
-    <div class="client-info">
-      <div class="client-info-row">
-        <span class="info-label">DNI:</span>
-        <span class="info-value" id="client-dni">83940293</span>
+    <!-- Client Info -->
+    <div class="mb-6 space-y-2">
+      <div class="flex gap-2">
+        <span class="text-sm text-gray-600">DNI:</span>
+        <span class="text-sm font-semibold text-gray-900" id="client-dni"
+          >83940293</span
+        >
       </div>
-      <div class="client-info-row">
-        <span class="info-label">Nombre:</span>
-        <span class="info-value" id="client-name">Pedro Pablo Kucinski</span>
-      </div>
-    </div>
-
-    <div class="pep-notice">
-      <div class="pep-content">
-        <h3>Estado PEP</h3>
-        <p>Cliente es una Persona Políticamente Expuesta (PEP).</p>
+      <div class="flex gap-2">
+        <span class="text-sm text-gray-600">Nombre:</span>
+        <span class="text-sm font-semibold text-gray-900" id="client-name"
+          >Pedro Pablo Kucinski</span
+        >
       </div>
     </div>
 
-    <div class="loan-active-notice" id="loan-active-notice">
+    <!-- PEP Notice -->
+    <div
+      class="pep-notice bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-6 hidden"
+      id="pep-notice"
+      style="display: none"
+    >
+      <div>
+        <h3 class="text-sm font-semibold text-amber-800 mb-1">Estado PEP</h3>
+        <p class="text-sm text-amber-700">
+          Cliente es una Persona Políticamente Expuesta (PEP).
+        </p>
+      </div>
+    </div>
+
+    <!-- Loan Active Notice -->
+    <div
+      class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-6 hidden"
+      id="loan-active-notice"
+      style="display: none"
+    >
       <div class="loan-active-content">
-        <h3>⚠️ Préstamo Activo</h3>
-        <p>Este cliente ya tiene un préstamo vigente. No se puede otorgar otro crédito hasta que el préstamo actual sea cancelado.</p>
-        <div class="loan-details-text" id="loan-details-text"></div>
+        <h3 class="text-sm font-semibold text-yellow-800 mb-1">
+          ⚠️ Préstamo Activo
+        </h3>
+        <p class="text-sm text-yellow-700 mb-2">
+          Este cliente ya tiene un préstamo vigente. No se puede otorgar otro
+          crédito hasta que el préstamo actual sea cancelado.
+        </p>
+        <div
+          class="loan-details-text text-xs text-yellow-700 pt-2 border-t border-yellow-200"
+          id="loan-details-text"
+        ></div>
       </div>
     </div>
 
+    <!-- Loan Form -->
     <form id="loan-form">
-      <div class="loan-details">
-        <div class="detail-item">
-          <h4>Monto del Préstamo</h4>
-          <div class="editable-field input-with-currency">
-            <span class="currency-prefix">S/</span>
-            <input 
-              type="number" 
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Monto del Préstamo
+          </h4>
+          <div class="relative">
+            <span
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-gray-600 pointer-events-none"
+              >S/</span
+            >
+            <input
+              type="number"
               id="monto"
               name="monto"
               step="0.01"
               min="0"
               placeholder="5000.00"
               required
-            >
+              class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
           </div>
         </div>
-        
-        <div class="detail-item">
-          <h4>Número de cuotas</h4>
-          <div class="editable-field">
-            <input 
-              type="number" 
-              id="cuotas"
-              name="cuotas"
-              min="1"
-              placeholder="6"
-              required
-            >
-          </div>
+
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Número de cuotas
+          </h4>
+          <input
+            type="number"
+            id="cuotas"
+            name="cuotas"
+            min="1"
+            placeholder="6"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          />
         </div>
       </div>
 
-      <div class="email-section">
-        <h4>Correo electrónico</h4>
-        <input 
-          type="email" 
+      <div class="flex justify-center">
+        <button
+          type="button"
+          id="cronograma-button"
+          onclick="verCronogramaPagos()"
+          class="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white border border-gray-300 rounded-lg text-sm font-medium transition duration-200 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
+          disabled
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+          >
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            >
+              <path
+                d="M9 20H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h11a4 4 0 0 1 4 4v3M8 2v2m7-2v2M2 8h19m-2.5 7.643l-1.5 1.5"
+              />
+              <circle cx="17" cy="17" r="5" />
+            </g>
+          </svg>
+          Ver cronograma de pagos
+        </button>
+      </div>
+
+      <div class="mb-6 mt-2">
+        <h4 class="text-sm text-gray-600 mb-2 font-medium">
+          Correo electrónico
+        </h4>
+        <input
+          type="email"
           id="email"
           name="email"
           placeholder="cliente@ejemplo.com"
-        >
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+        />
       </div>
 
-      <button type="button" class="btn btn-primary save-button" onclick="saveLoanChanges()">
-        Guardar Cambios
-      </button>
-    </form>
+      <!-- Validation Message (Hidden by default) -->
+      <div
+        id="validation-message"
+        class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg hidden"
+      >
+        <div class="flex items-start gap-3">
+          <svg
+            class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <div>
+            <h4 class="text-sm font-semibold text-green-800 mb-1">
+              Validación de Monto
+            </h4>
+            <p class="text-sm text-green-700">
+              Monto validado menor a 1 UIT (S/ 5,150)
+            </p>
+          </div>
+        </div>
+      </div>
 
-    <div class="action-buttons">
-      <button class="btn btn-primary" type="button">
-        Ver Cronograma de Pagos
-      </button>
-      <button class="btn btn-secondary" type="button">
-        Ver Historial de Pagos
-      </button>
-    </div>
+      <!-- UIT Exceeded Warning -->
+      <div
+        id="uit-warning"
+        class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg hidden"
+      >
+        <div class="flex items-start gap-3">
+          <svg
+            class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <div>
+            <h4 class="text-sm font-semibold text-amber-800 mb-1">
+              Monto Mayor a 1 UIT
+            </h4>
+            <p class="text-sm text-amber-700">
+              El monto del préstamo supera 1 UIT (S/ 5,150). Debe aceptar la
+              Declaración Jurada.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Declaración Jurada Checkbox (Solo visible si PEP o Monto > 1 UIT) -->
+      <div id="declaracion-jurada-container" class="mb-6 hidden">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="declaracion-jurada-check"
+            class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+          />
+          <span class="text-sm text-gray-700">
+            He leído y acepto la
+            <a
+              href="#"
+              class="text-blue-600 hover:text-blue-700 underline font-medium"
+              >Declaración Jurada</a
+            >.
+          </span>
+        </label>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 flex-wrap">
+        <button
+          type="button"
+          onclick="imprimirDeclaracionJurada()"
+          class="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition duration-200 cursor-pointer"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+            />
+          </svg>
+          Imprimir Declaración Jurada
+        </button>
+
+        <button
+          type="submit"
+          onclick="crearNuevoPrestamo(event)"
+          class="save-button flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+          disabled
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Crear Nuevo Préstamo
+        </button>
+      </div>
+    </form>
   </div>
 </div>
-
 <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/client-search.js') }}"></script>
 <script src="{{ url_for('static', filename='js/loan-modal.js') }}"></script>

@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import render_template, request, jsonify
 import requests
 import os
 from app import db
@@ -117,3 +117,11 @@ def test_validar_pep(dni): # → Endpoint de prueba para validar PEP
         'es_pep': es_pep,
         'mensaje': 'Este DNI está en la lista PEP' if es_pep else 'Este DNI NO está en la lista PEP'
     }), 200
+    
+@clientes_bp.route('/list', methods=['GET'])
+def listar_clientes_view():
+    page = request.args.get('page', 1, type=int)
+    dni = request.args.get('dni', '')
+    
+    clientes = crud.paginar_clientes(page=page, per_page=5, dni=dni)
+    return render_template('lista_clientes.html', clientes=clientes)

@@ -2,7 +2,7 @@ from flask import render_template, request, jsonify, abort
 from datetime import date
 from decimal import Decimal
 import logging
-from pydantic import ValidationErro
+from pydantic import ValidationError
 from app import db
 from app.cuotas.model.cuotas import Cuota
 from app.cuotas.crud import crear_cuotas_bulk
@@ -11,7 +11,7 @@ from app.prestamos.crud import crear_prestamo, listar_prestamos_por_cliente_id, 
 from app.common.error_handler import ErrorHandler
 from .model.prestamos import Prestamo, EstadoPrestamoEnum
 from app.declaraciones.model.declaraciones import DeclaracionJurada, TipoDeclaracionEnum 
-from app.clients.crud import obtener_cliente_por_dni, obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente, crear_o_obtener_cliente
+from app.clients.crud import obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente, crear_o_obtener_cliente
 from .schemas import PrestamoCreateDTO
 from . import prestamos_bp
 from app.common.utils import generar_cronograma_pagos, UIT_VALOR
