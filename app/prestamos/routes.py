@@ -2,22 +2,19 @@ from flask import render_template, request, jsonify, abort
 from datetime import date
 from decimal import Decimal
 import logging
-
-from pydantic import ValidationError
-
+from pydantic import ValidationErro
+from app import db
 from app.cuotas.model.cuotas import Cuota
+from app.cuotas.crud import crear_cuotas_bulk
 from app.declaraciones.crud import crear_declaracion
 from app.prestamos.crud import crear_prestamo, listar_prestamos_por_cliente_id, obtener_prestamo_por_id
 from app.common.error_handler import ErrorHandler
-
 from .model.prestamos import Prestamo, EstadoPrestamoEnum
 from app.declaraciones.model.declaraciones import DeclaracionJurada, TipoDeclaracionEnum 
 from app.clients.crud import obtener_cliente_por_dni, obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente, crear_o_obtener_cliente
-
 from .schemas import PrestamoCreateDTO
 from . import prestamos_bp
 from app.common.utils import generar_cronograma_pagos, UIT_VALOR
-
 
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
@@ -68,8 +65,8 @@ def registrar_prestamo():
         requiere_dj = True
         tipos_dj.add(TipoDeclaracionEnum.PEP)
 
-    nueva_dj = None
     declaracion_id = None
+    tipo_declaracion_enum = None
     
     if requiere_dj:
         if TipoDeclaracionEnum.USO_PROPIO in tipos_dj and TipoDeclaracionEnum.PEP in tipos_dj:
@@ -79,19 +76,20 @@ def registrar_prestamo():
         else:
             tipo_declaracion_enum = TipoDeclaracionEnum.PEP
 
-        nueva_dj = DeclaracionJurada(
-            cliente_id=cliente.cliente_id,
-            tipo_declaracion=tipo_declaracion_enum,
-            fecha_firma=date.today(), 
-            firmado=True 
-        )
-        
-        modelo_declaracion = crear_declaracion(nueva_dj)
-
     try:
-        if nueva_dj:
+        # 1. Crear declaración jurada si es necesaria
+        modelo_declaracion = None
+        if requiere_dj:
+            nueva_dj = DeclaracionJurada(
+                cliente_id=cliente.cliente_id,
+                tipo_declaracion=tipo_declaracion_enum,
+                fecha_firma=date.today(), 
+                firmado=True 
+            )
+            modelo_declaracion = crear_declaracion(nueva_dj)
             declaracion_id = modelo_declaracion.declaracion_id
-
+        
+        # 2. Crear el préstamo
         nuevo_prestamo = Prestamo(
             cliente_id=cliente.cliente_id,
             monto_total=monto_total,
@@ -104,8 +102,10 @@ def registrar_prestamo():
         
         modelo_prestamo = crear_prestamo(nuevo_prestamo)
 
+        # 3. Generar cronograma de pagos
         cronograma = generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento)
         
+        # 4. Crear cuotas en la base de datos
         cuotas_a_crear = []
         for item in cronograma:
             cuota = Cuota(
@@ -119,11 +119,53 @@ def registrar_prestamo():
             )
             cuotas_a_crear.append(cuota)
         
-        # prestamos_bp.session.add_all(cuotas_a_crear)
+        # Guardar todas las cuotas
+        crear_cuotas_bulk(cuotas_a_crear)
 
-        return jsonify({'success': True, 'message': 'Préstamo y cronograma registrados.', 'prestamo_id': nuevo_prestamo.prestamo_id}), 201
+        # 5. Preparar respuesta con toda la información
+        respuesta = {
+            'success': True,
+            'message': 'Préstamo registrado exitosamente',
+            'prestamo': {
+                'prestamo_id': modelo_prestamo.prestamo_id,
+                'cliente_id': modelo_prestamo.cliente_id,
+                'monto_total': float(modelo_prestamo.monto_total),
+                'interes_tea': float(modelo_prestamo.interes_tea),
+                'plazo': modelo_prestamo.plazo,
+                'fecha_otorgamiento': modelo_prestamo.f_otorgamiento.isoformat(),
+                'estado': modelo_prestamo.estado.value,
+                'requiere_declaracion': requiere_dj
+            },
+            'cliente': {
+                'cliente_id': cliente.cliente_id,
+                'dni': cliente.dni,
+                'nombre_completo': f"{cliente.nombre_completo} {cliente.apellido_paterno} {cliente.apellido_materno}",
+                'pep': cliente.pep
+            },
+            'cronograma': [
+                {
+                    'numero_cuota': c['numero_cuota'],
+                    'fecha_vencimiento': c['fecha_vencimiento'].isoformat(),
+                    'monto_cuota': float(c['monto_cuota']),
+                    'monto_capital': float(c['monto_capital']),
+                    'monto_interes': float(c['monto_interes']),
+                    'saldo_capital': float(c['saldo_capital'])
+                }
+                for c in cronograma
+            ]
+        }
+        
+        if requiere_dj:
+            respuesta['declaracion_jurada'] = {
+                'declaracion_id': modelo_declaracion.declaracion_id,
+                'tipo': tipo_declaracion_enum.value,
+                'fecha_firma': modelo_declaracion.fecha_firma.isoformat()
+            }
+
+        return jsonify(respuesta), 201
 
     except Exception as exc:
+        db.session.rollback()
         return error_handler.log_and_respond(
             exc,
             "Error fatal en la transacción de registro de préstamo",
@@ -131,6 +173,103 @@ def registrar_prestamo():
             status_code=500,
             log_extra={'dni': dni},
         )
+
+# ENDPOINTS API ADICIONALES
+
+@prestamos_bp.route('/api/prestamo/<int:prestamo_id>', methods=['GET'])
+def obtener_prestamo_api(prestamo_id): # → Endpoint para obtener la información completa de un préstamo
+    from app.cuotas.crud import listar_cuotas_por_prestamo, obtener_resumen_cuotas
+    
+    prestamo = obtener_prestamo_por_id(prestamo_id)
+    
+    if not prestamo:
+        return jsonify({'error': 'Préstamo no encontrado'}), 404
+    
+    # Obtener cuotas
+    cuotas = listar_cuotas_por_prestamo(prestamo_id)
+    resumen = obtener_resumen_cuotas(prestamo_id)
+    
+    respuesta = {
+        'prestamo': {
+            'prestamo_id': prestamo.prestamo_id,
+            'cliente_id': prestamo.cliente_id,
+            'monto_total': float(prestamo.monto_total),
+            'interes_tea': float(prestamo.interes_tea),
+            'plazo': prestamo.plazo,
+            'fecha_otorgamiento': prestamo.f_otorgamiento.isoformat(),
+            'estado': prestamo.estado.value,
+            'requiere_declaracion': prestamo.requiere_dec_jurada
+        },
+        'cliente': {
+            'cliente_id': prestamo.cliente.cliente_id,
+            'dni': prestamo.cliente.dni,
+            'nombre_completo': f"{prestamo.cliente.nombre_completo} {prestamo.cliente.apellido_paterno} {prestamo.cliente.apellido_materno}",
+            'pep': prestamo.cliente.pep
+        },
+        'cronograma': [
+            {
+                'cuota_id': c.cuota_id,
+                'numero_cuota': c.numero_cuota,
+                'fecha_vencimiento': c.fecha_vencimiento.isoformat(),
+                'monto_cuota': float(c.monto_cuota),
+                'monto_capital': float(c.monto_capital),
+                'monto_interes': float(c.monto_interes),
+                'saldo_capital': float(c.saldo_capital),
+                'pagado': bool(c.monto_pagado and c.monto_pagado > 0),
+                'monto_pagado': float(c.monto_pagado) if c.monto_pagado else 0,
+                'fecha_pago': c.fecha_pago.isoformat() if c.fecha_pago else None
+            }
+            for c in cuotas
+        ],
+        'resumen': resumen
+    }
+    
+    if prestamo.declaracion_jurada:
+        respuesta['declaracion_jurada'] = {
+            'declaracion_id': prestamo.declaracion_jurada.declaracion_id,
+            'tipo': prestamo.declaracion_jurada.tipo_declaracion.value,
+            'fecha_firma': prestamo.declaracion_jurada.fecha_firma.isoformat(),
+            'firmado': prestamo.declaracion_jurada.firmado
+        }
+    
+    return jsonify(respuesta), 200
+
+
+@prestamos_bp.route('/api/cliente/<int:cliente_id>/prestamos', methods=['GET'])
+def listar_prestamos_cliente_api(cliente_id): # → Endpoint para listar todos los préstamos de un cliente
+    from app.clients.crud import obtener_cliente_por_id
+    
+    cliente = obtener_cliente_por_id(cliente_id)
+    if not cliente:
+        return jsonify({'error': 'Cliente no encontrado'}), 404
+    
+    prestamos = listar_prestamos_por_cliente_id(cliente_id)
+    
+    respuesta = {
+        'cliente': {
+            'cliente_id': cliente.cliente_id,
+            'dni': cliente.dni,
+            'nombre_completo': f"{cliente.nombre_completo} {cliente.apellido_paterno} {cliente.apellido_materno}",
+            'pep': cliente.pep
+        },
+        'prestamos': [
+            {
+                'prestamo_id': p.prestamo_id,
+                'monto_total': float(p.monto_total),
+                'interes_tea': float(p.interes_tea),
+                'plazo': p.plazo,
+                'fecha_otorgamiento': p.f_otorgamiento.isoformat(),
+                'estado': p.estado.value,
+                'requiere_declaracion': p.requiere_dec_jurada
+            }
+            for p in prestamos
+        ],
+        'total_prestamos': len(prestamos)
+    }
+    
+    return jsonify(respuesta), 200
+
+# -------------- ENDPOINTS DE VISTAS (HTML) ------------------------
 
 @prestamos_bp.route('/', methods=['GET'])
 def list_clientes_con_prestamos():
@@ -169,21 +308,16 @@ def list_prestamos_por_cliente(cliente_id):
                            title=f"Préstamos de {cliente.nombre_completo}")
 
 @prestamos_bp.route('/prestamo/<int:prestamo_id>', methods=['GET'])
-def detail_prestamo(prestamo_id):
+def detail_prestamo(prestamo_id): # → Detalle de un préstamo
+    from app.cuotas.crud import listar_cuotas_por_prestamo
+    
     prestamo = obtener_prestamo_por_id(prestamo_id)
     
     if prestamo is None:
-        return error_handler.respond('Prestamo no encontrado.', 404)
+        return error_handler.respond('Préstamo no encontrado.', 404)
 
-    cronograma_list = []
-    
-    
-    # TODO: Corregir -> Las conexiones a DB deben estar en los archivos crud.py
-    # prestamos_bp.session.execute(
-    #     prestamos_bp.select(Cuota)
-    #     .where(Cuota.prestamo_id == prestamo_id)
-    #     .order_by(Cuota.numero_cuota.asc())
-    # ).scalars().all()
+    # Obtener cuotas desde crud.py (correcto)
+    cronograma_list = listar_cuotas_por_prestamo(prestamo_id)
 
     cronograma_data = [{
         'nro': c.numero_cuota,

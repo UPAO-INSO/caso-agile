@@ -1,7 +1,6 @@
 from app import db
 import requests
 import os
-
 from app.clients.model.clients import Cliente
 from app.prestamos.model.prestamos import Prestamo
 import pandas as pd
@@ -13,36 +12,35 @@ API_URL = os.environ.get('DNI_API_URL')
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATASET_PEP_PATH = BASE_DIR / "dataset-pep" / "Autoridades_Electas.xls"
 
-
 def cargar_lista_pep():
     try:
         df = pd.read_excel(DATASET_PEP_PATH)
         
         columnas_posibles = ['DNI', 'DOCUMENTO', 'NRO_DOCUMENTO', 'NUMERO_DOCUMENTO']
-        columna_dni = None
+        col_dni = None
         
-        for col in columnas_posibles:
-            if col in df.columns:
-                columna_dni = col
+        for columna in columnas_posibles:
+            if columna in df.columns:
+                col_dni = columna
                 break
         
-        if not columna_dni:
+        if not col_dni:
             # Si no encuentra, usar la primera columna que contenga números de 8 dígitos
-            for col in df.columns:
-                if df[col].dtype == 'object' or df[col].dtype == 'int64':
+            for columna in df.columns:
+                if df[columna].dtype == 'object' or df[columna].dtype == 'int64':
                     # Verificar si los valores parecen DNIs (8 dígitos)
-                    muestra = df[col].astype(str).str.strip()
+                    muestra = df[columna].astype(str).str.strip()
                     if muestra.str.len().mode()[0] == 8:
-                        columna_dni = col
+                        col_dni = columna
                         break
         
-        if not columna_dni:
+        if not col_dni:
             print(f"Advertencia: No se encontró columna de DNI en el dataset PEP")
             return set()
         
         # Convertir DNIs a strings de 8 dígitos y crear set
         dnis_pep = set(
-            df[columna_dni]
+            df[col_dni]
             .astype(str)
             .str.strip()
             .str.zfill(8)  # Rellenar con ceros a la izquierda si es necesario
@@ -88,7 +86,6 @@ def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del
         
     except requests.exceptions.RequestException as e:
         return None, f"Error al consultar el servicio de DNI: {str(e)}"
-
 
 def crear_cliente(dni, pep_declarado=False): # → Crea un nuevo cliente consultando la API de DNI
     # Validar si ya existe
@@ -139,25 +136,20 @@ def crear_cliente(dni, pep_declarado=False): # → Crea un nuevo cliente consult
         db.session.rollback()
         return None, f"Error al guardar el cliente: {str(e)}"
 
-
 def listar_clientes(): # → Lista todos los clientes
     return Cliente.query.all()
-
 
 def obtener_cliente_por_id(cliente_id): # → Obtiene un cliente por su ID
     return Cliente.query.get(cliente_id)
 
-
 def obtener_cliente_por_dni(dni): # → Obtener cliente por DNI
     return Cliente.query.filter_by(dni=dni).first()
-
 
 def prestamo_activo_cliente(cliente_id, estado):
     return db.session.execute(
         db.select(Prestamo)
         .filter_by(cliente_id=cliente_id, estado=estado)
     ).scalar_one_or_none()
-    
     
 def obtener_clientes_por_estado_prestamo():
     return db.session.execute(
@@ -167,59 +159,42 @@ def obtener_clientes_por_estado_prestamo():
         .order_by(Cliente.nombre_completo.asc())
     ).scalars().all()
 
-
 def actualizar_cliente(cliente_id, pep=None): # → Actualizar los datos de un cliente
     cliente = Cliente.query.get(cliente_id)
     if not cliente:
         return None, "Cliente no encontrado"
-    
     try:
         if pep is not None:
             cliente.pep = pep
         
         db.session.commit()
         return cliente, None
-        
     except Exception as e:
         db.session.rollback()
         return None, f"Error al actualizar: {str(e)}"
-
 
 def eliminar_cliente(cliente_id): # -> Eliminar un cliente por su ID
     cliente = Cliente.query.get(cliente_id)
     if not cliente:
         return False, "Cliente no encontrado"
-    
     try:
         db.session.delete(cliente)
         db.session.commit()
         return True, None
-        
     except Exception as e:
         db.session.rollback()
         return False, f"Error al eliminar: {str(e)}"
 
-
-def crear_o_obtener_cliente(dni):
-    """
-    Busca un cliente por DNI. Si no existe, lo crea consultando la API.
-    Esta función se usa al crear préstamos para registrar clientes nuevos.
-    
-    Returns:
-        tuple: (cliente, error)
-    """
+def crear_o_obtener_cliente(dni): # → Crear o obtener un cliente por DNI
     # Intentar obtener cliente existente
     cliente = Cliente.query.filter_by(dni=dni).first()
-    
     if cliente:
         return cliente, None
-    
     # Cliente no existe, crear uno nuevo
     cliente_dict, error = crear_cliente(dni, pep_declarado=False)
     
     if error:
         return None, error
-    
     # Obtener el cliente recién creado de la BD
     cliente = Cliente.query.filter_by(dni=dni).first()
     return cliente, None
