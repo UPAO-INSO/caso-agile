@@ -391,14 +391,10 @@ function actualizarEstadoBoton() {
   if (declaracionVisible) {
     submitButton.disabled = !(checkbox && checkbox.checked);
   } else {
-    // No requiere declaración jurada
     submitButton.disabled = false;
   }
 }
 
-/**
- * Validar y actualizar estado del botón de cronograma
- */
 function validarCronogramaButton() {
   const cronogramaButton = document.getElementById("cronograma-button");
   const montoInput = document.getElementById("monto");
@@ -409,7 +405,6 @@ function validarCronogramaButton() {
   const monto = parseFloat(montoInput?.value || 0);
   const cuotas = parseInt(cuotasInput?.value || 0);
 
-  // Habilitar solo si hay monto > 0 y cuotas > 0
   if (monto > 0 && cuotas > 0) {
     cronogramaButton.disabled = false;
   } else {
@@ -417,9 +412,6 @@ function validarCronogramaButton() {
   }
 }
 
-/**
- * Ver cronograma de pagos
- */
 function verCronogramaPagos() {
   const montoInput = document.getElementById("monto");
   const cuotasInput = document.getElementById("cuotas");
@@ -439,16 +431,11 @@ function verCronogramaPagos() {
 
   showAlert("Generando cronograma de pagos...", "info");
 
-  // Aquí puedes implementar la lógica real para mostrar el cronograma
-  // Por ejemplo, abrir un modal o redirigir a otra página
   setTimeout(() => {
     alert(`Cronograma para:\nMonto: S/ ${monto.toFixed(2)}\nCuotas: ${cuotas}`);
   }, 500);
 }
 
-/**
- * Imprimir Declaración Jurada
- */
 function imprimirDeclaracionJurada() {
   if (!window.currentClient) {
     showAlert("No hay cliente seleccionado", "error");
@@ -457,15 +444,11 @@ function imprimirDeclaracionJurada() {
 
   showAlert("Generando Declaración Jurada para imprimir...", "info");
 
-  // Aquí puedes implementar la lógica real de impresión
   setTimeout(() => {
     window.print();
   }, 500);
 }
 
-/**
- * Crear Nuevo Préstamo
- */
 async function crearNuevoPrestamo(event) {
   event.preventDefault();
 
@@ -483,7 +466,6 @@ async function crearNuevoPrestamo(event) {
     return;
   }
 
-  // Validar declaración jurada solo si es necesario
   const UIT = 5150;
   const montoNumerico = parseFloat(monto);
   const esPep = window.currentClient.pep;
@@ -492,7 +474,6 @@ async function crearNuevoPrestamo(event) {
   );
   const checkbox = document.getElementById("declaracion-jurada-check");
 
-  // Requiere declaración jurada si: es PEP O monto > 1 UIT
   const requiereDeclaracion = esPep || montoNumerico > UIT;
 
   if (requiereDeclaracion) {
@@ -528,20 +509,16 @@ async function crearNuevoPrestamo(event) {
       const data = await response.json();
       showAlert("Préstamo creado exitosamente", "success");
 
-      // Limpiar formulario
       document.getElementById("loan-form").reset();
       document.getElementById("declaracion-jurada-check").checked = false;
       document.getElementById("validation-message").classList.add("hidden");
 
-      // Actualizar cliente actual
       window.currentClient.tiene_prestamo_activo = true;
       window.currentClient.prestamo_activo = data;
 
-      // Actualizar vista
       displayClientInfo(window.currentClient);
       disableLoanForm(true);
 
-      // Opcional: mostrar modal con detalles del préstamo
       setTimeout(() => {
         alert(
           `Préstamo #${data.id} creado exitosamente\nMonto: S/ ${data.monto}\nCuotas: ${data.plazo}`
@@ -560,9 +537,7 @@ async function crearNuevoPrestamo(event) {
   }
 }
 
-// Event listeners
 document.addEventListener("DOMContentLoaded", function () {
-  // Búsqueda con Enter
   const dniInput = document.getElementById("dni-search");
   if (dniInput) {
     dniInput.addEventListener("keypress", function (e) {
@@ -572,32 +547,27 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Botón de búsqueda
   const searchButton = document.querySelector(".search-button");
   if (searchButton) {
     searchButton.addEventListener("click", searchClient);
   }
 
-  // Ocultar sección de resultados inicialmente
   const resultsSection = document.querySelector(".results-section");
   if (resultsSection) {
     resultsSection.classList.add("hidden");
     resultsSection.style.display = "none";
   }
 
-  // Validación de monto
   const montoInput = document.getElementById("monto");
   if (montoInput) {
     montoInput.addEventListener("input", validarMonto);
   }
 
-  // Validación de cuotas (también actualiza el botón de cronograma)
   const cuotasInput = document.getElementById("cuotas");
   if (cuotasInput) {
     cuotasInput.addEventListener("input", validarCronogramaButton);
   }
 
-  // Checkbox de declaración jurada
   const checkbox = document.getElementById("declaracion-jurada-check");
 
   if (checkbox) {
