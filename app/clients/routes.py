@@ -1,10 +1,10 @@
-from flask import request, jsonify
+from flask import request, jsonify, render_template
 import requests
 import os
 from app import db
 from app.clients.model.clients import Cliente
 from app.clients import crud
-from . import clientes_bp
+from . import clientes_bp, clientes_web_bp
 
 # → Guardamos la API Key en variables de entorno
 API_KEY = os.environ.get('DNI_API_KEY')
@@ -117,3 +117,12 @@ def test_validar_pep(dni): # → Endpoint de prueba para validar PEP
         'es_pep': es_pep,
         'mensaje': 'Este DNI está en la lista PEP' if es_pep else 'Este DNI NO está en la lista PEP'
     }), 200
+
+
+@clientes_web_bp.route('/api/v1/clientes', methods=['GET'])
+def listar_clientes_view():
+    page = request.args.get('page', 1, type=int)
+    dni = request.args.get('dni', '')
+    
+    clientes = crud.paginar_clientes(page=page, per_page=5, dni=dni)
+    return render_template('lista_clientes.html', clientes=clientes)
