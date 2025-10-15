@@ -285,6 +285,58 @@
     </form>
   </div>
 </div>
+
+<!-- Modal de Cronograma de Pagos -->
+<div id="modalCronograma" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+    <!-- Header del Modal -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center">
+      <h2 class="text-xl font-bold text-white">Cronograma de Pagos</h2>
+      <button onclick="cerrarModalCronograma()" class="text-white hover:text-gray-200 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Contenido del Modal -->
+    <div class="p-6">
+      <div id="cronograma-info" class="mb-4">
+        <p class="text-sm text-gray-600">Monto: <span id="cronograma-monto" class="font-semibold text-gray-900"></span></p>
+        <p class="text-sm text-gray-600">Cuotas: <span id="cronograma-cuotas" class="font-semibold text-gray-900"></span></p>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Cuota</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Vencimiento</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Monto</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Capital</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Interes</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Saldo</th>
+            </tr>
+          </thead>
+          <tbody id="cronograma-table-body" class="bg-white divide-y divide-gray-200">
+            <!-- Se llenara dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Footer del Modal -->
+    <div class="bg-gray-50 px-6 py-4 flex justify-end">
+      <button 
+        onclick="cerrarModalCronograma()"
+        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/client-search.js') }}"></script>
 <script src="{{ url_for('static', filename='js/loan-modal.js') }}"></script>

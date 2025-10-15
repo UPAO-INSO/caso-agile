@@ -87,7 +87,18 @@ def buscar_cliente_por_dni(dni): # → Endpoint para buscar cliente por DNI en l
     if not cliente:
         return jsonify({'error': 'Cliente no encontrado'}), 404
     
-    return jsonify(cliente.to_dict()), 200
+    # Verificar si tiene prestamo activo
+    from app.prestamos.model.prestamos import Prestamo, EstadoPrestamoEnum
+    prestamo_activo = Prestamo.query.filter_by(
+        cliente_id=cliente.cliente_id,
+        estado=EstadoPrestamoEnum.VIGENTE
+    ).first()
+    
+    # Agregar info de prestamo al dict
+    cliente_dict = cliente.to_dict()
+    cliente_dict['tiene_prestamo_activo'] = prestamo_activo is not None
+    
+    return jsonify(cliente_dict), 200
 
 
 @clientes_bp.route('/consultar_dni/<string:dni>', methods=['GET'])
@@ -98,9 +109,13 @@ def consultar_dni_reniec(dni): # -> Endpoint para consultar DNI en la API extern
     info, error = crud.consultar_dni_api(dni)
     
     if error:
-        return jsonify({'error': error}), 400
+        # Retornar 404 cuando no se encuentra, no 400
+        return jsonify({
+            'error': error,
+            'mensaje': 'DNI no encontrado en RENIEC. Verifique el número o intente más tarde.'
+        }), 404
     
-    # Devolver los datos tal cual vienen de la API (sin el wrapper 'success')
+    # Devolver los datos tal cual vienen de la API
     return jsonify(info), 200
 
 
@@ -123,5 +138,5 @@ def listar_clientes_view():
     page = request.args.get('page', 1, type=int)
     dni = request.args.get('dni', '')
     
-    clientes = crud.paginar_clientes(page=page, per_page=5, dni=dni)
-    return render_template('lista_clientes.html', clientes=clientes)
+    clientes_paginados = crud.obtener_clientes_con_prestamos_info(page=page, per_page=5, dni=dni)
+    return render_template('lista_clientes.html', clientes=clientes_paginados)

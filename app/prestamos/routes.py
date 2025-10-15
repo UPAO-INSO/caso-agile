@@ -45,14 +45,18 @@ def registrar_prestamo():
     
     if not cliente:
         return error_handler.respond(f'No se pudo crear o encontrar el cliente con DNI {dni}.', 404)
-        
+    
+    # Verificar si tiene préstamo VIGENTE
     prestamo_activo = prestamo_activo_cliente(cliente.cliente_id, EstadoPrestamoEnum.VIGENTE)
     
     if prestamo_activo:
-        return error_handler.respond(
-            f'El cliente {cliente.nombre_completo} ya tiene un préstamo ACTIVO (ID: {prestamo_activo.prestamo_id}).',
-            400,
-        )
+        return jsonify({
+            'error': 'PRESTAMO_ACTIVO',
+            'mensaje': f'El cliente {cliente.nombre_completo} ya tiene un préstamo activo.',
+            'prestamo_id': prestamo_activo.prestamo_id,
+            'monto': float(prestamo_activo.monto_total),
+            'estado': 'VIGENTE'
+        }), 400
 
     requiere_dj = False
     tipos_dj = set() 
@@ -77,7 +81,7 @@ def registrar_prestamo():
             tipo_declaracion_enum = TipoDeclaracionEnum.PEP
 
     try:
-        # 1. Crear declaración jurada si es necesaria
+        # 1. Crear declaracion jurada si es necesaria
         modelo_declaracion = None
         if requiere_dj:
             nueva_dj = DeclaracionJurada(
@@ -86,10 +90,14 @@ def registrar_prestamo():
                 fecha_firma=date.today(), 
                 firmado=True 
             )
-            modelo_declaracion = crear_declaracion(nueva_dj)
+            modelo_declaracion, error_dj = crear_declaracion(nueva_dj)
+            
+            if error_dj:
+                return error_handler.respond(f'Error al crear declaracion jurada: {error_dj}', 500)
+            
             declaracion_id = modelo_declaracion.declaracion_id
         
-        # 2. Crear el préstamo
+        # 2. Crear el prestamo
         nuevo_prestamo = Prestamo(
             cliente_id=cliente.cliente_id,
             monto_total=monto_total,
@@ -344,3 +352,85 @@ def detail_prestamo(prestamo_id): # → Detalle de un préstamo
     }
 
     return render_template('detail.html', prestamo=datos_prestamo, cronograma=cronograma_data, title=f"Detalle Préstamo {prestamo_id}")
+
+@prestamos_bp.route('/actualizar-estado/<int:prestamo_id>', methods=['POST'])
+def actualizar_estado_prestamo(prestamo_id):
+    """Actualizar estado de prestamo: VIGENTE -> CANCELADO (irreversible)"""
+    data = request.get_json()
+    nuevo_estado = data.get('estado')
+    
+    if not nuevo_estado:
+        return jsonify({'error': 'El campo estado es requerido'}), 400
+    
+    try:
+        estado_enum = EstadoPrestamoEnum[nuevo_estado.upper()]
+    except KeyError:
+        return jsonify({'error': 'Estado invalido. Debe ser VIGENTE o CANCELADO'}), 400
+    
+    prestamo = obtener_prestamo_por_id(prestamo_id)
+    if not prestamo:
+        return jsonify({'error': 'Prestamo no encontrado'}), 404
+    
+    estado_actual = prestamo.estado
+    
+    # REGLA: CANCELADO es final, no se puede cambiar
+    if estado_actual == EstadoPrestamoEnum.CANCELADO:
+        return jsonify({'error': 'Un prestamo CANCELADO no puede cambiar de estado'}), 400
+    
+    # REGLA: VIGENTE solo puede pasar a CANCELADO
+    if estado_actual == EstadoPrestamoEnum.VIGENTE and estado_enum == EstadoPrestamoEnum.VIGENTE:
+        return jsonify({'error': 'El prestamo ya esta en estado VIGENTE'}), 400
+    
+    try:
+        prestamo.estado = estado_enum
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'mensaje': f'Estado actualizado de {estado_actual.value} a {estado_enum.value}',
+            'prestamo_id': prestamo_id,
+            'nuevo_estado': estado_enum.value
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al actualizar estado: {str(e)}'}), 500
+
+@prestamos_bp.route('/cliente/<int:cliente_id>/json', methods=['GET'])
+def obtener_prestamos_cliente_json(cliente_id):
+    """Endpoint JSON para obtener todos los préstamos de un cliente con sus cronogramas"""
+    from app.cuotas.crud import listar_cuotas_por_prestamo
+    
+    cliente = obtener_cliente_por_id(cliente_id)
+    if not cliente:
+        return jsonify({'error': 'Cliente no encontrado'}), 404
+    
+    prestamos_del_cliente = listar_prestamos_por_cliente_id(cliente_id)
+    
+    prestamos_data = []
+    for prestamo in prestamos_del_cliente:
+        # Obtener cronograma de cuotas
+        cuotas = listar_cuotas_por_prestamo(prestamo.prestamo_id)
+        
+        cronograma_data = [{
+            'numero_cuota': c.numero_cuota,
+            'fecha_vencimiento': c.fecha_vencimiento.strftime('%d/%m/%Y'),
+            'monto_cuota': float(c.monto_cuota),
+            'monto_capital': float(c.monto_capital),
+            'monto_interes': float(c.monto_interes),
+            'saldo_capital': float(c.saldo_capital),
+            'pagado': bool(c.monto_pagado)
+        } for c in cuotas]
+        
+        prestamo_dict = {
+            'prestamo_id': prestamo.prestamo_id,
+            'monto_total': float(prestamo.monto_total),
+            'interes_tea': float(prestamo.interes_tea),
+            'plazo': prestamo.plazo,
+            'f_otorgamiento': prestamo.f_otorgamiento.strftime('%d/%m/%Y'),
+            'estado': prestamo.estado.value,
+            'requiere_dec_jurada': prestamo.requiere_dec_jurada,
+            'cronograma': cronograma_data
+        }
+        
+        prestamos_data.append(prestamo_dict)
+    
+    return jsonify(prestamos_data), 200

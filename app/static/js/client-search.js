@@ -40,17 +40,17 @@ async function searchClient() {
       window.currentClient = cliente;
       displayClientInfo(cliente);
 
-      // Verificar si tiene préstamo activo
+      // Verificar si tiene prestamo activo
       if (cliente.tiene_prestamo_activo) {
         showAlert(
-          "⚠️ Este cliente ya tiene un préstamo activo. No se puede otorgar otro crédito.",
+          "ADVERTENCIA: Este cliente ya tiene un prestamo activo. No se puede otorgar otro credito.",
           "warning"
         );
-        // Deshabilitar el formulario de préstamo
+        // Deshabilitar el formulario de prestamo
         disableLoanForm(true);
       } else {
         showAlert("Cliente encontrado", "success");
-        // Habilitar el formulario de préstamo
+        // Habilitar el formulario de prestamo
         disableLoanForm(false);
       }
     } else {
@@ -77,7 +77,8 @@ async function consultarYRegistrarCliente(dni) {
     );
 
     if (!consultaResponse.ok) {
-      throw new Error("DNI no encontrado en RENIEC");
+      const errorData = await consultaResponse.json();
+      throw new Error(errorData.mensaje || errorData.error || "DNI no encontrado en RENIEC");
     }
 
     const dniData = await consultaResponse.json();
@@ -110,24 +111,24 @@ async function consultarYRegistrarCliente(dni) {
     // Mostrar mensaje informativo
     if (esPep) {
       showAlert(
-        "⚠️ Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Políticamente).",
+        "ADVERTENCIA: Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Politicamente).",
         "warning"
       );
     } else {
       showAlert(
-        "Cliente encontrado en RENIEC. Complete el préstamo para registrar.",
-        "info"
+        "EXITO: Cliente encontrado en RENIEC. Complete el prestamo para registrar.",
+        "success"
       );
     }
 
     // Actualizar la interfaz con los datos del cliente
     displayClientInfo(clienteTemporal);
 
-    // Habilitar el formulario de préstamo
+    // Habilitar el formulario de prestamo
     disableLoanForm(false);
   } catch (error) {
     console.error("Error:", error);
-    showAlert("Error: " + error.message, "error");
+    showAlert("ERROR: " + error.message + "\n\nEl DNI no esta en RENIEC o el servicio no esta disponible.", "error");
   }
 }
 
@@ -491,13 +492,14 @@ async function crearNuevoPrestamo(event) {
 
   try {
     const prestamoData = {
-      cliente_dni: window.currentClient.dni,
+      dni: window.currentClient.dni,
       monto: parseFloat(monto),
+      interes_tea: 30.0, // TEA fijo por defecto
       plazo: parseInt(cuotas),
-      correo_electronico: email || null,
+      f_otorgamiento: new Date().toISOString().split('T')[0] // Fecha actual YYYY-MM-DD
     };
 
-    const response = await fetch("/api/v1/prestamos/", {
+    const response = await fetch("/api/v1/prestamos/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -507,30 +509,54 @@ async function crearNuevoPrestamo(event) {
 
     if (response.ok) {
       const data = await response.json();
-      showAlert("Préstamo creado exitosamente", "success");
+      showAlert("EXITO: Prestamo creado exitosamente", "success");
 
+      // Resetear formulario
       document.getElementById("loan-form").reset();
       document.getElementById("declaracion-jurada-check").checked = false;
       document.getElementById("validation-message").classList.add("hidden");
 
+      // Actualizar estado del cliente
       window.currentClient.tiene_prestamo_activo = true;
-      window.currentClient.prestamo_activo = data;
-
+      
       displayClientInfo(window.currentClient);
       disableLoanForm(true);
 
+      // Mostrar mensaje de exito con detalles
       setTimeout(() => {
         alert(
-          `Préstamo #${data.id} creado exitosamente\nMonto: S/ ${data.monto}\nCuotas: ${data.plazo}`
+          `EXITO: Prestamo registrado exitosamente\n\n` +
+          `ID: ${data.prestamo_id}\n` +
+          `Cliente: ${window.currentClient.nombre_completo}\n` +
+          `Monto: S/ ${data.monto_total}\n` +
+          `Plazo: ${data.plazo} meses\n` +
+          `Interes TEA: ${data.interes_tea}%\n` +
+          `${data.requiere_dec_jurada ? 'NOTA: Requiere Declaracion Jurada' : ''}\n\n` +
+          `Cronograma de ${data.cuotas_creadas} cuotas generado.`
         );
       }, 500);
     } else {
       const error = await response.json();
-      showAlert(error.error || "Error al crear el préstamo", "error");
+      
+      // Mensajes detallados segun el tipo de error
+      if (error.estado) {
+        // Error de prestamo activo
+        alert(
+          `${error.error}\n\n` +
+          `${error.mensaje}\n\n` +
+          `Prestamo ID: ${error.prestamo_id}\n` +
+          `Monto: S/ ${error.monto?.toFixed(2) || 'N/A'}\n` +
+          `Estado: ${error.estado}\n\n` +
+          `${error.detalle || ''}`
+        );
+      } else {
+        // Otros errores
+        showAlert(`ERROR: ${error.error || error.mensaje || "Error al crear el prestamo"}`, "error");
+      }
     }
   } catch (error) {
     console.error("Error:", error);
-    showAlert("Error al crear el préstamo: " + error.message, "error");
+    showAlert("ERROR: Error al crear el prestamo: " + error.message, "error");
   } finally {
     saveButton.innerHTML = originalText;
     saveButton.disabled = false;

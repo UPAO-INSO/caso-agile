@@ -173,6 +173,110 @@ function closeLoanModal() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeLoanModal();
+    cerrarModalCronograma();
+  }
+});
+
+/**
+ * Ver cronograma de pagos
+ */
+async function verCronogramaPagos() {
+  const monto = document.getElementById('monto')?.value;
+  const cuotas = document.getElementById('cuotas')?.value;
+  
+  if (!monto || !cuotas) {
+    alert('Por favor ingrese el monto y numero de cuotas primero');
+    return;
+  }
+  
+  if (parseFloat(monto) <= 0) {
+    alert('El monto debe ser mayor a 0');
+    return;
+  }
+  
+  if (parseInt(cuotas) <= 0) {
+    alert('El numero de cuotas debe ser mayor a 0');
+    return;
+  }
+  
+  // Calcular cronograma (metodo frances - cuota fija)
+  const montoTotal = parseFloat(monto);
+  const numCuotas = parseInt(cuotas);
+  const tasaAnual = 0.20; // 20% TEA
+  const tasaMensual = Math.pow(1 + tasaAnual, 1/12) - 1;
+  
+  // Calcular cuota fija
+  const cuotaFija = montoTotal * (tasaMensual * Math.pow(1 + tasaMensual, numCuotas)) / (Math.pow(1 + tasaMensual, numCuotas) - 1);
+  
+  let saldo = montoTotal;
+  const cronograma = [];
+  const fechaBase = new Date();
+  
+  for (let i = 1; i <= numCuotas; i++) {
+    const interes = saldo * tasaMensual;
+    const capital = cuotaFija - interes;
+    saldo -= capital;
+    
+    const fechaVencimiento = new Date(fechaBase);
+    fechaVencimiento.setMonth(fechaBase.getMonth() + i);
+    
+    cronograma.push({
+      numero_cuota: i,
+      fecha_vencimiento: fechaVencimiento.toLocaleDateString('es-PE'),
+      monto_cuota: cuotaFija,
+      monto_capital: capital,
+      monto_interes: interes,
+      saldo_capital: Math.max(0, saldo)
+    });
+  }
+  
+  // Llenar modal con datos
+  document.getElementById('cronograma-monto').textContent = `S/ ${montoTotal.toFixed(2)}`;
+  document.getElementById('cronograma-cuotas').textContent = `${numCuotas} meses`;
+  
+  const tbody = document.getElementById('cronograma-table-body');
+  tbody.innerHTML = '';
+  
+  cronograma.forEach(cuota => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-gray-50';
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-gray-900 font-medium">${cuota.numero_cuota}</td>
+      <td class="px-4 py-3 text-gray-600">${cuota.fecha_vencimiento}</td>
+      <td class="px-4 py-3 text-right font-semibold text-gray-900">S/ ${cuota.monto_cuota.toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-gray-600">S/ ${cuota.monto_capital.toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-gray-600">S/ ${cuota.monto_interes.toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-blue-600 font-medium">S/ ${cuota.saldo_capital.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  // Mostrar modal
+  const modal = document.getElementById('modalCronograma');
+  modal.style.display = 'flex';
+  setTimeout(() => {
+    modal.classList.remove('hidden');
+  }, 10);
+}
+
+/**
+ * Cerrar modal de cronograma
+ */
+function cerrarModalCronograma() {
+  const modal = document.getElementById('modalCronograma');
+  if (modal) {
+    modal.classList.add('hidden');
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
+  }
+}
+
+// Cerrar modal al hacer clic fuera
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('modalCronograma');
+  if (modal && e.target === modal) {
+    cerrarModalCronograma();
   }
 });
 
