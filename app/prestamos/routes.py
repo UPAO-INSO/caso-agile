@@ -12,7 +12,7 @@ from app.common.error_handler import ErrorHandler
 
 from .model.prestamos import Prestamo, EstadoPrestamoEnum
 from app.declaraciones.model.declaraciones import DeclaracionJurada, TipoDeclaracionEnum 
-from app.clients.crud import obtener_cliente_por_dni, obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente
+from app.clients.crud import obtener_cliente_por_dni, obtener_cliente_por_id, obtener_clientes_por_estado_prestamo, prestamo_activo_cliente, crear_o_obtener_cliente
 
 from .schemas import PrestamoCreateDTO
 from . import prestamos_bp
@@ -40,10 +40,14 @@ def registrar_prestamo():
     plazo = dto.plazo
     f_otorgamiento = dto.f_otorgamiento
 
-    cliente = obtener_cliente_por_dni(dni)
+    # Crear o obtener cliente (si no existe, se registra automáticamente)
+    cliente, error_cliente = crear_o_obtener_cliente(dni)
+    
+    if error_cliente:
+        return error_handler.respond(f'Error al procesar cliente: {error_cliente}', 400)
     
     if not cliente:
-        return error_handler.respond(f'Cliente con DNI {dni} no encontrado en la base de datos.', 404)
+        return error_handler.respond(f'No se pudo crear o encontrar el cliente con DNI {dni}.', 404)
         
     prestamo_activo = prestamo_activo_cliente(cliente.cliente_id, EstadoPrestamoEnum.VIGENTE)
     

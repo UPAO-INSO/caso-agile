@@ -66,7 +66,8 @@ async function searchClient() {
 }
 
 /**
- * Consultar API de RENIEC y registrar nuevo cliente
+ * Consultar API de RENIEC (SIN registrar en BD)
+ * El cliente se registrará cuando se cree el préstamo
  */
 async function consultarYRegistrarCliente(dni) {
   try {
@@ -81,44 +82,43 @@ async function consultarYRegistrarCliente(dni) {
 
     const dniData = await consultaResponse.json();
 
-    // Preguntar si desea registrar al cliente
-    const confirmar = confirm(
-      `Cliente encontrado en RENIEC:\n\n` +
-        `Nombres: ${dniData.nombres}\n` +
-        `Apellido Paterno: ${dniData.apellido_paterno}\n` +
-        `Apellido Materno: ${dniData.apellido_materno}\n\n` +
-        `¿Desea registrar este cliente?`
-    );
-
-    if (!confirmar) {
-      return;
+    // Validar si es PEP en el dataset
+    let esPep = false;
+    try {
+      const pepResponse = await fetch(`/api/v1/clientes/test/pep/${dni}`);
+      if (pepResponse.ok) {
+        const pepData = await pepResponse.json();
+        esPep = pepData.es_pep || false;
+      }
+    } catch (error) {
+      console.warn("No se pudo validar PEP:", error);
     }
 
-    // Registrar el cliente
-    const registroResponse = await fetch("/api/v1/clientes", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        dni: dni,
-        pep: false, // Por defecto no es PEP
-      }),
-    });
+    // Crear objeto temporal del cliente (NO guardado en BD aún)
+    const clienteTemporal = {
+      dni: dni,
+      nombre_completo: dniData.nombres,
+      apellido_paterno: dniData.apellido_paterno,
+      apellido_materno: dniData.apellido_materno,
+      pep: esPep, // Validado contra el dataset
+      _temp: true // Marca para indicar que no está en BD
+    };
 
-    if (!registroResponse.ok) {
-      const error = await registroResponse.json();
-      throw new Error(error.error || "Error al registrar el cliente");
+    // Guardar en variable global
+    window.currentClient = clienteTemporal;
+
+    // Mostrar mensaje informativo
+    if (esPep) {
+      showAlert("⚠️ Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Políticamente).", "warning");
+    } else {
+      showAlert("Cliente encontrado en RENIEC. Complete el préstamo para registrar.", "info");
     }
 
-    const nuevoCliente = await registroResponse.json();
-    window.currentClient = nuevoCliente;
-
-    // Mostrar pop-up de éxito
-    showClientRegisteredModal(nuevoCliente);
-
-    // Actualizar la interfaz
-    displayClientInfo(nuevoCliente);
+    // Actualizar la interfaz con los datos del cliente
+    displayClientInfo(clienteTemporal);
+    
+    // Habilitar el formulario de préstamo
+    disableLoanForm(false);
   } catch (error) {
     console.error("Error:", error);
     showAlert("Error: " + error.message, "error");

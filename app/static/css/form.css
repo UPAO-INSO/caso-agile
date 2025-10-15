@@ -155,18 +155,22 @@ body {
 
 /* Aviso PEP */
 .pep-notice {
-  background: #E3F2FD;
-  border-left: 4px solid #2196F3;
+  background: #FFF3E0;
+  border-left: 4px solid #FF9800;
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 24px;
-  display: flex;
+  display: none; /* Oculto por defecto */
   align-items: flex-start;
   gap: 12px;
 }
 
+.pep-notice[style*="display: flex"] {
+  display: flex !important;
+}
+
 .pep-icon {
-  color: #2196F3;
+  color: #FF9800;
   font-size: 20px;
   flex-shrink: 0;
 }
@@ -174,7 +178,7 @@ body {
 .pep-content h3 {
   font-size: 14px;
   font-weight: 600;
-  color: #1976D2;
+  color: #F57C00;
   margin-bottom: 4px;
 }
 

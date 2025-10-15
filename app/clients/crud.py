@@ -198,3 +198,28 @@ def eliminar_cliente(cliente_id): # -> Eliminar un cliente por su ID
     except Exception as e:
         db.session.rollback()
         return False, f"Error al eliminar: {str(e)}"
+
+
+def crear_o_obtener_cliente(dni):
+    """
+    Busca un cliente por DNI. Si no existe, lo crea consultando la API.
+    Esta función se usa al crear préstamos para registrar clientes nuevos.
+    
+    Returns:
+        tuple: (cliente, error)
+    """
+    # Intentar obtener cliente existente
+    cliente = Cliente.query.filter_by(dni=dni).first()
+    
+    if cliente:
+        return cliente, None
+    
+    # Cliente no existe, crear uno nuevo
+    cliente_dict, error = crear_cliente(dni, pep_declarado=False)
+    
+    if error:
+        return None, error
+    
+    # Obtener el cliente recién creado de la BD
+    cliente = Cliente.query.filter_by(dni=dni).first()
+    return cliente, None
