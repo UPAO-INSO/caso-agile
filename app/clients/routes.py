@@ -6,7 +6,7 @@ clientes_bp = Blueprint('clientes', __name__, url_prefix='/api/v1/clientes')
 
 
 @clientes_bp.route('', methods=['POST'])
-def crear_cliente(): # → Endpoint para crear un nuevo cliente
+def crear_cliente(): 
     data = request.get_json()
     
     if not data or not data.get('dni'):
@@ -44,6 +44,36 @@ def obtener_cliente(cliente_id): # → Endpoint para obtener un cliente por ID
     return jsonify(cliente.to_dict()), 200
 
 
+@clientes_bp.route('/dni/<string:dni>', methods=['GET'])
+def obtener_cliente_por_dni(dni): # → Endpoint para buscar cliente por DNI
+    if not dni or len(dni) != 8 or not dni.isdigit():
+        return jsonify({'error': 'DNI inválido. Debe tener 8 dígitos numéricos'}), 400
+    
+    cliente = crud.obtener_cliente_por_dni(dni)
+    
+    if not cliente:
+        return jsonify({'error': 'Cliente no encontrado', 'dni': dni}), 404
+    
+    # Verificar si tiene préstamo activo
+    from app.prestamos.model.prestamos import Prestamo, EstadoPrestamoEnum
+    prestamo_activo = Prestamo.query.filter_by(
+        cliente_id=cliente.cliente_id,
+        estado=EstadoPrestamoEnum.VIGENTE
+    ).first()
+    
+    cliente_data = cliente.to_dict()
+    cliente_data['tiene_prestamo_activo'] = prestamo_activo is not None
+    if prestamo_activo:
+        cliente_data['prestamo_activo'] = {
+            'id': prestamo_activo.prestamo_id,
+            'monto': float(prestamo_activo.monto_total),
+            'plazo': prestamo_activo.plazo,
+            'fecha_otorgamiento': prestamo_activo.f_otorgamiento.isoformat() if prestamo_activo.f_otorgamiento else None
+        }
+    
+    return jsonify(cliente_data), 200
+
+
 @clientes_bp.route('/<int:cliente_id>', methods=['PUT'])
 def actualizar_cliente(cliente_id): # → Endpoint para actualizar un cliente
     data = request.get_json()
@@ -65,22 +95,3 @@ def eliminar_cliente(cliente_id): # → Endpoint para eliminar un cliente
         return jsonify({'error': error}), 404
     
     return jsonify({'mensaje': f'Cliente con ID {cliente_id} eliminado correctamente'}), 200
-
-# FUNCIÓN DE PRUEBA - Solo para desarrollo
-
-@clientes_bp.route('/consultar_dni/<string:cliente_dni>', methods=['GET'])
-def probar_api_dni(cliente_dni): # → Función para probar la API de DNI
-    print(cliente_dni)
-    
-    if len(cliente_dni) != 8 or not cliente_dni.isdigit():
-        print("DNI inválido. Debe tener 8 dígitos.")
-        return
-    
-    from app.clients.crud import consultar_dni_api
-    info, error = consultar_dni_api(cliente_dni)
-    
-    if error:
-        return jsonify(error), 400
-    
-    return jsonify(info), 200
-    
