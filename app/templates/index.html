@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="container mx-auto px-4 py-8 max-w-5xl">
   <div class="mb-8 text-center">
     <h1 class="text-4xl font-semibold text-gray-900 mb-2">
@@ -9,8 +11,130 @@
     </p>
   </div>
 
-  {% include "components/form.html" %}
+  <section class="loan-page">
+    <div class="loan-page__cards">
+      <!-- 🧾 FORMULARIO PRINCIPAL -->
+      <article class="card loan-card">
+        <header class="loan-card__header">
+          <h2>Nueva Solicitud</h2>
+          <p>Complete los detalles para un nuevo préstamo.</p>
+        </header>
+
+        <form
+          class="loan-form"
+          id="loan-form"
+          method="POST"
+          action="{{ url_for('main.enviar_cronograma') }}"
+          novalidate
+        >
+          <div class="loan-form__group loan-form__group--full">
+            <label for="dni">DNI del Cliente</label>
+            <div class="input-with-icon">
+              <span class="input-icon" aria-hidden="true">👤</span>
+              <input
+                id="dni"
+                type="text"
+                name="dni"
+                placeholder="XXXXXXXX"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="loan-form__group loan-form__group--full">
+            <label for="nombre">Nombre del Cliente</label>
+            <input
+              id="nombre"
+              type="text"
+              name="nombre"
+              placeholder="Gian Campos"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="loan-form__status" role="status" data-status-message>
+            <span class="loan-form__status-icon" aria-hidden="true">✔</span>
+            <p>Aquí debe ir la lógica para verificar préstamos existentes</p>
+          </div>
+
+          <div class="loan-form__split">
+            <div class="loan-form__group">
+              <label for="monto">Monto del Préstamo</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">S/</span>
+                <input
+                  id="monto"
+                  type="number"
+                  name="monto"
+                  placeholder="00000.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div class="loan-form__group">
+              <label for="cuotas">Número de Cuotas</label>
+              <input id="cuotas" type="number" name="cuotas" min="1" />
+            </div>
+          </div>
+
+          <button type="submit" class="primary-button">
+            Enviar Préstamo y Correo de Prueba
+          </button>
+        </form>
+      </article>
+
+      <!-- 📋 RESUMEN DEL PRÉSTAMO -->
+      <article class="card loan-summary" data-summary>
+        <header class="loan-summary__header">
+          <h2>Resumen del Préstamo</h2>
+        </header>
+
+        <!-- Estado vacío -->
+        <div class="loan-summary__empty" data-summary-empty>
+          <p class="loan-summary__empty-title">Aún no has calculado un préstamo</p>
+          <p class="loan-summary__empty-text">
+            Completa el DNI, nombre, monto y número de cuotas para generar el
+            resumen automáticamente.
+          </p>
+        </div>
+
+        <!-- Cronograma dinámico -->
+        <div class="loan-summary__content is-hidden" data-summary-content>
+          <dl class="loan-summary__totals">
+            <div>
+              <dt>Monto Total del Préstamo</dt>
+              <dd data-summary-total>S/ 0.00 <span class="currency">PEN</span></dd>
+            </div>
+            <div>
+              <dt data-summary-installments-label>Cuota Mensual</dt>
+              <dd class="highlight" data-summary-monthly>S/ 0.00</dd>
+            </div>
+          </dl>
+
+          <section
+            class="loan-summary__schedule"
+            aria-labelledby="schedule-title"
+          >
+            <h3 id="schedule-title" data-summary-schedule-title>
+              Cronograma de Pagos
+            </h3>
+            <ul data-summary-schedule></ul>
+          </section>
+
+          <footer class="loan-summary__footer">
+            <button type="submit" class="primary-button" disabled>
+              Crear Préstamo
+            </button>
+          </footer>
+        </div>
+      </article>
+    </div>
+  </section>
 </div>
-{% endblock %} {% block scripts %}
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
 {% endblock %}
