@@ -1,61 +1,114 @@
-<!-- Formulario de registro -->
-<article class="card loan-card">
-  <header class="loan-card__header">
-    <h2>Nueva Solicitud</h2>
-    <p>Complete los detalles para un nuevo préstamo.</p>
-  </header>
+<div class="container">
+  <div class="search-section">
+    <h1>Buscar Cliente</h1>
+    <label class="search-label">DNI del cliente</label>
+    <div class="search-input-wrapper">
+      <div class="input-group">
+        <input 
+          type="text" 
+          class="search-input" 
+          id="dni-search"
+          placeholder="Ingrese el DNI"
+          value=""
+        >
+      </div>
+      <button class="search-button" type="button">
+        Buscar
+      </button>
+    </div>
+  </div>
 
-  <form class="loan-form" id="loan-form" novalidate>
-    <div class="loan-form__group loan-form__group--full">
-      <label for="dni">DNI del Cliente</label>
-      <div class="input-with-icon">
-        <span class="input-icon" aria-hidden="true">👤</span>
-        <input
-          id="dni"
-          type="text"
-          name="dni"
-          placeholder="XXXXXXXX"
-          autocomplete="off"
-        />
+  <div class="results-section">
+    <div class="results-header">
+      <h2>Resultados de la Búsqueda</h2>
+      <span class="status-badge">Préstamo Activo</span>
+    </div>
+
+    <div class="client-info">
+      <div class="client-info-row">
+        <span class="info-label">DNI:</span>
+        <span class="info-value" id="client-dni">83940293</span>
+      </div>
+      <div class="client-info-row">
+        <span class="info-label">Nombre:</span>
+        <span class="info-value" id="client-name">Pedro Pablo Kucinski</span>
       </div>
     </div>
 
-    <div class="loan-form__group loan-form__group--full">
-      <label for="nombre">Nombre del Cliente</label>
-      <input
-        id="nombre"
-        type="text"
-        name="nombre"
-        placeholder="Gian Campos"
-        autocomplete="off"
-      />
+    <div class="pep-notice">
+      <div class="pep-content">
+        <h3>Estado PEP</h3>
+        <p>Cliente es una Persona Políticamente Expuesta (PEP).</p>
+      </div>
     </div>
 
-    <div class="loan-form__status" role="status" data-status-message>
-      <span class="loan-form__status-icon" aria-hidden="true">✔</span>
-      <p>Aca debe ir la logica para ver si hay un prestamo existente</p>
+    <div class="loan-active-notice" id="loan-active-notice">
+      <div class="loan-active-content">
+        <h3>⚠️ Préstamo Activo</h3>
+        <p>Este cliente ya tiene un préstamo vigente. No se puede otorgar otro crédito hasta que el préstamo actual sea cancelado.</p>
+        <div class="loan-details-text" id="loan-details-text"></div>
+      </div>
     </div>
 
-    <div class="loan-form__split">
-      <div class="loan-form__group">
-        <label for="monto">Monto del Préstamo</label>
-        <div class="input-with-prefix">
-          <span class="input-prefix">S/</span>
-          <input
-            id="monto"
-            type="number"
-            name="monto"
-            placeholder="00000.00"
-            min="0"
-            step="0.01"
-          />
+    <form id="loan-form">
+      <div class="loan-details">
+        <div class="detail-item">
+          <h4>Monto del Préstamo</h4>
+          <div class="editable-field input-with-currency">
+            <span class="currency-prefix">S/</span>
+            <input 
+              type="number" 
+              id="monto"
+              name="monto"
+              step="0.01"
+              min="0"
+              placeholder="5000.00"
+              required
+            >
+          </div>
+        </div>
+        
+        <div class="detail-item">
+          <h4>Número de cuotas</h4>
+          <div class="editable-field">
+            <input 
+              type="number" 
+              id="cuotas"
+              name="cuotas"
+              min="1"
+              placeholder="6"
+              required
+            >
+          </div>
         </div>
       </div>
 
-      <div class="loan-form__group">
-        <label for="cuotas">Número de Cuotas</label>
-        <input id="cuotas" type="number" name="cuotas" min="1" />
+      <div class="email-section">
+        <h4>Correo electrónico</h4>
+        <input 
+          type="email" 
+          id="email"
+          name="email"
+          placeholder="cliente@ejemplo.com"
+        >
       </div>
+
+      <button type="button" class="btn btn-primary save-button" onclick="saveLoanChanges()">
+        Guardar Cambios
+      </button>
+    </form>
+
+    <div class="action-buttons">
+      <button class="btn btn-primary" type="button">
+        Ver Cronograma de Pagos
+      </button>
+      <button class="btn btn-secondary" type="button">
+        Ver Historial de Pagos
+      </button>
     </div>
-  </form>
-</article>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/client-search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/loan-modal.js') }}"></script>

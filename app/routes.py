@@ -29,4 +29,13 @@ def enviar_prueba_correo():
     except Exception as e:
         print(f"Error de Correo: {e}")
 
+    # Redirige al inicio
     return redirect(url_for('main.home'))
+
+@main.route('/buscar')
+def buscar_cliente():
+    return render_template('buscar_cliente.html', title='Buscar Cliente')
+
+@main.route('/test-modal')
+def test_modal():
+    return render_template('test_modal.html', title='Test Modal')

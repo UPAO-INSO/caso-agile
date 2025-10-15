@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Modal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div style="padding: 40px; text-align: center;">
+    <h1>Prueba de Modal</h1>
+    <button onclick="testModal()" style="padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+      Mostrar Modal de Préstamo
+    </button>
+    <br><br>
+    <button onclick="testClientModal()" style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+      Mostrar Modal de Cliente
+    </button>
+  </div>
+
+  <script>
+    function testModal() {
+      const modalOverlay = document.createElement('div');
+      modalOverlay.className = 'modal-overlay';
+      modalOverlay.id = 'test-modal';
+      
+      modalOverlay.innerHTML = `
+        <div class="modal-content">
+          <button class="modal-close" onclick="closeTestModal()">✕</button>
+          
+          <div class="modal-icon modal-icon--success">
+            ✓
+          </div>
+          
+          <h2 class="modal-title">Solicitud de Préstamo Creada</h2>
+          
+          <p class="modal-message">
+            La solicitud de préstamo para Ana Sofía Ramírez Mendoza ha sido creada exitosamente.
+          </p>
+          
+          <div class="modal-details">
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">Monto del Préstamo</span>
+              <span class="modal-detail-value">S/ 500.00</span>
+            </div>
+            
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">Número de cuotas</span>
+              <span class="modal-detail-value">7 Cuotas</span>
+            </div>
+            
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">Cliente</span>
+              <span class="modal-detail-value">Ana Sofía Ramírez Mendoza</span>
+            </div>
+            
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">DNI</span>
+              <span class="modal-detail-value">44332211</span>
+            </div>
+          </div>
+          
+          <button class="modal-button" onclick="closeTestModal()">
+            Cerrar
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(modalOverlay);
+      
+      setTimeout(() => {
+        modalOverlay.classList.add('active');
+      }, 10);
+      
+      modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) {
+          closeTestModal();
+        }
+      });
+    }
+
+    function testClientModal() {
+      const modalOverlay = document.createElement('div');
+      modalOverlay.className = 'modal-overlay';
+      modalOverlay.id = 'test-client-modal';
+      
+      modalOverlay.innerHTML = `
+        <div class="modal-content">
+          <button class="modal-close" onclick="closeTestModal()">✕</button>
+          
+          <div class="modal-icon modal-icon--success">
+            ✓
+          </div>
+          
+          <h2 class="modal-title">Cliente Registrado Exitosamente</h2>
+          
+          <p class="modal-message">
+            El cliente ha sido registrado en el sistema correctamente.
+          </p>
+          
+          <div class="modal-details">
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">DNI</span>
+              <span class="modal-detail-value">44332211</span>
+            </div>
+            
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">Nombre Completo</span>
+              <span class="modal-detail-value">Ana Sofía Ramírez Mendoza</span>
+            </div>
+            
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">Estado PEP</span>
+              <span class="modal-detail-value">No</span>
+            </div>
+            
+            <div class="modal-detail-row">
+              <span class="modal-detail-label">Fecha de Registro</span>
+              <span class="modal-detail-value">15/10/2025</span>
+            </div>
+          </div>
+          
+          <button class="modal-button" onclick="closeTestModal()">
+            Continuar
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(modalOverlay);
+      
+      setTimeout(() => {
+        modalOverlay.classList.add('active');
+      }, 10);
+    }
+
+    function closeTestModal() {
+      const modal = document.getElementById('test-modal') || document.getElementById('test-client-modal');
+      if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+          modal.remove();
+        }, 300);
+      }
+    }
+
+    // Cerrar con Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeTestModal();
+      }
+    });
+  </script>
+</body>
+</html>

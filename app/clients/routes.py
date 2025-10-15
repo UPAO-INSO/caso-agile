@@ -42,6 +42,36 @@ def obtener_cliente(cliente_id):
     return jsonify(cliente.to_dict()), 200
 
 
+@clientes_bp.route('/dni/<string:dni>', methods=['GET'])
+def obtener_cliente_por_dni(dni): # → Endpoint para buscar cliente por DNI
+    if not dni or len(dni) != 8 or not dni.isdigit():
+        return jsonify({'error': 'DNI inválido. Debe tener 8 dígitos numéricos'}), 400
+    
+    cliente = crud.obtener_cliente_por_dni(dni)
+    
+    if not cliente:
+        return jsonify({'error': 'Cliente no encontrado', 'dni': dni}), 404
+    
+    # Verificar si tiene préstamo activo
+    from app.prestamos.model.prestamos import Prestamo, EstadoPrestamoEnum
+    prestamo_activo = Prestamo.query.filter_by(
+        cliente_id=cliente.cliente_id,
+        estado=EstadoPrestamoEnum.VIGENTE
+    ).first()
+    
+    cliente_data = cliente.to_dict()
+    cliente_data['tiene_prestamo_activo'] = prestamo_activo is not None
+    if prestamo_activo:
+        cliente_data['prestamo_activo'] = {
+            'id': prestamo_activo.prestamo_id,
+            'monto': float(prestamo_activo.monto_total),
+            'plazo': prestamo_activo.plazo,
+            'fecha_otorgamiento': prestamo_activo.f_otorgamiento.isoformat() if prestamo_activo.f_otorgamiento else None
+        }
+    
+    return jsonify(cliente_data), 200
+
+
 @clientes_bp.route('/<int:cliente_id>', methods=['PUT'])
 def actualizar_cliente(cliente_id):
     data = request.get_json()
@@ -64,7 +94,7 @@ def eliminar_cliente(cliente_id):
     
     return jsonify({'mensaje': f'Cliente con ID {cliente_id} eliminado correctamente'}), 200
 
-@clientes_bp.route('/test/dni/<string:dni>', methods=['GET'])
+@clientes_bp.route('/consultar_dni/<string:dni>', methods=['GET'])
 def test_consultar_dni(dni):
     if len(dni) != 8 or not dni.isdigit():
         return jsonify({'error': 'DNI inválido. Debe tener 8 dígitos'}), 400
@@ -77,7 +107,7 @@ def test_consultar_dni(dni):
     return jsonify({'success': True, 'data': info}), 200
 
 
-@clientes_bp.route('/test/pep/<string:dni>', methods=['GET'])
+@clientes_bp.route('/consultar_pep/<string:dni>', methods=['GET'])
 def test_validar_pep(dni):
     if len(dni) != 8 or not dni.isdigit():
         return jsonify({'error': 'DNI inválido. Debe tener 8 dígitos'}), 400
