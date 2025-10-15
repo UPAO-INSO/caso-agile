@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, FieldValidationInfo, field_va
 
 class PrestamoCreateDTO(BaseModel):
     dni: str = Field(..., description="Documento nacional de identidad del cliente")
+    correo_electronico: str = Field(..., description="Correo electrónico del cliente")
     monto: Decimal = Field(..., description="Monto total del préstamo")
     interes_tea: Decimal = Field(..., description="Tasa Efectiva Anual en porcentaje")
     plazo: int = Field(..., description="Número de meses del crédito")
@@ -19,6 +20,13 @@ class PrestamoCreateDTO(BaseModel):
         if len(value) != 8 or not value.isdigit():
             raise ValueError("El DNI debe tener exactamente 8 dígitos numéricos")
         return value
+    
+    @field_validator("correo_electronico")
+    @classmethod
+    def validar_email(cls, value: str) -> str:
+        if not value or "@" not in value:
+            raise ValueError("El correo electrónico debe ser válido")
+        return value.lower().strip()
 
     @field_validator("monto", "interes_tea")
     @classmethod

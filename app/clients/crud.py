@@ -65,36 +65,86 @@ def validar_pep_en_dataset(dni): # → Validar si un DNI está en el dataset PEP
     return dni_normalizado in LISTA_PEP
 
 
-def consultar_dni_api(dni): # → Consulta la API externa para obtener datos del DNI
+def consultar_dni_api(dni, correo_electronico=None): # → Consulta la API externa para obtener datos del DNI
+    """
+    Consulta API de APIPERU para obtener datos del DNI.
+    Formato de respuesta esperado:
+    {
+        "success": true,
+        "data": {
+            "numero": "12345678",
+            "nombre_completo": "JUAN PEREZ GARCIA",
+            "nombres": "JUAN",
+            "apellido_paterno": "PEREZ",
+            "apellido_materno": "GARCIA",
+            "codigo_verificacion": "1",
+            "fecha_nacimiento": "01/01/1990",
+            "ubigeo": "150101"
+        }
+    }
+    """
+    # Validar que las variables de entorno estén configuradas
+    if not API_URL or not API_KEY:
+        return None, "Error de configuración: Las credenciales de la API no están configuradas. Por favor, configure DNI_API_URL y DNI_API_KEY en las variables de entorno."
+    
     try:
+        # Construir URL con parametro de consulta
+        url_completa = f"{API_URL}/{dni}"
+        
         headers = {
             "Authorization": f"Bearer {API_KEY}",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "Content-Type": "application/json"
         }
-        respuesta = requests.get(f"{API_URL}/{dni}", headers=headers)
-        # Construir URL completa con el DNI
-        url_completa = f"{API_URL}/{dni}"
-        respuesta = requests.get(url_completa, headers=headers)
-        respuesta.raise_for_status()
         
+        respuesta = requests.get(url_completa, headers=headers, timeout=10)
+        
+        # Verificar que la respuesta sea JSON
+        content_type = respuesta.headers.get('Content-Type', '')
+        if 'application/json' not in content_type:
+            return None, "DNI no encontrado en RENIEC"
+        
+        respuesta.raise_for_status()
         api_data = respuesta.json()
         
-        if not api_data.get("success"):
-            return None, "DNI no encontrado por la API"
+        # Verificar si la consulta fue exitosa
+        if not api_data.get("success", False):
+            mensaje = api_data.get("message", "DNI no encontrado en RENIEC")
+            return None, mensaje
         
-        return api_data.get('data', {}), None
+        # Obtener datos y normalizar formato
+        data = api_data.get('data', {})
         
+        # APIPERU devuelve los datos directamente
+        datos_normalizados = {
+            'nombres': data.get('nombres', ''),
+            'apellido_paterno': data.get('apellido_paterno', ''),
+            'apellido_materno': data.get('apellido_materno', ''),
+            'nombre_completo': data.get('nombre_completo', ''),
+            'numero': data.get('numero', dni)
+        }
+        
+        # Solo agregar correo_electronico si se proporcionó
+        if correo_electronico:
+            datos_normalizados['correo_electronico'] = correo_electronico
+        
+        return datos_normalizados, None
+        
+    except requests.exceptions.Timeout:
+        return None, "Tiempo de espera agotado al consultar RENIEC"
     except requests.exceptions.RequestException as e:
-        return None, f"Error al consultar el servicio de DNI: {str(e)}"
+        return None, f"Error de conexion con RENIEC: {str(e)}"
+    except Exception as e:
+        return None, f"Error al consultar DNI: {str(e)}"
 
-def crear_cliente(dni, pep_declarado=False): # → Crea un nuevo cliente consultando la API de DNI
+def crear_cliente(dni, correo_electronico, pep_declarado=False): # → Crea un nuevo cliente consultando la API de DNI
     # Validar si ya existe
     cliente_existente = Cliente.query.filter_by(dni=dni).first()
     if cliente_existente:
         return None, "El cliente ya existe"
     
     # Consultar API de Factiliza
-    info_cliente, error = consultar_dni_api(dni)
+    info_cliente, error = consultar_dni_api(dni, correo_electronico)
     if error:
         return None, error
     
@@ -111,6 +161,7 @@ def crear_cliente(dni, pep_declarado=False): # → Crea un nuevo cliente consult
             nombre_completo=info_cliente.get('nombres', ''),
             apellido_paterno=info_cliente.get('apellido_paterno', ''),
             apellido_materno=info_cliente.get('apellido_materno', ''),
+            correo_electronico =correo_electronico,
             pep=pep_final
         )
         
@@ -186,15 +237,38 @@ def eliminar_cliente(cliente_id): # -> Eliminar un cliente por su ID
         return False, f"Error al eliminar: {str(e)}"
 
 def crear_o_obtener_cliente(dni): # → Crear o obtener un cliente por DNI
+    """
+    Obtiene un cliente existente o lo crea consultando RENIEC.
+    Si el cliente ya fue consultado desde el frontend, usar crear_cliente_directo.
+    """
     # Intentar obtener cliente existente
     cliente = Cliente.query.filter_by(dni=dni).first()
     if cliente:
         return cliente, None
-    # Cliente no existe, crear uno nuevo
-    cliente_dict, error = crear_cliente(dni, pep_declarado=False)
+    
+    # Cliente no existe, intentar crear consultando RENIEC
+    cliente_dict, error = crear_cliente(dni, cliente.correo_electronico, pep_declarado=False)
     
     if error:
+        # Si falla la API, intentar crear con datos minimos
+        if "no encontrado" in error or "Tiempo de espera" in error:
+            try:
+                # Crear cliente con datos basicos
+                es_pep_validado = validar_pep_en_dataset(dni)
+                nuevo_cliente = Cliente(
+                    dni=dni,
+                    nombre_completo=f"Cliente {dni}",
+                    apellido_paterno="PENDIENTE",
+                    apellido_materno="ACTUALIZACION",
+                    pep=es_pep_validado
+                )
+                db.session.add(nuevo_cliente)
+                db.session.commit()
+                return nuevo_cliente, None
+            except Exception as e:
+                return None, f"Error al crear cliente: {str(e)}"
         return None, error
+    
     # Obtener el cliente recién creado de la BD
     cliente = Cliente.query.filter_by(dni=dni).first()
     return cliente, None
@@ -210,3 +284,30 @@ def paginar_clientes(page=1, per_page=5, dni=None):
         per_page=per_page,
         error_out=False
     )
+
+def obtener_clientes_con_prestamos_info(page=1, per_page=5, dni=None):
+    """Obtiene clientes con información agregada de sus préstamos"""
+    from sqlalchemy import func, case
+    from app.cuotas.model.cuotas import Cuota
+    from app.prestamos.model.prestamos import EstadoPrestamoEnum
+    
+    query = db.session.query(
+        Cliente,
+        func.coalesce(func.sum(Prestamo.monto_total), 0).label('monto_total_prestado'),
+        func.count(func.distinct(Prestamo.prestamo_id)).label('total_prestamos'),
+        func.count(Cuota.cuota_id).label('total_cuotas'),
+        func.coalesce(func.count(func.distinct(
+            case((Prestamo.estado == EstadoPrestamoEnum.VIGENTE, Prestamo.prestamo_id))
+        )), 0).label('prestamos_vigentes')
+    ).outerjoin(
+        Prestamo, Cliente.cliente_id == Prestamo.cliente_id
+    ).outerjoin(
+        Cuota, Prestamo.prestamo_id == Cuota.prestamo_id
+    ).group_by(Cliente.cliente_id)
+    
+    if dni:
+        query = query.filter(Cliente.dni.ilike(f'%{dni}%'))
+    
+    query = query.order_by(Cliente.fecha_registro.desc())
+    
+    return query.paginate(page=page, per_page=per_page, error_out=False)

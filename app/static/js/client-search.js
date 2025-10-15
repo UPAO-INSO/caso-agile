@@ -92,7 +92,10 @@ async function consultarYRegistrarCliente(dni) {
     );
 
     if (!consultaResponse.ok) {
-      throw new Error("DNI no encontrado en RENIEC");
+      const errorData = await consultaResponse.json();
+      throw new Error(
+        errorData.mensaje || errorData.error || "DNI no encontrado en RENIEC"
+      );
     }
 
     const dniData = await consultaResponse.json();
@@ -112,9 +115,12 @@ async function consultarYRegistrarCliente(dni) {
     // Crear objeto temporal del cliente (NO guardado en BD aún)
     const clienteTemporal = {
       dni: dni,
-      nombre_completo: dniData.nombres,
+      nombre_completo:
+        dniData.nombre_completo ||
+        `${dniData.apellido_paterno} ${dniData.apellido_materno}, ${dniData.nombres}`.trim(),
       apellido_paterno: dniData.apellido_paterno,
       apellido_materno: dniData.apellido_materno,
+      nombres: dniData.nombres, // Agregar nombres también
       pep: esPep, // Validado contra el dataset
       _temp: true, // Marca para indicar que no está en BD
     };
@@ -125,32 +131,42 @@ async function consultarYRegistrarCliente(dni) {
     // Mostrar mensaje informativo
     if (esPep) {
       showAlert(
-        "Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Políticamente).",
+        "ADVERTENCIA: Cliente encontrado en RENIEC. Este cliente es PEP (Persona Expuesta Politicamente).",
         "warning"
       );
     } else {
       showAlert(
-        "Cliente encontrado en RENIEC. Complete el préstamo para registrar.",
-        "info"
+        "EXITO: Cliente encontrado en RENIEC. Complete el prestamo para registrar.",
+        "success"
       );
     }
 
     // Actualizar la interfaz con los datos del cliente
-    displayClientInfo(clienteTemporal, prestamoData);
+    // Cliente temporal no tiene préstamo activo
+    const prestamoDataTemp = { tiene_prestamo_activo: false };
+    displayClientInfo(clienteTemporal, prestamoDataTemp);
 
-    // Habilitar el formulario de préstamo
+    // Habilitar el formulario de prestamo
     disableLoanForm(false);
   } catch (error) {
     console.error("Error:", error);
-    showAlert("Error: " + error.message, "error");
+    showAlert(
+      "ERROR: " +
+        error.message +
+        "\n\nEl DNI no esta en RENIEC o el servicio no esta disponible.",
+      "error"
+    );
   }
 }
 
 /**
  * Mostrar información del cliente en la interfaz
  */
-function displayClientInfo(cliente, prestamoData) {
-  console.log({ prestamoData });
+function displayClientInfo(
+  cliente,
+  prestamoData = { tiene_prestamo_activo: false }
+) {
+  console.log({ cliente, prestamoData });
 
   const dniElement = document.getElementById("client-dni");
   if (dniElement) {
@@ -159,9 +175,12 @@ function displayClientInfo(cliente, prestamoData) {
 
   const nameElement = document.getElementById("client-name");
   if (nameElement) {
-    const nombreCompleto = `${cliente.nombre_completo || ""} ${
-      cliente.apellido_paterno || ""
-    } ${cliente.apellido_materno || ""}`.trim();
+    // Usar nombre_completo si existe, sino construir desde las partes
+    const nombreCompleto =
+      cliente.nombre_completo ||
+      `${cliente.apellido_paterno || ""} ${cliente.apellido_materno || ""}, ${
+        cliente.nombres || ""
+      }`.trim();
     nameElement.textContent = nombreCompleto;
   }
 
@@ -172,7 +191,7 @@ function displayClientInfo(cliente, prestamoData) {
 
   const loanNotice = document.getElementById("loan-active-notice");
   const loanDetailsText = document.getElementById("loan-details-text");
-  if (loanNotice && prestamoData.tiene_prestamo_activo) {
+  if (loanNotice && prestamoData && prestamoData.tiene_prestamo_activo) {
     loanNotice.classList.add("show");
     if (loanDetailsText && prestamoData.tiene_prestamo_activo) {
       const fechaOtorgamiento = new Date(
@@ -190,14 +209,16 @@ function displayClientInfo(cliente, prestamoData) {
   }
 
   const statusBadge = document.querySelector(".status-badge");
-  if (statusBadge && prestamoData.tiene_prestamo_activo) {
-    statusBadge.textContent = "Préstamo Activo";
-    statusBadge.style.background = "#FFF3CD";
-    statusBadge.style.color = "#856404";
-  } else if (statusBadge) {
-    statusBadge.textContent = "Sin Préstamos";
-    statusBadge.style.background = "#E8F5E9";
-    statusBadge.style.color = "#2E7D32";
+  if (statusBadge) {
+    if (prestamoData && prestamoData.tiene_prestamo_activo) {
+      statusBadge.textContent = "Préstamo Activo";
+      statusBadge.style.background = "#FFF3CD";
+      statusBadge.style.color = "#856404";
+    } else {
+      statusBadge.textContent = "Sin Préstamos";
+      statusBadge.style.background = "#E8F5E9";
+      statusBadge.style.color = "#2E7D32";
+    }
   }
 
   const resultsSection = document.querySelector(".results-section");
@@ -237,9 +258,7 @@ function showClientRegisteredModal(cliente) {
   modalOverlay.className = "modal-overlay";
   modalOverlay.id = "client-registered-modal";
 
-  const nombreCompleto = `${cliente.nombre_completo || ""} ${
-    cliente.apellido_paterno || ""
-  } ${cliente.apellido_materno || ""}`.trim();
+  const nombreCompleto = `${cliente.nombre_completo || ""}`;
 
   modalOverlay.innerHTML = `
     <div class="modal-content">
@@ -416,7 +435,7 @@ function validarCronogramaButton() {
   }
 }
 
-function verCronogramaPagos() {
+async function verCronogramaPagos() {
   const montoInput = document.getElementById("monto");
   const cuotasInput = document.getElementById("cuotas");
 
@@ -433,11 +452,128 @@ function verCronogramaPagos() {
     return;
   }
 
-  showAlert("Generando cronograma de pagos...", "info");
+  // Abrir modal
+  const modal = document.getElementById("modalCronograma");
+  const modalMonto = document.getElementById("cronograma-monto");
+  const modalCuotas = document.getElementById("cronograma-cuotas");
+  const tableBody = document.getElementById("cronograma-table-body");
 
-  setTimeout(() => {
-    alert(`Cronograma para:\nMonto: S/ ${monto.toFixed(2)}\nCuotas: ${cuotas}`);
-  }, 500);
+  if (!modal || !tableBody) {
+    showAlert("Error: No se encontró el modal de cronograma", "error");
+    return;
+  }
+
+  modal.style.display = "flex";
+
+  // Actualizar información del modal
+  if (modalMonto) modalMonto.textContent = `S/ ${monto.toFixed(2)}`;
+  if (modalCuotas) modalCuotas.textContent = `${cuotas} meses`;
+
+  // Mostrar loading
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+        <p>Generando cronograma...</p>
+      </td>
+    </tr>
+  `;
+
+  try {
+    // Calcular cronograma localmente (simulación)
+    const tasaMensual = 0.1 / 12; // TEA 10% convertida a mensual
+    const cuotaMensual =
+      (monto * (tasaMensual * Math.pow(1 + tasaMensual, cuotas))) /
+      (Math.pow(1 + tasaMensual, cuotas) - 1);
+
+    let saldo = monto;
+    let html = "";
+    const fechaInicio = new Date();
+
+    for (let i = 1; i <= cuotas; i++) {
+      const interes = saldo * tasaMensual;
+      const capital = cuotaMensual - interes;
+      saldo = Math.max(0, saldo - capital);
+
+      // Calcular fecha de vencimiento
+      const fechaVencimiento = new Date(fechaInicio);
+      fechaVencimiento.setMonth(fechaVencimiento.getMonth() + i);
+
+      // Estilo alternado para filas
+      const rowClass = i % 2 === 0 ? "bg-gray-50" : "bg-white";
+
+      html += `
+        <tr class="${rowClass} hover:bg-blue-50 transition-colors">
+          <td class="px-4 py-3 text-center">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+              ${i}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-gray-700">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="font-medium">${fechaVencimiento.toLocaleDateString(
+                "es-PE",
+                {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                }
+              )}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-gray-900 font-bold text-base">S/ ${cuotaMensual.toFixed(
+              2
+            )}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-blue-600 font-semibold">S/ ${capital.toFixed(
+              2
+            )}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-amber-600 font-semibold">S/ ${interes.toFixed(
+              2
+            )}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="inline-block px-3 py-1 rounded-full text-sm font-bold ${
+              saldo === 0
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-700"
+            }">
+              S/ ${saldo.toFixed(2)}
+            </span>
+          </td>
+        </tr>
+      `;
+    }
+
+    tableBody.innerHTML = html;
+  } catch (error) {
+    console.error("Error al generar cronograma:", error);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-red-600">
+          <p class="font-semibold">Error al generar el cronograma</p>
+          <p class="text-sm text-gray-600 mt-2">${error.message}</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+/**
+ * Cerrar modal de cronograma
+ */
+function cerrarModalCronograma() {
+  const modal = document.getElementById("modalCronograma");
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
 
 function imprimirDeclaracionJurada() {
@@ -496,15 +632,13 @@ async function crearNuevoPrestamo(event) {
   interes_tea = 0.1;
 
   try {
-    const today = new Date();
-    const fechaOtorgamiento = today.toISOString().split("T")[0]; // "2025-10-15"
-
     const prestamoData = {
       dni: window.currentClient.dni,
+      correo_electronico: email,
       monto: parseFloat(monto),
-      plazo: parseInt(cuotas),
       interes_tea: interes_tea,
-      f_otorgamiento: fechaOtorgamiento,
+      plazo: parseInt(cuotas),
+      f_otorgamiento: new Date().toISOString().split("T")[0],
     };
 
     const response = await fetch("/api/v1/prestamos/register", {
@@ -517,30 +651,70 @@ async function crearNuevoPrestamo(event) {
 
     if (response.ok) {
       const data = await response.json();
-      showAlert("Préstamo creado exitosamente", "success");
+      console.log("Response data:", data);
+      showAlert("EXITO: Prestamo creado exitosamente", "success");
 
+      // Resetear formulario
       document.getElementById("loan-form").reset();
       document.getElementById("declaracion-jurada-check").checked = false;
       document.getElementById("validation-message").classList.add("hidden");
 
       window.currentClient.tiene_prestamo_activo = true;
-      window.currentClient.prestamo_activo = data;
 
       displayClientInfo(window.currentClient);
       disableLoanForm(true);
 
+      const prestamo = data.prestamo || {};
+      const cliente = data.cliente || {};
+      const cronograma = data.cronograma || [];
+
       setTimeout(() => {
         alert(
-          `Préstamo #${data.id} creado exitosamente\nMonto: S/ ${data.monto}\nCuotas: ${data.plazo}`
+          `EXITO: Prestamo registrado exitosamente\n\n` +
+            `ID: ${prestamo.prestamo_id}\n` +
+            `Cliente: ${
+              cliente.nombre_completo || window.currentClient.nombre_completo
+            }\n` +
+            `Monto: S/ ${
+              prestamo.monto_total ? prestamo.monto_total.toFixed(2) : "N/A"
+            }\n` +
+            `Plazo: ${prestamo.plazo} meses\n` +
+            `Interes TEA: ${prestamo.interes_tea}%\n` +
+            `${
+              prestamo.requiere_declaracion
+                ? "NOTA: Requiere Declaracion Jurada"
+                : ""
+            }\n\n` +
+            `Cronograma de ${cronograma.length} cuotas generado.`
         );
       }, 500);
     } else {
       const error = await response.json();
-      showAlert(error.error || "Error al crear el préstamo", "error");
+
+      // Mensajes detallados segun el tipo de error
+      if (error.estado) {
+        // Error de prestamo activo
+        alert(
+          `${error.error}\n\n` +
+            `${error.mensaje}\n\n` +
+            `Prestamo ID: ${error.prestamo_id}\n` +
+            `Monto: S/ ${error.monto?.toFixed(2) || "N/A"}\n` +
+            `Estado: ${error.estado}\n\n` +
+            `${error.detalle || ""}`
+        );
+      } else {
+        // Otros errores
+        showAlert(
+          `ERROR: ${
+            error.error || error.mensaje || "Error al crear el prestamo"
+          }`,
+          "error"
+        );
+      }
     }
   } catch (error) {
     console.error("Error:", error);
-    showAlert("Error al crear el préstamo: " + error.message, "error");
+    showAlert("ERROR: Error al crear el prestamo: " + error.message, "error");
   } finally {
     saveButton.innerHTML = originalText;
     saveButton.disabled = false;
