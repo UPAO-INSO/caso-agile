@@ -68,23 +68,19 @@ def eliminar_cliente(cliente_id): # → Endpoint para eliminar un cliente
 
 # FUNCIÓN DE PRUEBA - Solo para desarrollo
 
-def probar_api_dni(): # → Función para probar la API de DNI desde consola
-    dni = input("\nIngrese DNI (8 dígitos): ").strip()
+@clientes_bp.route('/consultar_dni/<string:cliente_dni>', methods=['GET'])
+def probar_api_dni(cliente_dni): # → Función para probar la API de DNI
+    print(cliente_dni)
     
-    if len(dni) != 8 or not dni.isdigit():
+    if len(cliente_dni) != 8 or not cliente_dni.isdigit():
         print("DNI inválido. Debe tener 8 dígitos.")
         return
     
     from app.clients.crud import consultar_dni_api
-    info, error = consultar_dni_api(dni)
+    info, error = consultar_dni_api(cliente_dni)
     
     if error:
-        print(f"{error}")
-    else:
-        print("\nINFORMACIÓN ENCONTRADA")
-        print("="*50)
-        print(f"DNI: {info.get('numero')}")
-        print(f"Nombres: {info.get('nombres')}")
-        print(f"Apellido Paterno: {info.get('apellido_paterno')}")
-        print(f"Apellido Materno: {info.get('apellido_materno')}")
-        print(f"Direccion: {info.get('direccion')}")
+        return jsonify(error), 400
+    
+    return jsonify(info), 200
+    
