@@ -1,9 +1,13 @@
+"""
+Módulo de Clientes
+Gestiona el registro y administración de clientes del sistema
+"""
 from flask import Blueprint
 
-# blueprint ahora usa template_folder local
-bp = Blueprint('clients', __name__, url_prefix='/clients', template_folder='templates')
-
-from . import routes  # noqa: E402,F401
-
 def init_app(app):
-    app.register_blueprint(bp)
+    """
+    Inicializa el módulo de clientes registrando el blueprint de rutas
+    """
+    from .routes import clientes_bp
+    app.register_blueprint(clientes_bp)
+
