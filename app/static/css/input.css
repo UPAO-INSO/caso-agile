@@ -101,3 +101,271 @@ body {
     font-size: 14px;
   }
 }
+
+.loan-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+.loan-page__cards {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loan-card__header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.loan-card__header p {
+  font-size: 15px;
+  color: #475569;
+}
+
+.loan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loan-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loan-form__group--full {
+  width: 100%;
+}
+
+.loan-form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.loan-form input {
+  padding: 14px 16px;
+  border: 1px solid #cbd5f5;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #0f172a;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.loan-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #cbd5f5;
+  padding: 0 6px 0 14px;
+}
+
+.input-with-icon input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 14px 0;
+}
+
+.input-with-icon input:focus {
+  box-shadow: none;
+}
+
+.input-icon {
+  font-size: 18px;
+}
+
+.loan-form__status {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: #fef9c3;
+  border: 1px solid #f97316;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #9a3412;
+  font-size: 14px;
+}
+
+.loan-form__status-icon {
+  font-size: 18px;
+}
+
+.loan-form__split {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.input-with-prefix {
+  position: relative;
+}
+
+.input-with-prefix .input-prefix {
+  position: absolute;
+  inset-inline-start: 16px;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.input-with-prefix input {
+  padding-inline-start: 48px;
+}
+
+.primary-button {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+}
+
+.primary-button:active {
+  transform: translateY(0);
+}
+
+.loan-summary {
+  position: sticky;
+  top: 24px;
+}
+
+.loan-summary__header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.loan-summary__empty {
+  text-align: center;
+  padding: 36px 20px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px dashed #cbd5f5;
+}
+
+.loan-summary__empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.loan-summary__empty-text {
+  font-size: 14px;
+  color: #475569;
+}
+
+.loan-summary__content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loan-summary__content.is-hidden {
+  display: none;
+}
+
+.loan-summary__totals {
+  display: grid;
+  gap: 20px;
+}
+
+.loan-summary__totals dt {
+  font-size: 13px;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.08em;
+}
+
+.loan-summary__totals dd {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.loan-summary__totals .highlight {
+  background-color: #e0f2fe;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #0369a1;
+  display: inline-block;
+}
+
+.loan-summary__schedule {
+  padding: 20px;
+  background-color: #f1f5f9;
+  border-radius: 16px;
+  border: 1px solid #cbd5f5;
+}
+
+.loan-summary__schedule ul {
+  display: grid;
+  gap: 12px;
+}
+
+.loan-summary__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loan-summary__footer .primary-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.currency {
+  font-size: 14px;
+  color: #64748b;
+  margin-inline-start: 8px;
+}
+
+@media (max-width: 768px) {
+  .loan-page__cards {
+    grid-template-columns: 1fr;
+  }
+
+  .loan-summary {
+    position: static;
+  }
+
+  .card {
+    padding: 22px;
+  }
+}

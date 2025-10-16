@@ -36,6 +36,22 @@
       display: inline-block;
       margin: 10px 0;
     }
+    .summary-box {
+      background-color: #f4f7fb;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 20px 0;
+      border: 1px solid #dde7f5;
+    }
+    .summary-item {
+      margin: 8px 0;
+    }
+    .summary-item span {
+      display: inline-block;
+      min-width: 160px;
+      color: #1f4e79;
+      font-weight: 600;
+    }
     .footer {
       text-align: center;
       font-size: 12px;
@@ -60,6 +76,21 @@
     <p>Te escribimos para confirmarte que tu préstamo ha sido registrado exitosamente.</p>
 
     <p>Adjunto encontrarás tu <span class="highlight">cronograma de pagos</span>, con los montos y fechas de cada cuota.</p>
+
+    <div class="summary-box">
+      <div class="summary-item">
+        <span>Monto solicitado:</span>
+        S/ {{ '%.2f' % monto }}
+      </div>
+      <div class="summary-item">
+        <span>Número de cuotas:</span>
+        {{ cuotas }}
+      </div>
+      <div class="summary-item">
+        <span>Tasa de interés mensual:</span>
+        {{ '%.2f' % tasa_interes }}%
+      </div>
+    </div>
 
     <p>Por favor revisa cuidadosamente el documento y guarda una copia para tu control personal.</p>
 
