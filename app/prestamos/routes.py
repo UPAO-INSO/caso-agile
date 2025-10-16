@@ -2,7 +2,7 @@ from flask import render_template, request, jsonify, abort
 from datetime import date
 from decimal import Decimal
 import logging
-from pydantic import ValidationErro
+from pydantic import ValidationError
 from app import db
 from app.cuotas.model.cuotas import Cuota
 from app.cuotas.crud import crear_cuotas_bulk
@@ -15,6 +15,7 @@ from app.clients.crud import obtener_cliente_por_dni, obtener_cliente_por_id, ob
 from .schemas import PrestamoCreateDTO
 from . import prestamos_bp
 from app.common.utils import generar_cronograma_pagos, UIT_VALOR
+from app.declaraciones.crud import obtener_datos_dj_por_prestamo # Importamos la función
 
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
@@ -344,3 +345,25 @@ def detail_prestamo(prestamo_id): # → Detalle de un préstamo
     }
 
     return render_template('detail.html', prestamo=datos_prestamo, cronograma=cronograma_data, title=f"Detalle Préstamo {prestamo_id}")
+
+@prestamos_bp.route('/prestamo/<int:prestamo_id>/declaracion-jurada', methods=['GET'])
+def vista_declaracion_jurada(prestamo_id):
+    """
+    Muestra el documento de Declaración Jurada listo para impresión.
+    """
+    # 1. Obtener todos los datos del documento (lógica de negocio y DB en CRUD)
+    datos_dj, error = obtener_datos_dj_por_prestamo(prestamo_id)
+
+    if error:
+        # Usamos el ErrorHandler si está disponible o simplemente abortamos/redirigimos
+        if 'error_handler' in globals():
+             return error_handler.respond(f'No se puede generar DJ: {error}', 404)
+        else:
+             abort(404, description=f'No se puede generar DJ: {error}')
+    
+    # 2. Renderizar la plantilla con los datos generados
+    # Asumimos que la plantilla se llama 'declaracion_jurada.html' y está en prestamos/templates
+    return render_template('declaracion_jurada.html', 
+                           title=f"Declaración Jurada - P{prestamo_id}",
+                           **datos_dj)
+
