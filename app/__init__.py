@@ -1,79 +1,120 @@
-# app/__init__.py
+"""
+Application Factory
+Crea y configura la aplicación Flask usando el patrón Factory.
+Permite crear múltiples instancias con diferentes configuraciones (dev, prod, test).
+"""
 
 import os
 import importlib
 from flask import Flask
 from dotenv import load_dotenv
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_mail import Mail
 
-load_dotenv() 
+# Cargar variables de entorno desde .env
+load_dotenv()
 
-db = SQLAlchemy()
-migrate = Migrate()
-mail = Mail()
+# Importar extensiones centralizadas
+from app.extensions import db, migrate, mail
+from app.config import get_config
 
+# Módulos que se registrarán automáticamente
 MODULES = ['clients', 'prestamos', 'declaraciones', 'cuotas']
 
-def _str_to_bool(value):
-    if value is None:
-        return False
-    return str(value).strip().lower() in {'true', '1', 'yes', 'on'}
 
-
-def create_app():
-    app = Flask(__name__)
-
-    secret_key = os.environ.get('SECRET_KEY')
-    if not secret_key:
-        raise RuntimeError('SECRET_KEY environment variable is required for session management')
-    app.config['SECRET_KEY'] = secret_key
-
-    database_url = os.environ.get('DATABASE_URL')
-    if not database_url:
-        raise RuntimeError('DATABASE_URL environment variable is required')
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    mail_server = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-    mail_port = os.environ.get('MAIL_PORT', '587')
-    mail_use_tls = os.environ.get('MAIL_USE_TLS', 'true')
-    mail_username = os.environ.get('MAIL_USERNAME')
-    mail_password = os.environ.get('MAIL_PASSWORD')
-    mail_default_sender = os.environ.get('MAIL_DEFAULT_SENDER') or mail_username
-
-    app.config['MAIL_SERVER'] = mail_server
+def create_app(config_name=None):
+    """
+    Application Factory para crear instancia de Flask.
+    
+    Args:
+        config_name: Nombre del ambiente ('development', 'production', 'testing')
+                    Si es None, usa FLASK_ENV de variables de entorno
+    
+    Returns:
+        Instancia de Flask configurada y lista para usar
+    """
+    app = Flask(__name__, instance_relative_config=True)
+    
+    # Cargar configuración desde config.py
+    config_class = get_config(config_name)
+    app.config.from_object(config_class)
+    
+    # Cargar configuración sensible desde instance/config.py (si existe)
     try:
-        app.config['MAIL_PORT'] = int(mail_port)
-    except (TypeError, ValueError):
-        app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = _str_to_bool(mail_use_tls)
-    app.config['MAIL_USERNAME'] = mail_username
-    app.config['MAIL_PASSWORD'] = mail_password
-    app.config['MAIL_DEFAULT_SENDER'] = mail_default_sender
-
+        app.config.from_pyfile('config.py', silent=True)
+    except Exception as e:
+        app.logger.debug(f'No se pudo cargar instance/config.py: {e}')
+    
+    # Asegurar que existe el directorio instance/
+    try:
+        os.makedirs(app.instance_path, exist_ok=True)
+    except OSError as e:
+        app.logger.warning(f'No se pudo crear directorio instance/: {e}')
+    
+    # Inicializar extensiones con la app
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
+    
+    # Registrar modelos de SQLAlchemy (para migrations)
+    _register_models(app)
+    
+    # Registrar blueprints principales
+    _register_blueprints(app)
+    
+    # Registrar módulos dinámicamente
+    _register_modules(app)
+    
+    # Log de inicialización
+    app.logger.info(f'Aplicación iniciada en modo: {config_class.__name__}')
+    
+    return app
 
+
+def _register_models(app):
+    """
+    Importa todos los modelos de SQLAlchemy para que Alembic los detecte.
+    Esto es necesario para las migraciones automáticas.
+    """
     for mod_name in MODULES:
         try:
-            importlib.import_module(f'.{mod_name}.model.{mod_name}', package=__name__)
-        except Exception as exc:
-            app.logger.warning('No se pudo importar modelo %s: %s', mod_name, exc)
+            # Intentar importar el modelo del módulo
+            importlib.import_module(f'.{mod_name}.model.{mod_name}', package='app')
+        except ImportError:
+            try:
+                # Intentar con estructura alternativa (models.py en lugar de model/modulo.py)
+                importlib.import_module(f'.{mod_name}.models', package='app')
+            except ImportError as exc:
+                app.logger.warning(f'No se pudo importar modelo {mod_name}: {exc}')
 
-    from .routes import main as main_blueprint
+
+def _register_blueprints(app):
+    """
+    Registra blueprints principales de la aplicación.
+    """
+    from app.routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
+    
+    # Registrar API v1
+    from app.api.v1 import api_v1_bp
+    app.register_blueprint(api_v1_bp)
+    
+    # Registrar Views
+    from app.views import clientes_view_bp, prestamos_view_bp
+    app.register_blueprint(clientes_view_bp)
+    app.register_blueprint(prestamos_view_bp)
 
+
+def _register_modules(app):
+    """
+    Registra módulos dinámicamente llamando a su función init_app() si existe.
+    Cada módulo puede tener su propio blueprint que se registra automáticamente.
+    """
     for mod_name in MODULES:
         try:
-            pkg = importlib.import_module(f'.{mod_name}', package=__name__)
+            pkg = importlib.import_module(f'.{mod_name}', package='app')
             init_fn = getattr(pkg, 'init_app', None)
+            
             if callable(init_fn):
                 init_fn(app)
+                app.logger.debug(f'Módulo {mod_name} inicializado correctamente')
         except Exception as exc:
-            app.logger.warning('No se pudo inicializar el modulo %s: %s', mod_name, exc)
-
-    return app
+            app.logger.warning(f'No se pudo inicializar el módulo {mod_name}: {exc}')

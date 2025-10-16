@@ -119,6 +119,32 @@
             class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           />
         </div>
+
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Tasa de Interés Anual (TEA)
+          </h4>
+          <div class="relative">
+            <input
+              type="number"
+              id="interes_tea"
+              name="interes_tea"
+              step="0.01"
+              min="0"
+              max="100"
+              value="10"
+              required
+              class="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
+            <span
+              class="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-gray-600 pointer-events-none"
+              >%</span
+            >
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            Ejemplo: 10.00 para 10% anual
+          </p>
+        </div>
       </div>
 
       <div class="flex justify-center">
@@ -347,7 +373,9 @@
             <p class="text-xs text-gray-500 mb-1 uppercase font-medium">
               Tasa de Interés
             </p>
-            <p class="text-2xl font-bold text-gray-900">10% TEA</p>
+            <p id="cronograma-tea" class="text-2xl font-bold text-gray-900">
+              0% TEA
+            </p>
           </div>
         </div>
       </div>

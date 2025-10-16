@@ -1,7 +1,7 @@
 from flask import render_template, request, jsonify
 import requests
 import os
-from app import db
+from app.extensions import db
 from app.clients.model.clients import Cliente
 from app.clients import crud
 from app.prestamos.model.prestamos import EstadoPrestamoEnum

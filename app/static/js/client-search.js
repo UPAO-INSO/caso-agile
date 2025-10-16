@@ -347,16 +347,21 @@ function validarMonto() {
 
   const monto = parseFloat(montoInput.value);
 
-  // Validaciones de monto
-  if (montoInput.value && monto < 0) {
-    showAlert("El monto no puede ser negativo", "error");
-    montoInput.value = "";
-    return;
-  }
-
-  if (montoInput.value && monto > 0 && monto < 300) {
-    showAlert("El monto mínimo es S/ 300.00", "error");
-    montoInput.value = "";
+  // Solo validar si el campo no está vacío Y el usuario no está escribiendo
+  // No validar mientras está escribiendo (permite escribir números grandes)
+  if (montoInput.value === "" || isNaN(monto)) {
+    // Si está vacío, ocultar mensajes y actualizar botón
+    if (validationMessage) validationMessage.classList.add("hidden");
+    if (uitWarning) uitWarning.classList.add("hidden");
+    if (declaracionContainer) {
+      const esPep = window.currentClient && window.currentClient.pep;
+      if (esPep) {
+        declaracionContainer.classList.remove("hidden");
+      } else {
+        declaracionContainer.classList.add("hidden");
+      }
+    }
+    validarCronogramaButton();
     return;
   }
 
@@ -438,45 +443,37 @@ function validarCronogramaButton() {
   const cronogramaButton = document.getElementById("cronograma-button");
   const montoInput = document.getElementById("monto");
   const cuotasInput = document.getElementById("cuotas");
+  const teaInput = document.getElementById("interes_tea");
 
   if (!cronogramaButton) return;
 
   const monto = parseFloat(montoInput?.value || 0);
   const cuotas = parseInt(cuotasInput?.value || 0);
+  const tea = parseFloat(teaInput?.value || 0);
 
-  // Validaciones de cuotas
-  if (cuotasInput.value) {
-    if (cuotas < 0) {
-      showAlert("El número de cuotas no puede ser negativo", "error");
-      cuotasInput.value = "";
-      cronogramaButton.disabled = true;
-      return;
-    }
-
-    if (cuotas > 0 && cuotas < 3) {
-      showAlert("El número mínimo de cuotas es 3", "error");
-      cuotasInput.value = "";
-      cronogramaButton.disabled = true;
-      return;
-    }
-  }
-
-  if (monto >= 300 && cuotas >= 3) {
+  // Solo habilitar/deshabilitar el botón, sin limpiar campos ni mostrar alertas
+  if (monto >= 300 && cuotas >= 3 && tea > 0) {
     cronogramaButton.disabled = false;
   } else {
     cronogramaButton.disabled = true;
   }
 }
-
 async function verCronogramaPagos() {
   const montoInput = document.getElementById("monto");
   const cuotasInput = document.getElementById("cuotas");
+  const teaInput = document.getElementById("interes_tea");
 
   const monto = parseFloat(montoInput?.value || 0);
   const cuotas = parseInt(cuotasInput?.value || 0);
+  const tea = parseFloat(teaInput?.value || 0);
 
   if (!monto || !cuotas) {
     showAlert("Ingrese monto y número de cuotas", "error");
+    return;
+  }
+
+  if (!tea || tea <= 0) {
+    showAlert("Ingrese una tasa de interés (TEA) válida", "error");
     return;
   }
 
@@ -489,6 +486,7 @@ async function verCronogramaPagos() {
   const modal = document.getElementById("modalCronograma");
   const modalMonto = document.getElementById("cronograma-monto");
   const modalCuotas = document.getElementById("cronograma-cuotas");
+  const modalTea = document.getElementById("cronograma-tea");
   const tableBody = document.getElementById("cronograma-table-body");
 
   if (!modal || !tableBody) {
@@ -501,6 +499,7 @@ async function verCronogramaPagos() {
   // Actualizar información del modal
   if (modalMonto) modalMonto.textContent = `S/ ${monto.toFixed(2)}`;
   if (modalCuotas) modalCuotas.textContent = `${cuotas} meses`;
+  if (modalTea) modalTea.textContent = `${tea.toFixed(2)}% TEA`;
 
   // Mostrar loading
   tableBody.innerHTML = `
@@ -513,9 +512,12 @@ async function verCronogramaPagos() {
   `;
 
   try {
-    // Calcular cronograma localmente (simulación)
-    const teaDecimal = 10 / 100; // Convertir 10% a 0.10
-    const tasaMensual = teaDecimal / 12; // TEA convertida a mensual
+    // Calcular cronograma localmente (simulación) usando TEA ingresado
+    const teaDecimal = tea / 100; // Convertir porcentaje a decimal (ej: 10 -> 0.10)
+
+    // Convertir TEA a TEM usando la fórmula correcta: TEM = (1 + TEA)^(1/12) - 1
+    const tasaMensual = Math.pow(1 + teaDecimal, 1 / 12) - 1;
+
     const cuotaMensual =
       (monto * (tasaMensual * Math.pow(1 + tasaMensual, cuotas))) /
       (Math.pow(1 + tasaMensual, cuotas) - 1);
@@ -529,9 +531,9 @@ async function verCronogramaPagos() {
       const capital = cuotaMensual - interes;
       saldo = Math.max(0, saldo - capital);
 
-      // Calcular fecha de vencimiento
+      // Calcular fecha de vencimiento: sumar exactamente 30 días por cada cuota
       const fechaVencimiento = new Date(fechaInicio);
-      fechaVencimiento.setMonth(fechaVencimiento.getMonth() + i);
+      fechaVencimiento.setDate(fechaVencimiento.getDate() + i * 30);
 
       // Estilo alternado para filas
       const rowClass = i % 2 === 0 ? "bg-gray-50" : "bg-white";
@@ -634,8 +636,9 @@ async function crearNuevoPrestamo(event) {
   const monto = document.getElementById("monto").value;
   const cuotas = document.getElementById("cuotas").value;
   const email = document.getElementById("email").value;
+  const interes_tea = document.getElementById("interes_tea").value;
 
-  if (!monto || !cuotas || !email) {
+  if (!monto || !cuotas || !email || !interes_tea) {
     showAlert("Complete todos los campos requeridos", "error");
     return;
   }
@@ -643,7 +646,7 @@ async function crearNuevoPrestamo(event) {
   // Validaciones finales antes de enviar
   const montoNumerico = parseFloat(monto);
   const cuotasNumerico = parseInt(cuotas);
-
+  const teaNumerico = parseFloat(interes_tea);
   if (montoNumerico < 300) {
     showAlert("El monto mínimo es S/ 300.00", "error");
     return;
@@ -661,6 +664,16 @@ async function crearNuevoPrestamo(event) {
 
   if (cuotasNumerico < 0) {
     showAlert("El número de cuotas no puede ser negativo", "error");
+    return;
+  }
+
+  if (teaNumerico <= 0) {
+    showAlert("La tasa de interés debe ser mayor a 0%", "error");
+    return;
+  }
+
+  if (teaNumerico > 100) {
+    showAlert("La tasa de interés no puede ser mayor a 100%", "error");
     return;
   }
 
@@ -686,8 +699,6 @@ async function crearNuevoPrestamo(event) {
     '<svg class="animate-spin w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creando...';
   saveButton.disabled = true;
 
-  interes_tea = 10; // TEA en porcentaje (10%)
-
   try {
     // Obtener fecha actual en formato YYYY-MM-DD (zona horaria local)
     const hoy = new Date();
@@ -699,7 +710,7 @@ async function crearNuevoPrestamo(event) {
       dni: window.currentClient.dni,
       correo_electronico: email,
       monto: parseFloat(monto),
-      interes_tea: interes_tea,
+      interes_tea: teaNumerico, // Usar el TEA ingresado por el usuario
       plazo: parseInt(cuotas),
       f_otorgamiento: fechaLocal,
     };
@@ -808,11 +819,68 @@ document.addEventListener("DOMContentLoaded", function () {
   const montoInput = document.getElementById("monto");
   if (montoInput) {
     montoInput.addEventListener("input", validarMonto);
+
+    // Validar monto mínimo cuando el usuario sale del campo
+    montoInput.addEventListener("blur", function () {
+      const monto = parseFloat(montoInput.value);
+      if (montoInput.value && !isNaN(monto)) {
+        if (monto < 0) {
+          showAlert("El monto no puede ser negativo", "error");
+          montoInput.value = "";
+          montoInput.focus();
+        } else if (monto > 0 && monto < 300) {
+          showAlert("El monto mínimo es S/ 300.00", "error");
+          montoInput.value = "";
+          montoInput.focus();
+        }
+      }
+    });
   }
 
   const cuotasInput = document.getElementById("cuotas");
   if (cuotasInput) {
     cuotasInput.addEventListener("input", validarCronogramaButton);
+
+    // Validar cuotas mínimas cuando el usuario sale del campo
+    cuotasInput.addEventListener("blur", function () {
+      const cuotas = parseInt(cuotasInput.value);
+      if (cuotasInput.value && !isNaN(cuotas)) {
+        if (cuotas < 0) {
+          showAlert("El número de cuotas no puede ser negativo", "error");
+          cuotasInput.value = "";
+          cuotasInput.focus();
+        } else if (cuotas > 0 && cuotas < 3) {
+          showAlert("El número mínimo de cuotas es 3", "error");
+          cuotasInput.value = "";
+          cuotasInput.focus();
+        }
+      }
+    });
+  }
+
+  const teaInput = document.getElementById("interes_tea");
+  if (teaInput) {
+    teaInput.addEventListener("input", validarCronogramaButton);
+
+    // Validar TEA cuando el usuario sale del campo
+    teaInput.addEventListener("blur", function () {
+      const tea = parseFloat(teaInput.value);
+      if (teaInput.value && !isNaN(tea)) {
+        if (tea < 0) {
+          showAlert("La tasa de interés no puede ser negativa", "error");
+          teaInput.value = "";
+          teaInput.focus();
+        } else if (tea > 100) {
+          showAlert("La tasa de interés no puede ser mayor a 100%", "error");
+          teaInput.value = "";
+          teaInput.focus();
+        } else if (tea === 0) {
+          showAlert("La tasa de interés debe ser mayor a 0%", "error");
+          teaInput.value = "";
+          teaInput.focus();
+        }
+      }
+    });
   }
 
   const checkbox = document.getElementById("declaracion-jurada-check");
@@ -822,6 +890,9 @@ document.addEventListener("DOMContentLoaded", function () {
       actualizarEstadoBoton();
     });
   }
+
+  // Validar el estado inicial del botón de cronograma al cargar la página
+  validarCronogramaButton();
 });
 
 console.log("client-search.js loaded");

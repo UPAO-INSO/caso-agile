@@ -1,4 +1,4 @@
-from app import db
+from app.extensions import db
 from app.cuotas.model.cuotas import Cuota
 from datetime import date
 

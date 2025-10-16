@@ -1,10 +1,16 @@
+"""
+Common Utilities
+Funciones de utilidad compartidas.
+"""
+
 import logging
-from datetime import date
-from dateutil.relativedelta import relativedelta
+from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
+# Importar servicio financiero para reutilizar lógica
+from app.services.financial_service import FinancialService
+
 # Valor de la UIT (Unidad Impositiva Tributaria) - Perú 2025
-# S/ 5,350.00
 UIT_VALOR = Decimal('5350.00')
 
 logger = logging.getLogger(__name__)
@@ -13,9 +19,8 @@ if not logger.handlers:
     logging.basicConfig(level=logging.INFO)
 
 def tea_to_tem(tea):
-    tea_decimal = Decimal(tea) / Decimal('100.00')
-    tem = ((Decimal('1') + tea_decimal) ** (Decimal('1') / Decimal('12'))) - Decimal('1')
-    return tem
+    """Convierte TEA a TEM usando FinancialService"""
+    return FinancialService.tea_to_tem(tea)
 
 
 def calcular_cuota_fija(monto, tea, plazo_meses):
@@ -51,41 +56,40 @@ def calcular_cuota_fija(monto, tea, plazo_meses):
 
 
 def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
-    cuota_fija = calcular_cuota_fija(monto_total, interes_tea, plazo)  # puede venir redondeada
-    tem = tea_to_tem(interes_tea)
-
-    saldo = monto_total   # saldo pendiente al inicio de cada periodo
-    cronograma = []
-
-    for i in range(1, plazo + 1):
-        fecha_vencimiento = f_otorgamiento + relativedelta(months=i)
-
-        monto_interes_un = saldo * tem
-
-        monto_capital_un = cuota_fija - monto_interes_un
-
-        if i == plazo:
-            monto_capital_un = saldo
-            cuota_un = monto_capital_un + monto_interes_un
-            saldo_final_un = Decimal('0.00')
-        else:
-            cuota_un = cuota_fija
-            saldo_final_un = saldo - monto_capital_un
-
-        monto_interes = monto_interes_un.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        monto_capital = monto_capital_un.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        cuota_a_usar = cuota_un.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        saldo_capital_final = saldo_final_un.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-        cronograma.append({
-            'numero_cuota': i,
+    """
+    Genera cronograma de pagos.
+    
+    REFACTORED: Ahora delega al FinancialService para mayor consistencia.
+    Este wrapper se mantiene por compatibilidad legacy.
+    
+    Args:
+        monto_total: Monto del préstamo
+        interes_tea: TEA en porcentaje
+        plazo: Número de cuotas
+        f_otorgamiento: Fecha de otorgamiento
+        
+    Returns:
+        list: Cronograma de pagos con formato ajustado para BD
+    """
+    # Delegar a FinancialService
+    cronograma_servicio = FinancialService.generar_cronograma_pagos(
+        monto_total, interes_tea, plazo, f_otorgamiento
+    )
+    
+    # Adaptar formato para compatibilidad con código existente
+    cronograma_legacy = []
+    for item in cronograma_servicio:
+        # Convertir formato del servicio a formato legacy esperado por la BD
+        from datetime import datetime
+        fecha_vencimiento = datetime.strptime(item['fecha_vencimiento'], '%Y-%m-%d').date()
+        
+        cronograma_legacy.append({
+            'numero_cuota': item['numero'],
             'fecha_vencimiento': fecha_vencimiento,
-            'monto_cuota': cuota_a_usar,
-            'monto_capital': monto_capital,
-            'monto_interes': monto_interes,
-            'saldo_capital': saldo_capital_final,
+            'monto_cuota': Decimal(str(item['monto_cuota'])),
+            'monto_capital': Decimal(str(item['capital'])),
+            'monto_interes': Decimal(str(item['interes'])),
+            'saldo_capital': Decimal(str(item['saldo']))
         })
-
-        saldo = saldo_final_un
-
-    return cronograma
+    
+    return cronograma_legacy

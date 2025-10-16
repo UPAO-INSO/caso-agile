@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from ... import db
+from app.extensions import db
 
 
 class Cuota(db.Model):

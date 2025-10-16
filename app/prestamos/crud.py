@@ -1,4 +1,4 @@
-from app import db
+from app.extensions import db
 from app.prestamos.model.prestamos import Prestamo
 
 def crear_prestamo(prestamo): # → Crear un nuevo préstamo

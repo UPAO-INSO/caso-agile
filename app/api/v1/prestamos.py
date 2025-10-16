@@ -1,25 +1,43 @@
-from flask import render_template, request, jsonify
+"""
+API v1 - Endpoints de Préstamos
+Endpoints REST que retornan JSON
+"""
+from flask import jsonify, request
 from decimal import Decimal
 import logging
 from pydantic import ValidationError
 
+from . import api_v1_bp
 from app.extensions import db
-from app.prestamos.crud import listar_prestamos_por_cliente_id, obtener_prestamo_por_id
+from app.prestamos.crud import (
+    listar_prestamos_por_cliente_id,
+    obtener_prestamo_por_id
+)
+from app.prestamos.schemas import PrestamoCreateDTO
+from app.prestamos.model.prestamos import EstadoPrestamoEnum
+from app.clients.crud import obtener_cliente_por_id
 from app.common.error_handler import ErrorHandler
-from .model.prestamos import EstadoPrestamoEnum
-from app.clients.crud import obtener_cliente_por_id, obtener_clientes_por_estado_prestamo
-from .schemas import PrestamoCreateDTO
-from . import prestamos_bp
-
-# Importar servicios
 from app.services.prestamo_service import PrestamoService
 
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
 
-@prestamos_bp.route('/register', methods=['POST'])
-def registrar_prestamo():
-    """Endpoint para registrar un nuevo préstamo"""
+
+@api_v1_bp.route('/prestamos', methods=['POST'])
+def registrar_prestamo_api():
+    """
+    Registra un nuevo préstamo
+    
+    Request body:
+    {
+        "dni": "12345678",
+        "correo_electronico": "email@example.com",
+        "monto": 10000.00,
+        "interes_tea": 24.0,
+        "plazo": 12,
+        "f_otorgamiento": "2025-10-16"
+    }
+    """
     payload = request.get_json(silent=True)
     if payload is None:
         return error_handler.respond('El cuerpo de la solicitud debe ser JSON válido.', 400)
@@ -28,7 +46,6 @@ def registrar_prestamo():
         dto = PrestamoCreateDTO.model_validate(payload)
     except ValidationError as exc:
         logger.warning("Errores de validación al registrar préstamo", extra={'errors': exc.errors()})
-        # Convertir errores de Pydantic a formato serializable
         errors_serializables = []
         for error in exc.errors():
             error_dict = {
@@ -41,7 +58,7 @@ def registrar_prestamo():
             errors_serializables.append(error_dict)
         return error_handler.respond('Datos inválidos.', 400, errors=errors_serializables)
 
-    # Delegar toda la lógica de negocio al servicio
+    # Delegar al servicio
     respuesta, error, status_code = PrestamoService.registrar_prestamo_completo(
         dni=dto.dni,
         correo_electronico=dto.correo_electronico,
@@ -53,16 +70,15 @@ def registrar_prestamo():
     
     if error:
         if status_code == 400 and respuesta and 'error' in respuesta:
-            # Error de préstamo activo
             return jsonify(respuesta), status_code
         return error_handler.respond(error, status_code)
     
     return jsonify(respuesta), status_code
 
-# ENDPOINTS API ADICIONALES
 
-@prestamos_bp.route('/api/prestamo/<int:prestamo_id>', methods=['GET'])
-def obtener_prestamo_api(prestamo_id): # → Endpoint para obtener la información completa de un préstamo
+@api_v1_bp.route('/prestamos/<int:prestamo_id>', methods=['GET'])
+def obtener_prestamo_api(prestamo_id):
+    """Obtiene la información completa de un préstamo"""
     from app.cuotas.crud import listar_cuotas_por_prestamo, obtener_resumen_cuotas
     
     prestamo = obtener_prestamo_por_id(prestamo_id)
@@ -70,7 +86,7 @@ def obtener_prestamo_api(prestamo_id): # → Endpoint para obtener la informaci�
     if not prestamo:
         return jsonify({'error': 'Préstamo no encontrado'}), 404
     
-    # Obtener cuotas
+    # Obtener cuotas y resumen
     cuotas = listar_cuotas_por_prestamo(prestamo_id)
     resumen = obtener_resumen_cuotas(prestamo_id)
     
@@ -120,10 +136,9 @@ def obtener_prestamo_api(prestamo_id): # → Endpoint para obtener la informaci�
     return jsonify(respuesta), 200
 
 
-@prestamos_bp.route('/api/cliente/<int:cliente_id>/prestamos', methods=['GET'])
-def listar_prestamos_cliente_api(cliente_id): # → Endpoint para listar todos los préstamos de un cliente
-    from app.clients.crud import obtener_cliente_por_id
-    
+@api_v1_bp.route('/clientes/<int:cliente_id>/prestamos', methods=['GET'])
+def listar_prestamos_cliente_api(cliente_id):
+    """Lista todos los préstamos de un cliente"""
     cliente = obtener_cliente_por_id(cliente_id)
     if not cliente:
         return jsonify({'error': 'Cliente no encontrado'}), 404
@@ -154,107 +169,10 @@ def listar_prestamos_cliente_api(cliente_id): # → Endpoint para listar todos l
     
     return jsonify(respuesta), 200
 
-# -------------- ENDPOINTS DE VISTAS (HTML) ------------------------
 
-@prestamos_bp.route('/', methods=['GET'])
-def list_clientes_con_prestamos():
-
-    clientes_con_prestamos = obtener_clientes_por_estado_prestamo()
-    
-    listado_clientes = [{
-        'id': c.cliente_id,
-        'nombre_completo': c.nombre_completo,
-        'dni': c.dni,
-        'pep': 'Sí' if c.pep else 'No',
-    } for c in clientes_con_prestamos]
-    
-    return render_template('list_clients.html', clientes=listado_clientes, title="Consulta de Clientes con Historial")
-
-@prestamos_bp.route('/clientes/<int:cliente_id>', methods=['GET'])
-def list_prestamos_por_cliente(cliente_id):
-    cliente = obtener_cliente_por_id(cliente_id)
-    
-    if cliente is None:
-        return error_handler.respond('Cliente no encontrado.', 404)
-        
-    prestamos_del_cliente = listar_prestamos_por_cliente_id(cliente_id)
-
-    listado_prestamos = [{
-        'id': p.prestamo_id,
-        'monto': f"S/ {p.monto_total.quantize(Decimal('0.01'))}",
-        'estado': p.estado.value,
-        'plazo': p.plazo,
-        'f_otorgamiento': p.f_otorgamiento.strftime('%d-%m-%Y')
-    } for p in prestamos_del_cliente]
-    
-    return render_template('list.html', 
-                           cliente=cliente,
-                           prestamos=listado_prestamos, 
-                           title=f"Préstamos de {cliente.nombre_completo}")
-
-@prestamos_bp.route('/prestamo/<int:prestamo_id>', methods=['GET'])
-def detail_prestamo(prestamo_id): # → Detalle de un préstamo
-    from app.cuotas.crud import listar_cuotas_por_prestamo
-    
-    prestamo = obtener_prestamo_por_id(prestamo_id)
-    
-    if prestamo is None:
-        return error_handler.respond('Préstamo no encontrado.', 404)
-
-    # Obtener cuotas desde crud.py (correcto)
-    cronograma_list = listar_cuotas_por_prestamo(prestamo_id)
-
-    cronograma_data = [{
-        'nro': c.numero_cuota,
-        'vencimiento': c.fecha_vencimiento.strftime('%d-%m-%Y'),
-        'monto_cuota': f"S/ {c.monto_cuota.quantize(Decimal('0.01'))}",
-        'capital': f"S/ {c.monto_capital.quantize(Decimal('0.01'))}",
-        'interes': f"S/ {c.monto_interes.quantize(Decimal('0.01'))}",
-        'saldo': f"S/ {c.saldo_capital.quantize(Decimal('0.01'))}",
-        'pagado': 'Sí' if c.monto_pagado else 'No'
-    } for c in cronograma_list]
-
-    datos_prestamo = {
-        'id': prestamo.prestamo_id,
-        'cliente_id': prestamo.cliente_id, 
-        'cliente': prestamo.cliente.nombre_completo,
-        'dni': prestamo.cliente.dni,
-        'monto_total': f"S/ {prestamo.monto_total.quantize(Decimal('0.01'))}",
-        'interes_tea': f"{prestamo.interes_tea.quantize(Decimal('0.01'))} %",
-        'plazo': prestamo.plazo,
-        'f_otorgamiento': prestamo.f_otorgamiento.strftime('%d-%m-%Y'),
-        'estado': prestamo.estado.value,
-        'requiere_dj': 'Sí' if prestamo.requiere_dec_jurada else 'No',
-        'tipo_dj': prestamo.declaracion_jurada.tipo_declaracion.value if prestamo.declaracion_jurada else 'N/A'
-    }
-
-    return render_template('detail.html', prestamo=datos_prestamo, cronograma=cronograma_data, title=f"Detalle Préstamo {prestamo_id}")
-
-@prestamos_bp.route('/actualizar-estado/<int:prestamo_id>', methods=['POST'])
-def actualizar_estado_prestamo(prestamo_id):
-    """Actualizar estado de préstamo: VIGENTE -> CANCELADO (irreversible)"""
-    data = request.get_json()
-    nuevo_estado = data.get('estado')
-    
-    if not nuevo_estado:
-        return jsonify({'error': 'El campo estado es requerido'}), 400
-    
-    try:
-        estado_enum = EstadoPrestamoEnum[nuevo_estado.upper()]
-    except KeyError:
-        return jsonify({'error': 'Estado inválido. Debe ser VIGENTE o CANCELADO'}), 400
-    
-    # Delegar al servicio
-    respuesta, error, status_code = PrestamoService.actualizar_estado_prestamo(prestamo_id, estado_enum)
-    
-    if error:
-        return jsonify({'error': error}), status_code
-    
-    return jsonify(respuesta), status_code
-
-@prestamos_bp.route('/cliente/<int:cliente_id>/json', methods=['GET'])
-def obtener_prestamos_cliente_json(cliente_id):
-    """Endpoint JSON para obtener todos los préstamos de un cliente con sus cronogramas"""
+@api_v1_bp.route('/clientes/<int:cliente_id>/prestamos/detalle', methods=['GET'])
+def obtener_prestamos_cliente_con_cronogramas_api(cliente_id):
+    """Obtiene todos los préstamos de un cliente con sus cronogramas"""
     from app.cuotas.crud import listar_cuotas_por_prestamo
     
     cliente = obtener_cliente_por_id(cliente_id)
@@ -265,7 +183,6 @@ def obtener_prestamos_cliente_json(cliente_id):
     
     prestamos_data = []
     for prestamo in prestamos_del_cliente:
-        # Obtener cronograma de cuotas
         cuotas = listar_cuotas_por_prestamo(prestamo.prestamo_id)
         
         cronograma_data = [{
@@ -292,3 +209,33 @@ def obtener_prestamos_cliente_json(cliente_id):
         prestamos_data.append(prestamo_dict)
     
     return jsonify(prestamos_data), 200
+
+
+@api_v1_bp.route('/prestamos/<int:prestamo_id>/estado', methods=['PUT'])
+def actualizar_estado_prestamo_api(prestamo_id):
+    """
+    Actualiza el estado de un préstamo
+    
+    Request body:
+    {
+        "estado": "CANCELADO"
+    }
+    """
+    data = request.get_json()
+    nuevo_estado = data.get('estado')
+    
+    if not nuevo_estado:
+        return jsonify({'error': 'El campo estado es requerido'}), 400
+    
+    try:
+        estado_enum = EstadoPrestamoEnum[nuevo_estado.upper()]
+    except KeyError:
+        return jsonify({'error': 'Estado inválido. Debe ser VIGENTE o CANCELADO'}), 400
+    
+    # Delegar al servicio
+    respuesta, error, status_code = PrestamoService.actualizar_estado_prestamo(prestamo_id, estado_enum)
+    
+    if error:
+        return jsonify({'error': error}), status_code
+    
+    return jsonify(respuesta), status_code
