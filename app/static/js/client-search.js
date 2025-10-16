@@ -258,7 +258,9 @@ function showClientRegisteredModal(cliente) {
   modalOverlay.className = "modal-overlay";
   modalOverlay.id = "client-registered-modal";
 
-  const nombreCompleto = `${cliente.nombre_completo || ""}`;
+  const nombreCompleto = `${cliente.nombre_completo || ""} ${
+    cliente.apellido_paterno
+  } ${cliente.apellido_materno}`;
 
   modalOverlay.innerHTML = `
     <div class="modal-content">
@@ -344,6 +346,20 @@ function validarMonto() {
   if (!montoInput) return;
 
   const monto = parseFloat(montoInput.value);
+
+  // Validaciones de monto
+  if (montoInput.value && monto < 0) {
+    showAlert("El monto no puede ser negativo", "error");
+    montoInput.value = "";
+    return;
+  }
+
+  if (montoInput.value && monto > 0 && monto < 300) {
+    showAlert("El monto mínimo es S/ 300.00", "error");
+    montoInput.value = "";
+    return;
+  }
+
   const UIT = 5350; // 1 UIT en soles (2025)
 
   // Verificar si el cliente es PEP
@@ -428,7 +444,24 @@ function validarCronogramaButton() {
   const monto = parseFloat(montoInput?.value || 0);
   const cuotas = parseInt(cuotasInput?.value || 0);
 
-  if (monto > 0 && cuotas > 0) {
+  // Validaciones de cuotas
+  if (cuotasInput.value) {
+    if (cuotas < 0) {
+      showAlert("El número de cuotas no puede ser negativo", "error");
+      cuotasInput.value = "";
+      cronogramaButton.disabled = true;
+      return;
+    }
+
+    if (cuotas > 0 && cuotas < 3) {
+      showAlert("El número mínimo de cuotas es 3", "error");
+      cuotasInput.value = "";
+      cronogramaButton.disabled = true;
+      return;
+    }
+  }
+
+  if (monto >= 300 && cuotas >= 3) {
     cronogramaButton.disabled = false;
   } else {
     cronogramaButton.disabled = true;
@@ -481,7 +514,8 @@ async function verCronogramaPagos() {
 
   try {
     // Calcular cronograma localmente (simulación)
-    const tasaMensual = 0.1 / 12; // TEA 10% convertida a mensual
+    const teaDecimal = 10 / 100; // Convertir 10% a 0.10
+    const tasaMensual = teaDecimal / 12; // TEA convertida a mensual
     const cuotaMensual =
       (monto * (tasaMensual * Math.pow(1 + tasaMensual, cuotas))) /
       (Math.pow(1 + tasaMensual, cuotas) - 1);
@@ -606,8 +640,31 @@ async function crearNuevoPrestamo(event) {
     return;
   }
 
-  const UIT = 5350;
+  // Validaciones finales antes de enviar
   const montoNumerico = parseFloat(monto);
+  const cuotasNumerico = parseInt(cuotas);
+
+  if (montoNumerico < 300) {
+    showAlert("El monto mínimo es S/ 300.00", "error");
+    return;
+  }
+
+  if (montoNumerico < 0) {
+    showAlert("El monto no puede ser negativo", "error");
+    return;
+  }
+
+  if (cuotasNumerico < 3) {
+    showAlert("El número mínimo de cuotas es 3", "error");
+    return;
+  }
+
+  if (cuotasNumerico < 0) {
+    showAlert("El número de cuotas no puede ser negativo", "error");
+    return;
+  }
+
+  const UIT = 5350;
   const esPep = window.currentClient.pep;
   const declaracionContainer = document.getElementById(
     "declaracion-jurada-container"
@@ -629,16 +686,22 @@ async function crearNuevoPrestamo(event) {
     '<svg class="animate-spin w-5 h-5 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creando...';
   saveButton.disabled = true;
 
-  interes_tea = 0.1;
+  interes_tea = 10; // TEA en porcentaje (10%)
 
   try {
+    // Obtener fecha actual en formato YYYY-MM-DD (zona horaria local)
+    const hoy = new Date();
+    const fechaLocal = `${hoy.getFullYear()}-${String(
+      hoy.getMonth() + 1
+    ).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+
     const prestamoData = {
       dni: window.currentClient.dni,
       correo_electronico: email,
       monto: parseFloat(monto),
       interes_tea: interes_tea,
       plazo: parseInt(cuotas),
-      f_otorgamiento: new Date().toISOString().split("T")[0],
+      f_otorgamiento: fechaLocal,
     };
 
     const response = await fetch("/api/v1/prestamos/register", {

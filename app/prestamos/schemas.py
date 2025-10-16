@@ -28,11 +28,20 @@ class PrestamoCreateDTO(BaseModel):
             raise ValueError("El correo electrónico debe ser válido")
         return value.lower().strip()
 
-    @field_validator("monto", "interes_tea")
+    @field_validator("monto")
     @classmethod
-    def validar_decimales_positivos(cls, value: Decimal, info: FieldValidationInfo) -> Decimal:
+    def validar_monto(cls, value: Decimal) -> Decimal:
         if value <= Decimal("0"):
-            raise ValueError(f"{info.field_name} debe ser mayor que cero")
+            raise ValueError("El monto debe ser mayor que cero")
+        return value
+    
+    @field_validator("interes_tea")
+    @classmethod
+    def validar_interes_tea(cls, value: Decimal) -> Decimal:
+        if value <= Decimal("0"):
+            raise ValueError("La tasa de interés debe ser mayor que cero")
+        if value > Decimal("100"):
+            raise ValueError("La tasa de interés no puede ser mayor a 100%")
         return value
 
     @field_validator("plazo")

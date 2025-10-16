@@ -3,7 +3,8 @@ from datetime import date
 from decimal import Decimal
 import logging
 from pydantic import ValidationError
-from app import db
+from flask_mail import Message
+from app import db, mail
 from app.cuotas.model.cuotas import Cuota
 from app.cuotas.crud import crear_cuotas_bulk
 from app.declaraciones.crud import crear_declaracion
@@ -15,9 +16,80 @@ from app.clients.crud import obtener_cliente_por_id, obtener_clientes_por_estado
 from .schemas import PrestamoCreateDTO
 from . import prestamos_bp
 from app.common.utils import generar_cronograma_pagos, UIT_VALOR
+from app.utils import generar_cronograma_pdf
 
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
+
+def enviar_correo_prestamo(cliente, prestamo, cronograma):
+    """
+    Envía un correo electrónico al cliente con los detalles del préstamo
+    """
+    try:
+        if not cliente.correo_electronico:
+            logger.warning(f"Cliente {cliente.dni} no tiene correo electrónico registrado")
+            return False
+        
+        msg = Message(
+            subject="Confirmación de Préstamo - Gota a Gota",
+            recipients=[cliente.correo_electronico]
+        )
+        
+        # Cuerpo de texto plano
+        msg.body = f"""
+Hola {cliente.nombre_completo},
+
+Tu préstamo ha sido aprobado exitosamente.
+
+Detalles del Préstamo:
+- ID: {prestamo.prestamo_id}
+- Monto: S/ {float(prestamo.monto_total):.2f}
+- Tasa de Interés (TEA): {float(prestamo.interes_tea):.2f}%
+- Plazo: {prestamo.plazo} meses
+- Fecha de Otorgamiento: {prestamo.f_otorgamiento.strftime('%d/%m/%Y')}
+- Número de Cuotas: {len(cronograma)}
+
+Gracias por confiar en nosotros.
+
+Atentamente,
+Gota a Gota
+"""
+        
+        # Cuerpo HTML
+        msg.html = render_template(
+            "emails/email_cliente.html",
+            nombre=cliente.nombre_completo,
+            prestamo_id=prestamo.prestamo_id,
+            monto=float(prestamo.monto_total),
+            interes_tea=float(prestamo.interes_tea),
+            plazo=prestamo.plazo,
+            fecha=prestamo.f_otorgamiento.strftime('%d/%m/%Y'),
+            num_cuotas=len(cronograma)
+        )
+        
+        # Adjuntar PDF del cronograma (si es posible)
+        try:
+            pdf_buffer = generar_cronograma_pdf(
+                cliente.nombre_completo,
+                float(prestamo.monto_total),
+                len(cronograma),
+                float(prestamo.interes_tea)
+            )
+            # Asegurarse de leer desde el inicio
+            pdf_buffer.seek(0)
+            pdf_bytes = pdf_buffer.read()
+            msg.attach("cronograma.pdf", "application/pdf", pdf_bytes)
+            logger.debug(f"Adjuntado cronograma PDF para el prestamo {prestamo.prestamo_id}")
+        except Exception as attach_exc:
+            logger.error(f"No se pudo generar/adjuntar el PDF del cronograma: {attach_exc}")
+
+        mail.send(msg)
+        logger.info(f"Correo enviado exitosamente a {cliente.correo_electronico}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error al enviar correo a {cliente.correo_electronico}: {str(e)}")
+        return False
 
 @prestamos_bp.route('/register', methods=['POST'])
 def registrar_prestamo():
@@ -29,7 +101,18 @@ def registrar_prestamo():
         dto = PrestamoCreateDTO.model_validate(payload)
     except ValidationError as exc:
         logger.warning("Errores de validación al registrar préstamo", extra={'errors': exc.errors()})
-        return error_handler.respond('Datos inválidos.', 400, errors=exc.errors())
+        # Convertir errores de Pydantic a formato serializable
+        errors_serializables = []
+        for error in exc.errors():
+            error_dict = {
+                'loc': list(error.get('loc', [])),
+                'msg': str(error.get('msg', '')),
+                'type': str(error.get('type', ''))
+            }
+            if 'input' in error:
+                error_dict['input'] = str(error['input'])
+            errors_serializables.append(error_dict)
+        return error_handler.respond('Datos inválidos.', 400, errors=errors_serializables)
 
     dni = dto.dni
     correo_electronico = dto.correo_electronico
@@ -142,7 +225,10 @@ def registrar_prestamo():
         # Guardar todas las cuotas
         crear_cuotas_bulk(cuotas_a_crear)
 
-        # 5. Preparar respuesta con toda la información
+        # 5. Enviar correo electrónico al cliente
+        enviar_correo_prestamo(cliente, modelo_prestamo, cronograma)
+
+        # 6. Preparar respuesta con toda la información
         respuesta = {
             'success': True,
             'message': 'Préstamo registrado exitosamente',

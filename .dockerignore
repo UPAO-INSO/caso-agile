@@ -1,0 +1,10 @@
+# Archivos de Docker
+docker-compose.override.yml
+
+# Datos de PostgreSQL (si no usas volúmenes nombrados)
+pgdata/
+postgres_data/
+
+# Backups de base de datos
+*.sql.backup
+backup_*.sql

@@ -158,10 +158,10 @@ def crear_cliente(dni, correo_electronico, pep_declarado=False): # → Crea un n
     try:
         nuevo_cliente = Cliente(
             dni=dni,
-            nombre_completo=info_cliente.get('nombres', ''),
+            nombre_completo=info_cliente.get('nombre_completo', ''),
             apellido_paterno=info_cliente.get('apellido_paterno', ''),
             apellido_materno=info_cliente.get('apellido_materno', ''),
-            correo_electronico =correo_electronico,
+            correo_electronico=correo_electronico,
             pep=pep_final
         )
         

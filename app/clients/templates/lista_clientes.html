@@ -199,7 +199,7 @@
   </div>
 
   <!-- Pagination -->
-  <div class="mt-6 flex justify-center items-center gap-3">
+  <!-- <div class="mt-6 flex justify-center items-center gap-3">
     {% if clientes.has_prev %}
     <a
       href="{{ url_for('clientes.listar_clientes_view', page=clientes.prev_num, dni=request.args.get('dni', '')) }}"
@@ -224,185 +224,185 @@
     </a>
     {% endif %}
   </div>
-</div>
+</div> -->
 
-<!-- Modal de Detalles de Préstamos -->
-<div
-  id="modalDetallesPrestamos"
-  class="fixed inset-0 bg-gray-700/70 bg-opacity-50 hidden items-center justify-center z-50"
-  style="display: none"
->
+  <!-- Modal de Detalles de Préstamos -->
   <div
-    class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
+    id="modalDetallesPrestamos"
+    class="fixed inset-0 bg-gray-700/70 bg-opacity-50 hidden items-center justify-center z-50"
+    style="display: none"
   >
-    <!-- Header del Modal -->
     <div
-      class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center"
+      class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
     >
-      <h2 class="text-xl font-bold text-white">Detalles de Préstamos</h2>
-      <button
-        onclick="cerrarModal()"
-        class="text-white hover:text-gray-200 transition-colors"
+      <!-- Header del Modal -->
+      <div
+        class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center"
       >
-        <svg
-          class="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+        <h2 class="text-xl font-bold text-white">Detalles de Préstamos</h2>
+        <button
+          onclick="cerrarModal()"
+          class="text-white hover:text-gray-200 transition-colors"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          ></path>
-        </svg>
-      </button>
-    </div>
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+      </div>
 
-    <!-- Contenido del Modal -->
-    <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-      <!-- Información del Cliente -->
-      <div id="modalClienteInfo" class="bg-gray-50 rounded-lg p-4 mb-6">
-        <div class="flex items-center gap-4">
-          <div class="bg-blue-100 rounded-full p-3">
-            <svg
-              class="w-8 h-8 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              ></path>
-            </svg>
-          </div>
-          <div>
-            <h3
-              id="modalClienteNombre"
-              class="text-lg font-semibold text-gray-900"
-            >
-              Cargando...
-            </h3>
-            <p id="modalClienteDni" class="text-sm text-gray-600">DNI: ---</p>
+      <!-- Contenido del Modal -->
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <!-- Información del Cliente -->
+        <div id="modalClienteInfo" class="bg-gray-50 rounded-lg p-4 mb-6">
+          <div class="flex items-center gap-4">
+            <div class="bg-blue-100 rounded-full p-3">
+              <svg
+                class="w-8 h-8 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                ></path>
+              </svg>
+            </div>
+            <div>
+              <h3
+                id="modalClienteNombre"
+                class="text-lg font-semibold text-gray-900"
+              >
+                Cargando...
+              </h3>
+              <p id="modalClienteDni" class="text-sm text-gray-600">DNI: ---</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Loading -->
-      <div id="modalLoading" class="text-center py-8">
-        <div
-          class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
-        ></div>
-        <p class="mt-4 text-gray-600">Cargando información...</p>
-      </div>
+        <!-- Loading -->
+        <div id="modalLoading" class="text-center py-8">
+          <div
+            class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+          ></div>
+          <p class="mt-4 text-gray-600">Cargando información...</p>
+        </div>
 
-      <!-- Contenido de Préstamos -->
-      <div id="modalPrestamosContent" class="hidden">
-        <!-- Se llenará dinámicamente con JavaScript -->
-      </div>
+        <!-- Contenido de Préstamos -->
+        <div id="modalPrestamosContent" class="hidden">
+          <!-- Se llenará dinámicamente con JavaScript -->
+        </div>
 
-      <!-- Error -->
-      <div id="modalError" class="hidden text-center py-8">
-        <svg
-          class="w-16 h-16 text-red-500 mx-auto mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <p class="text-red-600 font-semibold">Error al cargar los datos</p>
-        <p id="modalErrorMsg" class="text-gray-600 mt-2"></p>
+        <!-- Error -->
+        <div id="modalError" class="hidden text-center py-8">
+          <svg
+            class="w-16 h-16 text-red-500 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          <p class="text-red-600 font-semibold">Error al cargar los datos</p>
+          <p id="modalErrorMsg" class="text-gray-600 mt-2"></p>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-  // Función para abrir el modal y cargar detalles de préstamos
-  async function verDetallesPrestamos(clienteId) {
-    const modal = document.getElementById("modalDetallesPrestamos");
-    const loading = document.getElementById("modalLoading");
-    const content = document.getElementById("modalPrestamosContent");
-    const error = document.getElementById("modalError");
+  <script>
+    // Función para abrir el modal y cargar detalles de préstamos
+    async function verDetallesPrestamos(clienteId) {
+      const modal = document.getElementById("modalDetallesPrestamos");
+      const loading = document.getElementById("modalLoading");
+      const content = document.getElementById("modalPrestamosContent");
+      const error = document.getElementById("modalError");
 
-    // Mostrar modal y loading
-    modal.style.display = "flex";
-    loading.classList.remove("hidden");
-    content.classList.add("hidden");
-    error.classList.add("hidden");
+      // Mostrar modal y loading
+      modal.style.display = "flex";
+      loading.classList.remove("hidden");
+      content.classList.add("hidden");
+      error.classList.add("hidden");
 
-    try {
-      // Obtener datos del cliente
-      const clienteResponse = await fetch(`/api/v1/clientes/${clienteId}`);
-      if (!clienteResponse.ok) throw new Error("Cliente no encontrado");
+      try {
+        // Obtener datos del cliente
+        const clienteResponse = await fetch(`/api/v1/clientes/${clienteId}`);
+        if (!clienteResponse.ok) throw new Error("Cliente no encontrado");
 
-      const cliente = await clienteResponse.json();
+        const cliente = await clienteResponse.json();
 
-      // Actualizar info del cliente en el modal
-      document.getElementById(
-        "modalClienteNombre"
-      ).textContent = `${cliente.nombre_completo} ${cliente.apellido_paterno} ${cliente.apellido_materno}`;
-      document.getElementById(
-        "modalClienteDni"
-      ).textContent = `DNI: ${cliente.dni}`;
+        // Actualizar info del cliente en el modal
+        document.getElementById(
+          "modalClienteNombre"
+        ).textContent = `${cliente.nombre_completo} ${cliente.apellido_paterno} ${cliente.apellido_materno}`;
+        document.getElementById(
+          "modalClienteDni"
+        ).textContent = `DNI: ${cliente.dni}`;
 
-      // Obtener préstamos del cliente (necesitamos crear un endpoint JSON)
-      const prestamosResponse = await fetch(
-        `/api/v1/prestamos/cliente/${clienteId}/json`
-      );
-
-      if (!prestamosResponse.ok) {
-        // Si no existe el endpoint, mostrar mensaje
-        throw new Error(
-          "No se pudo cargar los préstamos. Endpoint no disponible."
+        // Obtener préstamos del cliente (necesitamos crear un endpoint JSON)
+        const prestamosResponse = await fetch(
+          `/api/v1/prestamos/cliente/${clienteId}/json`
         );
-      }
 
-      const prestamos = await prestamosResponse.json();
+        if (!prestamosResponse.ok) {
+          // Si no existe el endpoint, mostrar mensaje
+          throw new Error(
+            "No se pudo cargar los préstamos. Endpoint no disponible."
+          );
+        }
 
-      // Construir HTML de préstamos
-      let html = "";
+        const prestamos = await prestamosResponse.json();
 
-      if (prestamos.length === 0) {
-        html = `
+        // Construir HTML de préstamos
+        let html = "";
+
+        if (prestamos.length === 0) {
+          html = `
         <div class="text-center py-8 text-gray-500">
           <p>Este cliente no tiene préstamos registrados</p>
         </div>
       `;
-      } else {
-        prestamos.forEach((prestamo, index) => {
-          // Definir colores segun estado
-          let estadoClass = "";
-          if (prestamo.estado === "VIGENTE") {
-            estadoClass = "bg-green-100 text-green-800";
-          } else if (prestamo.estado === "CANCELADO") {
-            estadoClass = "bg-gray-100 text-gray-800";
-          }
+        } else {
+          prestamos.forEach((prestamo, index) => {
+            // Definir colores segun estado
+            let estadoClass = "";
+            if (prestamo.estado === "VIGENTE") {
+              estadoClass = "bg-green-100 text-green-800";
+            } else if (prestamo.estado === "CANCELADO") {
+              estadoClass = "bg-gray-100 text-gray-800";
+            }
 
-          // Definir opciones del select segun el estado actual
-          let opcionesEstado = "";
-          if (prestamo.estado === "VIGENTE") {
-            opcionesEstado = `
+            // Definir opciones del select segun el estado actual
+            let opcionesEstado = "";
+            if (prestamo.estado === "VIGENTE") {
+              opcionesEstado = `
             <option value="">Cambiar estado...</option>
             <option value="CANCELADO">CANCELADO</option>
           `;
-          } else if (prestamo.estado === "CANCELADO") {
-            opcionesEstado = `
+            } else if (prestamo.estado === "CANCELADO") {
+              opcionesEstado = `
             <option value="" selected>No se puede cambiar</option>
           `;
-          }
+            }
 
-          html += `
+            html += `
           <div class="border border-gray-200 rounded-lg p-5 mb-4 hover:shadow-md transition-shadow">
             <div class="flex justify-between items-start mb-4">
               <div>
@@ -528,97 +528,102 @@
             }
           </div>
         `;
-        });
+          });
+        }
+
+        content.innerHTML = html;
+        loading.classList.add("hidden");
+        content.classList.remove("hidden");
+      } catch (err) {
+        loading.classList.add("hidden");
+        error.classList.remove("hidden");
+        document.getElementById("modalErrorMsg").textContent = err.message;
+      }
+    }
+
+    // Función para cerrar el modal
+    function cerrarModal() {
+      document.getElementById("modalDetallesPrestamos").style.display = "none";
+    }
+
+    // Función para mostrar/ocultar cronograma
+    function toggleCronograma(index) {
+      const cronograma = document.getElementById(`cronograma-${index}`);
+      const icon = document.getElementById(`cronograma-icon-${index}`);
+
+      if (cronograma.classList.contains("hidden")) {
+        cronograma.classList.remove("hidden");
+        icon.style.transform = "rotate(180deg)";
+      } else {
+        cronograma.classList.add("hidden");
+        icon.style.transform = "rotate(0deg)";
+      }
+    }
+
+    // Función para cambiar estado del préstamo
+    async function cambiarEstadoPrestamo(
+      prestamoId,
+      nuevoEstado,
+      estadoActual
+    ) {
+      if (!nuevoEstado) return;
+
+      // Validaciones del lado del cliente
+      if (estadoActual === "CANCELADO") {
+        alert("Un préstamo CANCELADO no puede cambiar de estado.");
+        event.target.value = "";
+        return;
       }
 
-      content.innerHTML = html;
-      loading.classList.add("hidden");
-      content.classList.remove("hidden");
-    } catch (err) {
-      loading.classList.add("hidden");
-      error.classList.remove("hidden");
-      document.getElementById("modalErrorMsg").textContent = err.message;
-    }
-  }
+      // Mensaje personalizado segun la transicion
+      let mensaje = `¿Esta seguro de cambiar el estado del prestamo de ${estadoActual} a ${nuevoEstado}?`;
 
-  // Función para cerrar el modal
-  function cerrarModal() {
-    document.getElementById("modalDetallesPrestamos").style.display = "none";
-  }
+      if (nuevoEstado === "CANCELADO") {
+        mensaje +=
+          "\n\nADVERTENCIA: Esta accion es IRREVERSIBLE. Un prestamo CANCELADO no podra cambiar de estado nuevamente.";
+      }
 
-  // Función para mostrar/ocultar cronograma
-  function toggleCronograma(index) {
-    const cronograma = document.getElementById(`cronograma-${index}`);
-    const icon = document.getElementById(`cronograma-icon-${index}`);
+      if (!confirm(mensaje)) {
+        event.target.value = "";
+        return;
+      }
 
-    if (cronograma.classList.contains("hidden")) {
-      cronograma.classList.remove("hidden");
-      icon.style.transform = "rotate(180deg)";
-    } else {
-      cronograma.classList.add("hidden");
-      icon.style.transform = "rotate(0deg)";
-    }
-  }
+      try {
+        const response = await fetch(
+          `/api/v1/prestamos/actualizar-estado/${prestamoId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ estado: nuevoEstado }),
+          }
+        );
 
-  // Función para cambiar estado del préstamo
-  async function cambiarEstadoPrestamo(prestamoId, nuevoEstado, estadoActual) {
-    if (!nuevoEstado) return;
+        const data = await response.json();
 
-    // Validaciones del lado del cliente
-    if (estadoActual === "CANCELADO") {
-      alert("Un préstamo CANCELADO no puede cambiar de estado.");
-      event.target.value = "";
-      return;
-    }
-
-    // Mensaje personalizado segun la transicion
-    let mensaje = `¿Esta seguro de cambiar el estado del prestamo de ${estadoActual} a ${nuevoEstado}?`;
-
-    if (nuevoEstado === "CANCELADO") {
-      mensaje +=
-        "\n\nADVERTENCIA: Esta accion es IRREVERSIBLE. Un prestamo CANCELADO no podra cambiar de estado nuevamente.";
-    }
-
-    if (!confirm(mensaje)) {
-      event.target.value = "";
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `/api/v1/prestamos/actualizar-estado/${prestamoId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ estado: nuevoEstado }),
+        if (response.ok) {
+          alert(`EXITO: ${data.mensaje}`);
+          location.reload();
+        } else {
+          alert(`ERROR: ${data.error}`);
+          event.target.value = "";
         }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`EXITO: ${data.mensaje}`);
-        location.reload();
-      } else {
-        alert(`ERROR: ${data.error}`);
+      } catch (err) {
+        alert("ERROR de conexion: " + err.message);
         event.target.value = "";
       }
-    } catch (err) {
-      alert("ERROR de conexion: " + err.message);
-      event.target.value = "";
     }
-  }
 
-  // Cerrar modal al hacer clic fuera
-  document
-    .getElementById("modalDetallesPrestamos")
-    ?.addEventListener("click", function (e) {
-      if (e.target === this) {
-        cerrarModal();
-      }
-    });
-</script>
+    // Cerrar modal al hacer clic fuera
+    document
+      .getElementById("modalDetallesPrestamos")
+      ?.addEventListener("click", function (e) {
+        if (e.target === this) {
+          cerrarModal();
+        }
+      });
+  </script>
 
-{% endblock %}
+  {% endblock %}
+</div>

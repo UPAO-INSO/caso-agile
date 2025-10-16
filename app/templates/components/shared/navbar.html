@@ -1,15 +1,21 @@
 <nav class="navbar">
   <div class="navbar-container">
     <div class="navbar-brand">
-      <h1 class="brand-text">GOTA A GOTA</h1>
+      <h1 class="brand-text">COMFY</h1>
     </div>
 
     <div class="navbar-menu">
-      <a href="/" class="nav-item {% if request.path == '/' %}nav-item--active{% endif %}">
+      <a
+        href="/"
+        class="nav-item {% if request.path == '/' %}nav-item--active{% endif %}"
+      >
         <span class="nav-text">Inicio</span>
       </a>
 
-      <a href="/api/v1/clientes/list" class="nav-item {% if '/clientes' in request.path %}nav-item--active{% endif %}">
+      <a
+        href="/api/v1/clientes/list"
+        class="nav-item {% if '/clientes' in request.path %}nav-item--active{% endif %}"
+      >
         <span class="nav-text">Clientes Actuales</span>
       </a>
     </div>
