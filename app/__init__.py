@@ -63,6 +63,9 @@ def create_app(config_name=None):
     # Registrar módulos dinámicamente
     _register_modules(app)
     
+    # Configurar seguridad
+    _configure_security(app)
+    
     # Log de inicialización
     app.logger.info(f'Aplicación iniciada en modo: {config_class.__name__}')
     
@@ -118,3 +121,19 @@ def _register_modules(app):
                 app.logger.debug(f'Módulo {mod_name} inicializado correctamente')
         except Exception as exc:
             app.logger.warning(f'No se pudo inicializar el módulo {mod_name}: {exc}')
+
+def _configure_security(app):
+    """
+    Configura las medidas de seguridad de la aplicación.
+    - Headers de seguridad
+    - CORS (si es necesario)
+    - Rate limiting
+    """
+    from app.security import add_security_headers
+    
+    # Agregar security headers a todas las respuestas
+    @app.after_request
+    def apply_security_headers(response):
+        return add_security_headers(response)
+    
+    app.logger.info('Security headers configurados')
