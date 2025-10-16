@@ -1,3 +1,54 @@
-<footer class="bg-gray-800 text-white text-center p-4 mt-auto">
-  <p>© 2025 - Comfy</p>
+<footer class="bg-gray-900 text-white mt-auto border-t border-gray-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Información -->
+      <div>
+        <h3 class="text-lg font-bold mb-3 flex items-center">
+          <span class="text-2xl mr-2">🏦</span> COMFY
+        </h3>
+        <p class="text-gray-400 text-sm">
+          Sistema de gestión de préstamos con tecnología moderna y segura.
+        </p>
+      </div>
+
+      <!-- Enlaces Rápidos -->
+      <div>
+        <h3 class="text-lg font-bold mb-3">Enlaces Rápidos</h3>
+        <ul class="space-y-2 text-sm">
+          <li>
+            <a href="{{ url_for('prestamos_view.index_view') }}" class="text-gray-400 hover:text-white transition-colors">
+              Inicio
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('clientes_view.listar_clientes_view') }}" class="text-gray-400 hover:text-white transition-colors">
+              Clientes
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('prestamos.registrar_prestamo_view') }}" class="text-gray-400 hover:text-white transition-colors">
+              Nuevo Préstamo
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Información Técnica -->
+      <div>
+        <h3 class="text-lg font-bold mb-3">Tecnología</h3>
+        <ul class="text-sm text-gray-400 space-y-1">
+          <li>✓ Flask 3.1.2</li>
+          <li>✓ Python 3.10+</li>
+          <li>✓ SQLAlchemy 2.0</li>
+          <li>✓ API REST v1</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Copyright -->
+    <div class="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400">
+      <p>© {{ now().year }} COMFY - Sistema de Préstamos. Todos los derechos reservados.</p>
+      <p class="mt-2">Desarrollado con ❤️ usando Flask y Tailwind CSS</p>
+    </div>
+  </div>
 </footer>
