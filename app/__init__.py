@@ -63,6 +63,12 @@ def create_app(config_name=None):
     # Registrar módulos dinámicamente
     _register_modules(app)
     
+    # Configurar logging
+    _configure_logging(app)
+    
+    # Configurar manejo de errores
+    _configure_error_handlers(app)
+    
     # Configurar seguridad
     _configure_security(app)
     
@@ -137,3 +143,26 @@ def _configure_security(app):
         return add_security_headers(response)
     
     app.logger.info('Security headers configurados')
+
+def _configure_logging(app):
+    """
+    Configura el sistema de logging estructurado.
+    - Logging a archivo con rotación
+    - Logging a consola
+    - Logging de requests/responses
+    """
+    from app.logging_config import configure_logging
+    configure_logging(app)
+    app.logger.info('Sistema de logging configurado')
+
+def _configure_error_handlers(app):
+    """
+    Configura el manejo centralizado de errores.
+    - Excepciones personalizadas
+    - Errores HTTP (4xx, 5xx)
+    - Errores de base de datos
+    - Páginas de error personalizadas
+    """
+    from app.errors import register_error_handlers
+    register_error_handlers(app)
+    app.logger.info('Error handlers configurados')

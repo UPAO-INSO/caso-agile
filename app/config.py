@@ -48,6 +48,15 @@ class Config:
     # Application
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
     
+    # Logging Configuration
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    LOG_DIR = os.environ.get('LOG_DIR', 'logs')
+    LOG_FILE = os.environ.get('LOG_FILE', 'app.log')
+    LOG_MAX_BYTES = int(os.environ.get('LOG_MAX_BYTES', str(10 * 1024 * 1024)))  # 10MB
+    LOG_BACKUP_COUNT = int(os.environ.get('LOG_BACKUP_COUNT', '5'))
+    LOG_REQUESTS = _str_to_bool(os.environ.get('LOG_REQUESTS', 'true'))
+    LOG_RESPONSES = _str_to_bool(os.environ.get('LOG_RESPONSES', 'true'))
+    
     # API Externa DNI
     DNI_API_KEY = os.environ.get('DNI_API_KEY')
     DNI_API_URL = os.environ.get('DNI_API_URL', 'https://api.apis.net.pe/v2/reniec/dni')
@@ -67,6 +76,11 @@ class DevelopmentConfig(Config):
     
     # Mail debug (imprimir en consola en lugar de enviar)
     MAIL_DEBUG = True
+    
+    # Logging más verboso en desarrollo
+    LOG_LEVEL = 'DEBUG'
+    LOG_REQUESTS = True
+    LOG_RESPONSES = True
 
 
 class ProductionConfig(Config):
