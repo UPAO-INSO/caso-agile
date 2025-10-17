@@ -1,60 +1,95 @@
-{% extends "base.html" %}
-
-{% block title %}404 - Página No Encontrada{% endblock %}
-
-{% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-    <div class="max-w-lg w-full">
-        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
-            <!-- 404 Illustration -->
-            <div class="mb-6">
-                <div class="mx-auto flex items-center justify-center h-32 w-32">
-                    <svg class="w-full h-full text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <!-- Error Code -->
-            <h1 class="text-7xl font-bold text-indigo-600 mb-4">404</h1>
-            
-            <!-- Error Message -->
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Página No Encontrada</h2>
-            
-            <p class="text-gray-600 mb-8">
-                Lo sentimos, la página que buscas no existe o ha sido movida.
-                Verifica la URL o vuelve al inicio.
-            </p>
-            
-            <!-- Suggestions -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-8 text-left">
-                <p class="text-sm font-medium text-gray-700 mb-2">Sugerencias:</p>
-                <ul class="text-sm text-gray-600 space-y-1">
-                    <li>✓ Verifica que la URL esté escrita correctamente</li>
-                    <li>✓ La página puede haber sido eliminada o movida</li>
-                    <li>✓ Usa el menú de navegación para encontrar lo que buscas</li>
-                </ul>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onclick="window.history.back()" 
-                        class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    Volver Atrás
-                </button>
-                
-                <a href="/" 
-                   class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                    </svg>
-                    Ir al Inicio
-                </a>
-            </div>
+{% extends "base.html" %} {% block title %}404 - Página No Encontrada{% endblock
+%} {% block content %}
+<div
+  class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4"
+>
+  <div class="max-w-lg w-full">
+    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+      <!-- 404 Illustration -->
+      <div class="mb-6">
+        <div class="mx-auto flex items-center justify-center h-32 w-32">
+          <svg
+            class="w-full h-full text-indigo-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
         </div>
+      </div>
+
+      <!-- Error Code -->
+      <h1 class="text-7xl font-bold text-indigo-600 mb-4">404</h1>
+
+      <!-- Error Message -->
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+        Página No Encontrada
+      </h2>
+
+      <p class="text-gray-600 mb-8">
+        Lo sentimos, la página que buscas no existe o ha sido movida. Verifica
+        la URL o vuelve al inicio.
+      </p>
+
+      <!-- Suggestions -->
+      <div class="bg-gray-50 rounded-lg p-4 mb-8 text-left">
+        <p class="text-sm font-medium text-gray-700 mb-2">Sugerencias:</p>
+        <ul class="text-sm text-gray-600 space-y-1">
+          <li>✓ Verifica que la URL esté escrita correctamente</li>
+          <li>✓ La página puede haber sido eliminada o movida</li>
+          <li>✓ Usa el menú de navegación para encontrar lo que buscas</li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          onclick="window.history.back()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Volver Atrás
+        </button>
+
+        <a
+          href="/"
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+          Ir al Inicio
+        </a>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

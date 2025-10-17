@@ -34,15 +34,15 @@ app/
 
 ### Excepciones Disponibles
 
-| Excepción | Código | Uso |
-|-----------|--------|-----|
-| **ValidationError** | 400 | Datos inválidos o incompletos |
-| **UnauthorizedError** | 401 | Usuario no autenticado |
-| **ForbiddenError** | 403 | Usuario sin permisos |
-| **NotFoundError** | 404 | Recurso no encontrado |
-| **ConflictError** | 409 | Conflicto (duplicado) |
-| **RateLimitError** | 429 | Límite excedido |
-| **ServiceUnavailableError** | 503 | Servicio no disponible |
+| Excepción                   | Código | Uso                           |
+| --------------------------- | ------ | ----------------------------- |
+| **ValidationError**         | 400    | Datos inválidos o incompletos |
+| **UnauthorizedError**       | 401    | Usuario no autenticado        |
+| **ForbiddenError**          | 403    | Usuario sin permisos          |
+| **NotFoundError**           | 404    | Recurso no encontrado         |
+| **ConflictError**           | 409    | Conflicto (duplicado)         |
+| **RateLimitError**          | 429    | Límite excedido               |
+| **ServiceUnavailableError** | 503    | Servicio no disponible        |
 
 ### Ejemplo de Uso
 
@@ -52,13 +52,13 @@ from app.errors import ValidationError, NotFoundError
 @api_v1_bp.route('/clientes/<int:id>', methods=['GET'])
 def obtener_cliente(id):
     cliente = Cliente.query.get(id)
-    
+
     if not cliente:
         raise NotFoundError(
             message=f'Cliente {id} no encontrado',
             payload={'resource': 'Cliente', 'id': id}
         )
-    
+
     return cliente.to_dict(), 200
 ```
 
@@ -115,13 +115,14 @@ def is_api_request() -> bool:
     # 1. ¿Ruta comienza con /api/?
     if request.path.startswith('/api/'):
         return True
-    
+
     # 2. ¿Cliente acepta JSON?
     best = request.accept_mimetypes.best_match(['application/json', 'text/html'])
     return best == 'application/json'
 ```
 
 **Resultado:**
+
 - `/api/v1/clientes` → JSON ✅
 - `/views/clientes` → HTML ✅
 
@@ -131,14 +132,14 @@ def is_api_request() -> bool:
 
 ### Páginas Creadas
 
-| Página | Tema | Features | Auto-Refresh |
-|--------|------|----------|--------------|
-| **404.html** | Indigo | Sugerencias de búsqueda | ❌ |
-| **500.html** | Red | Error ID, botón reintentar | ❌ |
-| **403.html** | Orange | Link a login | ❌ |
-| **409.html** | Purple | Causas comunes | ❌ |
-| **503.html** | Blue | Tiempo estimado | ✅ 30s |
-| **error.html** | Red | Genérica para otros códigos | ❌ |
+| Página         | Tema   | Features                    | Auto-Refresh |
+| -------------- | ------ | --------------------------- | ------------ |
+| **404.html**   | Indigo | Sugerencias de búsqueda     | ❌           |
+| **500.html**   | Red    | Error ID, botón reintentar  | ❌           |
+| **403.html**   | Orange | Link a login                | ❌           |
+| **409.html**   | Purple | Causas comunes              | ❌           |
+| **503.html**   | Blue   | Tiempo estimado             | ✅ 30s       |
+| **error.html** | Red    | Genérica para otros códigos | ❌           |
 
 ### Diseño
 
@@ -170,7 +171,7 @@ def is_api_request() -> bool:
 ✅ **Iconos SVG** - Personalizados por error  
 ✅ **Sugerencias** - Acciones útiles  
 ✅ **Navegación** - Volver atrás / Ir al inicio  
-✅ **Mensajes Amigables** - No técnicos  
+✅ **Mensajes Amigables** - No técnicos
 
 ---
 
@@ -426,13 +427,13 @@ Total: 20+ tipos de errores ✅
 
 ### Impacto en Debugging
 
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| **Tiempo identificar error** | 15-30 min | 2-5 min | -80% ⚡ |
-| **Información disponible** | Básica | Completa | +500% 📊 |
-| **Reproducibilidad** | Difícil | Fácil | +300% 🔄 |
-| **Experiencia usuario** | Genérica | Personalizada | +400% 🎨 |
-| **Mensajes de error** | Técnicos | Amigables | +200% 💬 |
+| Métrica                      | Antes     | Después       | Mejora   |
+| ---------------------------- | --------- | ------------- | -------- |
+| **Tiempo identificar error** | 15-30 min | 2-5 min       | -80% ⚡  |
+| **Información disponible**   | Básica    | Completa      | +500% 📊 |
+| **Reproducibilidad**         | Difícil   | Fácil         | +300% 🔄 |
+| **Experiencia usuario**      | Genérica  | Personalizada | +400% 🎨 |
+| **Mensajes de error**        | Técnicos  | Amigables     | +200% 💬 |
 
 ---
 
@@ -458,20 +459,20 @@ logger = Logger(current_app.logger)
 @log_performance
 def crear_cliente():
     """Crear cliente con manejo completo de errores"""
-    
+
     # 1. Validar request
     if not request.is_json:
         raise ValidationError('Content-Type debe ser application/json')
-    
+
     data = request.get_json()
-    
+
     # 2. Validar campos requeridos
     if 'dni' not in data:
         raise ValidationError(
             'Campo requerido: dni',
             payload={'field': 'dni'}
         )
-    
+
     # 3. Validar formato
     dni = data['dni']
     if len(dni) != 8 or not dni.isdigit():
@@ -479,27 +480,27 @@ def crear_cliente():
             'El DNI debe tener 8 dígitos',
             payload={'field': 'dni', 'value': dni}
         )
-    
+
     # 4. Crear cliente
     try:
         cliente = Cliente(**data)
         db.session.add(cliente)
         db.session.commit()
-        
+
         # Log exitoso
         logger.log_user_action(
             user_id=request.remote_addr,
             action='crear_cliente',
             details=f'DNI: {dni}'
         )
-        
+
         return cliente.to_dict(), 201
-    
+
     except IntegrityError:
         db.session.rollback()
-        
+
         logger.warning(f'Cliente duplicado', dni=dni)
-        
+
         raise ConflictError(
             f'Ya existe un cliente con DNI {dni}',
             payload={'field': 'dni', 'value': dni}
@@ -509,6 +510,7 @@ def crear_cliente():
 ### Respuestas Generadas
 
 **✅ Éxito (201):**
+
 ```json
 {
   "id": 123,
@@ -518,6 +520,7 @@ def crear_cliente():
 ```
 
 **❌ Error de Validación (400):**
+
 ```json
 {
   "error": "El DNI debe tener 8 dígitos",
@@ -528,6 +531,7 @@ def crear_cliente():
 ```
 
 **❌ Conflicto (409):**
+
 ```json
 {
   "error": "Ya existe un cliente con DNI 12345678",
@@ -601,12 +605,14 @@ TOTAL: 12 archivos | ~2,120 líneas agregadas
 ### 1. Experiencia de Usuario
 
 **Antes:**
+
 ```
 Error 404
 Not Found
 ```
 
 **Después:**
+
 ```
 ┌─────────────────────────────────┐
 │         😕                      │
@@ -629,11 +635,13 @@ Not Found
 ### 2. Debugging
 
 **Antes:**
+
 ```
 Exception: An error occurred
 ```
 
 **Después:**
+
 ```
 2025-10-16 19:46:10 | ERROR | app.clientes | IntegrityError: UNIQUE constraint failed: clientes.dni | Context: {'method': 'POST', 'path': '/api/v1/clientes', 'ip': '192.168.1.100', 'user_agent': 'Mozilla/5.0...'}
 2025-10-16 19:46:10 | ERROR | app.clientes | Stack trace:
@@ -648,6 +656,7 @@ sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed
 ### 3. Respuestas de API
 
 **Antes:**
+
 ```json
 {
   "error": "500 Internal Server Error"
@@ -655,6 +664,7 @@ sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed
 ```
 
 **Después:**
+
 ```json
 {
   "error": "Ya existe un cliente con DNI 12345678",
@@ -723,7 +733,7 @@ Pendientes:
 ✅ **Páginas Personalizadas** - Diseño profesional y responsive  
 ✅ **Mensajes Amigables** - No expone detalles técnicos  
 ✅ **Debugging Mejorado** - Información completa en logs  
-✅ **Configuración Flexible** - Ajustable por ambiente  
+✅ **Configuración Flexible** - Ajustable por ambiente
 
 ---
 
@@ -756,9 +766,9 @@ FASE 12: Documentación & Standards
 
 **🎊 ¡Fase 10 completada exitosamente!**
 
-*Progreso Total: 9 de 12 fases (75%) ✨*
+_Progreso Total: 9 de 12 fases (75%) ✨_
 
 ---
 
-*Creado: 16 Octubre 2025*  
-*Última actualización: 16 Octubre 2025*
+_Creado: 16 Octubre 2025_  
+_Última actualización: 16 Octubre 2025_

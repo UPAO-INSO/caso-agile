@@ -14,26 +14,35 @@
       <!-- Enlaces Rápidos -->
       <div>
         <h3 class="text-lg font-bold mb-3">Enlaces Rápidos</h3>
-        <ul class="space-y-2 text-sm">
+        <ul class="flex flex-row space-x-2 text-sm">
           <li>
-            <a href="{{ url_for('prestamos_view.index_view') }}" class="text-gray-400 hover:text-white transition-colors">
+            <a
+              href="{{ url_for('prestamos_view.index_view') }}"
+              class="text-gray-400 hover:text-white transition-colors"
+            >
               Inicio
             </a>
           </li>
           <li>
-            <a href="{{ url_for('clientes_view.listar_clientes_view') }}" class="text-gray-400 hover:text-white transition-colors">
+            <a
+              href="{{ url_for('clientes_view.listar_clientes_view') }}"
+              class="text-gray-400 hover:text-white transition-colors"
+            >
               Clientes
             </a>
           </li>
           <li>
-            <a href="{{ url_for('prestamos.registrar_prestamo_view') }}" class="text-gray-400 hover:text-white transition-colors">
-              Nuevo Préstamo
+            <a
+              href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
+              class="text-gray-400 hover:text-white transition-colors"
+            >
+              Préstamos
             </a>
           </li>
         </ul>
       </div>
 
-      <!-- Información Técnica -->
+      <!-- Información Técnica
       <div>
         <h3 class="text-lg font-bold mb-3">Tecnología</h3>
         <ul class="text-sm text-gray-400 space-y-1">
@@ -42,13 +51,14 @@
           <li>✓ SQLAlchemy 2.0</li>
           <li>✓ API REST v1</li>
         </ul>
-      </div>
+      </div> -->
     </div>
 
     <!-- Copyright -->
-    <div class="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400">
-      <p>© {{ now().year }} COMFY - Sistema de Préstamos. Todos los derechos reservados.</p>
-      <p class="mt-2">Desarrollado con ❤️ usando Flask y Tailwind CSS</p>
+    <div
+      class="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400"
+    >
+      <p>© 2025 COMFY - Sistema de Préstamos. Todos los derechos reservados.</p>
     </div>
   </div>
 </footer>

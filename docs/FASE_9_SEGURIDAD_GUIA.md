@@ -5,10 +5,15 @@ Esta guía muestra cómo aplicar las medidas de seguridad implementadas en la Fa
 ## 📦 Componentes Disponibles
 
 ### 1. Rate Limiting
+
 ### 2. Input Validation
+
 ### 3. Input Sanitization
+
 ### 4. CSRF Protection
+
 ### 5. Security Headers (ya aplicado globalmente)
+
 ### 6. Password Hashing
 
 ---
@@ -30,11 +35,13 @@ def crear_cliente_api():
 ```
 
 **Parámetros:**
+
 - `max_requests`: Número máximo de peticiones permitidas
 - `window`: Ventana de tiempo en segundos
 - `key_func`: Función personalizada para obtener el identificador (opcional)
 
 **Ejemplo con identificador personalizado:**
+
 ```python
 def get_user_id():
     return request.headers.get('User-ID', request.remote_addr)
@@ -57,27 +64,28 @@ from flask import jsonify, request
 @api_v1_bp.route('/clientes', methods=['POST'])
 def crear_cliente_api():
     data = request.get_json()
-    
+
     # Validar DNI
     is_valid, error_msg = validator.validate_dni(data.get('dni'))
     if not is_valid:
         return jsonify({'error': error_msg}), 400
-    
+
     # Validar email
     is_valid, error_msg = validator.validate_email(data.get('email'))
     if not is_valid:
         return jsonify({'error': error_msg}), 400
-    
+
     # Validar teléfono
     is_valid, error_msg = validator.validate_phone(data.get('telefono'))
     if not is_valid:
         return jsonify({'error': error_msg}), 400
-    
+
     # Procesar datos validados...
     return jsonify({'status': 'ok'}), 201
 ```
 
 **Validadores disponibles:**
+
 - `validate_dni(dni)` - DNI peruano (8 dígitos)
 - `validate_email(email)` - Formato de email
 - `validate_phone(phone)` - Teléfono peruano (9 dígitos, comienza con 9)
@@ -97,19 +105,20 @@ from app.security import sanitizer
 @api_v1_bp.route('/clientes', methods=['POST'])
 def crear_cliente_api():
     data = request.get_json()
-    
+
     # Sanitizar datos individualmente
     nombre = sanitizer.sanitize_html(data.get('nombre'))
     email = sanitizer.sanitize_html(data.get('email'))
-    
+
     # O sanitizar todo el diccionario
     datos_limpios = sanitizer.sanitize_dict(data)
-    
+
     # Procesar datos sanitizados...
     return jsonify({'status': 'ok'}), 201
 ```
 
 **Métodos disponibles:**
+
 - `sanitize_html(text)` - Escapar HTML para prevenir XSS
 - `sanitize_sql(text)` - Limpiar para prevenir SQL injection (SQLAlchemy ya protege)
 - `sanitize_filename(filename)` - Limpiar nombres de archivo
@@ -143,22 +152,24 @@ def crear_cliente_api():
 ```
 
 **En el frontend (JavaScript):**
+
 ```javascript
 // Incluir el token CSRF en las peticiones
-fetch('/api/v1/clientes', {
-  method: 'POST',
+fetch("/api/v1/clientes", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken  // Token del formulario
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrfToken, // Token del formulario
   },
-  body: JSON.stringify(data)
+  body: JSON.stringify(data),
 });
 ```
 
 **En templates (formularios HTML):**
+
 ```html
 <form method="POST" action="/api/v1/clientes">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
   <!-- resto del formulario -->
 </form>
 ```
@@ -170,6 +181,7 @@ fetch('/api/v1/clientes', {
 Los security headers se aplican automáticamente a todas las respuestas.
 
 **Headers incluidos:**
+
 - `X-Content-Type-Options: nosniff` - Previene MIME sniffing
 - `X-Frame-Options: DENY` - Previene clickjacking
 - `X-XSS-Protection: 1; mode=block` - Protección XSS del navegador
@@ -231,24 +243,24 @@ def crear_cliente_api():
     """
     # 1. Obtener datos
     data = request.get_json()
-    
+
     if not data:
         return jsonify({'error': 'Datos inválidos'}), 400
-    
+
     # 2. Validar inputs
     validations = [
         validator.validate_dni(data.get('dni')),
         validator.validate_email(data.get('email')),
         validator.validate_phone(data.get('telefono'))
     ]
-    
+
     for is_valid, error_msg in validations:
         if not is_valid:
             return jsonify({'error': error_msg}), 400
-    
+
     # 3. Sanitizar inputs
     datos_limpios = sanitizer.sanitize_dict(data)
-    
+
     # 4. Procesar datos (ahora son seguros)
     try:
         cliente = crear_cliente(
@@ -256,9 +268,9 @@ def crear_cliente_api():
             email=datos_limpios['email'],
             telefono=datos_limpios['telefono']
         )
-        
+
         return jsonify(cliente.to_dict()), 201
-        
+
     except Exception as e:
         logger.error(f'Error al crear cliente: {e}')
         return jsonify({'error': 'Error interno del servidor'}), 500
@@ -269,26 +281,31 @@ def crear_cliente_api():
 ## 🎯 Mejores Prácticas
 
 ### 1. Rate Limiting
+
 - **APIs públicas:** 10-20 peticiones por minuto
 - **APIs autenticadas:** 50-100 peticiones por minuto
 - **Operaciones costosas:** 5-10 peticiones por minuto
 
 ### 2. Validation
+
 - **Siempre validar en el servidor** (la validación del cliente es solo UX)
 - Validar antes de sanitizar
 - Retornar mensajes de error claros
 
 ### 3. Sanitization
+
 - Sanitizar todos los inputs del usuario
 - Sanitizar antes de guardar en BD
 - Sanitizar antes de mostrar en templates
 
 ### 4. CSRF Protection
+
 - Aplicar a todos los endpoints que modifican datos (POST, PUT, DELETE)
 - No aplicar a APIs públicas sin estado
 - Generar token por sesión
 
 ### 5. Password Security
+
 - Nunca guardar passwords en texto plano
 - Usar salt único por usuario
 - Verificar complejidad de passwords
@@ -321,6 +338,7 @@ X-RateLimit-Window: 60
 ```
 
 Puedes monitorear estos headers para:
+
 - Detectar intentos de abuso
 - Ajustar límites si es necesario
 - Alertar a usuarios cerca del límite
@@ -330,6 +348,7 @@ Puedes monitorear estos headers para:
 ## ⚠️ Importante
 
 ### Para Producción:
+
 1. **Rate Limiting:** Usar Redis en lugar de memoria
 2. **CSRF:** Usar Flask-WTF o extensión dedicada
 3. **HTTPS:** Obligatorio para headers de seguridad (HSTS)
@@ -337,6 +356,7 @@ Puedes monitorear estos headers para:
 5. **Logging:** Implementar sistema de logs centralizado
 
 ### Actualizar requirements.txt:
+
 ```bash
 pip install Flask-WTF Flask-Limiter redis
 ```

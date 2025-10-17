@@ -10,20 +10,20 @@
  */
 export function validarDNI(dni) {
   if (!dni || dni.trim().length === 0) {
-    return { valid: false, message: 'El DNI es obligatorio' };
+    return { valid: false, message: "El DNI es obligatorio" };
   }
 
   const dniLimpio = dni.trim();
 
   if (dniLimpio.length !== 8) {
-    return { valid: false, message: 'El DNI debe tener 8 dígitos' };
+    return { valid: false, message: "El DNI debe tener 8 dígitos" };
   }
 
   if (!/^\d{8}$/.test(dniLimpio)) {
-    return { valid: false, message: 'El DNI solo debe contener números' };
+    return { valid: false, message: "El DNI solo debe contener números" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -33,16 +33,16 @@ export function validarDNI(dni) {
  */
 export function validarEmail(email) {
   if (!email || email.trim().length === 0) {
-    return { valid: false, message: 'El email es obligatorio' };
+    return { valid: false, message: "El email es obligatorio" };
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
+
   if (!emailRegex.test(email.trim())) {
-    return { valid: false, message: 'El email no es válido' };
+    return { valid: false, message: "El email no es válido" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -52,20 +52,20 @@ export function validarEmail(email) {
  */
 export function validarTelefono(telefono) {
   if (!telefono || telefono.trim().length === 0) {
-    return { valid: false, message: 'El teléfono es obligatorio' };
+    return { valid: false, message: "El teléfono es obligatorio" };
   }
 
   const telefonoLimpio = telefono.trim();
 
   if (telefonoLimpio.length !== 9) {
-    return { valid: false, message: 'El teléfono debe tener 9 dígitos' };
+    return { valid: false, message: "El teléfono debe tener 9 dígitos" };
   }
 
   if (!/^9\d{8}$/.test(telefonoLimpio)) {
-    return { valid: false, message: 'El teléfono debe iniciar con 9' };
+    return { valid: false, message: "El teléfono debe iniciar con 9" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -75,18 +75,21 @@ export function validarTelefono(telefono) {
  */
 export function validarNombre(nombre) {
   if (!nombre || nombre.trim().length === 0) {
-    return { valid: false, message: 'El nombre es obligatorio' };
+    return { valid: false, message: "El nombre es obligatorio" };
   }
 
   if (nombre.trim().length < 2) {
-    return { valid: false, message: 'El nombre debe tener al menos 2 caracteres' };
+    return {
+      valid: false,
+      message: "El nombre debe tener al menos 2 caracteres",
+    };
   }
 
   if (!/^[a-záéíóúñü\s]+$/i.test(nombre.trim())) {
-    return { valid: false, message: 'El nombre solo debe contener letras' };
+    return { valid: false, message: "El nombre solo debe contener letras" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -96,14 +99,17 @@ export function validarNombre(nombre) {
  */
 export function validarDireccion(direccion) {
   if (!direccion || direccion.trim().length === 0) {
-    return { valid: false, message: 'La dirección es obligatoria' };
+    return { valid: false, message: "La dirección es obligatoria" };
   }
 
   if (direccion.trim().length < 5) {
-    return { valid: false, message: 'La dirección debe tener al menos 5 caracteres' };
+    return {
+      valid: false,
+      message: "La dirección debe tener al menos 5 caracteres",
+    };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -113,24 +119,24 @@ export function validarDireccion(direccion) {
  */
 export function validarMonto(monto) {
   if (!monto || monto.toString().trim().length === 0) {
-    return { valid: false, message: 'El monto es obligatorio' };
+    return { valid: false, message: "El monto es obligatorio" };
   }
 
   const montoNumero = parseFloat(monto);
 
   if (isNaN(montoNumero)) {
-    return { valid: false, message: 'El monto debe ser un número' };
+    return { valid: false, message: "El monto debe ser un número" };
   }
 
   if (montoNumero <= 0) {
-    return { valid: false, message: 'El monto debe ser mayor a 0' };
+    return { valid: false, message: "El monto debe ser mayor a 0" };
   }
 
   if (montoNumero > 50000) {
-    return { valid: false, message: 'El monto no puede superar S/ 50,000' };
+    return { valid: false, message: "El monto no puede superar S/ 50,000" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -140,24 +146,24 @@ export function validarMonto(monto) {
  */
 export function validarTEA(tea) {
   if (!tea || tea.toString().trim().length === 0) {
-    return { valid: false, message: 'La TEA es obligatoria' };
+    return { valid: false, message: "La TEA es obligatoria" };
   }
 
   const teaNumero = parseFloat(tea);
 
   if (isNaN(teaNumero)) {
-    return { valid: false, message: 'La TEA debe ser un número' };
+    return { valid: false, message: "La TEA debe ser un número" };
   }
 
   if (teaNumero <= 0) {
-    return { valid: false, message: 'La TEA debe ser mayor a 0' };
+    return { valid: false, message: "La TEA debe ser mayor a 0" };
   }
 
   if (teaNumero > 100) {
-    return { valid: false, message: 'La TEA no puede superar 100%' };
+    return { valid: false, message: "La TEA no puede superar 100%" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -167,24 +173,27 @@ export function validarTEA(tea) {
  */
 export function validarCuotas(cuotas) {
   if (!cuotas || cuotas.toString().trim().length === 0) {
-    return { valid: false, message: 'El número de cuotas es obligatorio' };
+    return { valid: false, message: "El número de cuotas es obligatorio" };
   }
 
   const cuotasNumero = parseInt(cuotas);
 
   if (isNaN(cuotasNumero)) {
-    return { valid: false, message: 'El número de cuotas debe ser un número entero' };
+    return {
+      valid: false,
+      message: "El número de cuotas debe ser un número entero",
+    };
   }
 
   if (cuotasNumero < 1) {
-    return { valid: false, message: 'Debe haber al menos 1 cuota' };
+    return { valid: false, message: "Debe haber al menos 1 cuota" };
   }
 
   if (cuotasNumero > 36) {
-    return { valid: false, message: 'El número máximo de cuotas es 36' };
+    return { valid: false, message: "El número máximo de cuotas es 36" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -194,22 +203,22 @@ export function validarCuotas(cuotas) {
  */
 export function validarFecha(fecha) {
   if (!fecha || fecha.trim().length === 0) {
-    return { valid: false, message: 'La fecha es obligatoria' };
+    return { valid: false, message: "La fecha es obligatoria" };
   }
 
   const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
-  
+
   if (!fechaRegex.test(fecha)) {
-    return { valid: false, message: 'Formato de fecha inválido (YYYY-MM-DD)' };
+    return { valid: false, message: "Formato de fecha inválido (YYYY-MM-DD)" };
   }
 
   const fechaObj = new Date(fecha);
-  
+
   if (isNaN(fechaObj.getTime())) {
-    return { valid: false, message: 'Fecha inválida' };
+    return { valid: false, message: "Fecha inválida" };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: "" };
 }
 
 /**
@@ -236,11 +245,12 @@ export function validarFormularioCliente(formData) {
   if (!telefonoValidation.valid) errors.telefono = telefonoValidation.message;
 
   const direccionValidation = validarDireccion(formData.direccion);
-  if (!direccionValidation.valid) errors.direccion = direccionValidation.message;
+  if (!direccionValidation.valid)
+    errors.direccion = direccionValidation.message;
 
   return {
     valid: Object.keys(errors).length === 0,
-    errors
+    errors,
   };
 }
 
@@ -266,7 +276,7 @@ export function validarFormularioPrestamo(formData) {
 
   return {
     valid: Object.keys(errors).length === 0,
-    errors
+    errors,
   };
 }
 
@@ -281,5 +291,5 @@ export default {
   validarCuotas,
   validarFecha,
   validarFormularioCliente,
-  validarFormularioPrestamo
+  validarFormularioPrestamo,
 };

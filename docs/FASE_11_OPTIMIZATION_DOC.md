@@ -1,6 +1,7 @@
 # 📊 Documentación Técnica: Fase 11 - Optimization & Performance
 
 ## 📑 Índice
+
 1. [Arquitectura de Optimización](#arquitectura-de-optimización)
 2. [Sistema de Cache](#sistema-de-cache)
 3. [Optimización de Base de Datos](#optimización-de-base-de-datos)
@@ -72,23 +73,27 @@
 #### 1. SimpleCache (Development)
 
 **Características**:
+
 - En memoria del proceso
 - No persistente
 - No distribuido
 - Rápido para desarrollo
 
 **Configuración**:
+
 ```python
 CACHE_TYPE = 'SimpleCache'
 CACHE_DEFAULT_TIMEOUT = 300
 ```
 
-**Pros**: 
+**Pros**:
+
 - Sin dependencias externas
 - Setup inmediato
 - Performance óptimo
 
 **Cons**:
+
 - Se pierde al reiniciar
 - No compartido entre workers
 - Limitado por RAM del proceso
@@ -96,12 +101,14 @@ CACHE_DEFAULT_TIMEOUT = 300
 #### 2. RedisCache (Production)
 
 **Características**:
+
 - Distribuido
 - Persistente (opcional)
 - Compartido entre workers
 - Escalable
 
 **Configuración**:
+
 ```python
 CACHE_TYPE = 'RedisCache'
 CACHE_REDIS_URL = 'redis://localhost:6379/0'
@@ -115,12 +122,14 @@ CACHE_REDIS_URL = 'redis://node1:6379,node2:6379,node3:6379/0'
 ```
 
 **Pros**:
+
 - Compartido entre servidores
 - Persistencia opcional
 - TTL automático
 - Eviction policies
 
 **Cons**:
+
 - Requiere servidor Redis
 - Latencia de red
 - Complejidad adicional
@@ -128,11 +137,13 @@ CACHE_REDIS_URL = 'redis://node1:6379,node2:6379,node3:6379/0'
 #### 3. FileSystemCache (Alternativa)
 
 **Características**:
+
 - Persistente en disco
 - Sin dependencias
 - Compartido entre workers (mismo filesystem)
 
 **Configuración**:
+
 ```python
 CACHE_TYPE = 'FileSystemCache'
 CACHE_DIR = '/var/cache/app'
@@ -140,11 +151,13 @@ CACHE_DEFAULT_TIMEOUT = 300
 ```
 
 **Pros**:
+
 - Persistente entre reinicios
 - Sin servidor externo
 - Tamaño flexible
 
 **Cons**:
+
 - I/O más lento que memoria
 - No distribuido (mismo server)
 - Limpieza manual de archivos
@@ -155,9 +168,9 @@ CACHE_DEFAULT_TIMEOUT = 300
 def _generate_cache_key(func, prefix, args, kwargs):
     """
     Algoritmo de generación de claves únicas.
-    
+
     Formato: cache:{prefix}:{hash}
-    
+
     Hash incluye:
     - Nombre de función
     - Request path
@@ -171,10 +184,10 @@ def _generate_cache_key(func, prefix, args, kwargs):
         str(args),
         str(sorted(kwargs.items()))
     ]
-    
+
     key_string = '|'.join(key_parts)
     key_hash = hashlib.md5(key_string.encode()).hexdigest()
-    
+
     return f'cache:{prefix}:{key_hash}'
 
 # Ejemplos de claves generadas:
@@ -187,6 +200,7 @@ def _generate_cache_key(func, prefix, args, kwargs):
 #### Estrategias
 
 1. **TTL (Time-To-Live)**:
+
 ```python
 # Cache expira automáticamente después de timeout
 @cache_response(timeout=300)
@@ -195,6 +209,7 @@ def listar_clientes():
 ```
 
 2. **Invalidación Explícita**:
+
 ```python
 # Invalidar al modificar datos
 @invalidate_cache('clientes_*')
@@ -205,12 +220,14 @@ def actualizar_cliente(id):
 ```
 
 3. **Invalidación por Prefix**:
+
 ```python
 # Limpiar todos los caches relacionados
 clear_cache_by_prefix('clientes')  # clientes_list, clientes_detail, etc.
 ```
 
 4. **Limpieza Total**:
+
 ```python
 # Limpiar todo el cache (emergency)
 cache.clear()
@@ -240,11 +257,13 @@ cache_dict[key] = result  # Store
 ```
 
 **Ventajas**:
+
 - Sin latencia (memoria local)
 - Sin dependencias
 - Perfect para cálculos matemáticos
 
 **Limitaciones**:
+
 - Máximo 100 entradas (LRU)
 - No compartido entre requests
 - No persistente
@@ -263,7 +282,7 @@ clientes = Cliente.query.all()  # 1 query: SELECT * FROM clientes
 
 for cliente in clientes:  # N queries adicionales
     print(cliente.prestamos)  # SELECT * FROM prestamos WHERE cliente_id=?
-    
+
 # Total: 1 + 100 = 101 queries para 100 clientes
 ```
 
@@ -284,7 +303,7 @@ clientes = Cliente.query.options(
 
 for cliente in clientes:
     print(cliente.prestamos)  # Sin query adicional
-    
+
 # Total: 1 query para todo
 ```
 
@@ -368,6 +387,7 @@ db.session.commit()
 ```
 
 **Benchmark**:
+
 - Individual: 1000 registros en ~5 segundos
 - Bulk: 1000 registros en ~0.2 segundos
 - **Mejora: 25x más rápido**
@@ -396,7 +416,7 @@ def paginate_query(query, page, per_page):
     # Usar offset/limit eficientemente
     total = query.count()  # SELECT COUNT(*)
     items = query.limit(per_page).offset((page-1)*per_page).all()
-    
+
     return {
         'items': items,
         'total': total,
@@ -406,6 +426,7 @@ def paginate_query(query, page, per_page):
 ```
 
 **Optimizaciones**:
+
 - `count()` cacheado
 - `limit/offset` a nivel SQL
 - Sin cargar todos los registros
@@ -415,11 +436,11 @@ def paginate_query(query, page, per_page):
 ```python
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)  # Índice automático
-    
+
     # Índices para búsquedas frecuentes
     dni = db.Column(db.String(8), unique=True, index=True)
     email = db.Column(db.String(120), unique=True, index=True)
-    
+
     # Índice compuesto
     __table_args__ = (
         db.Index('idx_nombre_apellido', 'nombre', 'apellido'),
@@ -427,6 +448,7 @@ class Cliente(db.Model):
 ```
 
 **Reglas**:
+
 - Índice en columnas de WHERE/JOIN
 - Índice en foreign keys
 - No sobre-indexar (ralentiza INSERTs)
@@ -452,24 +474,24 @@ def compress_response(response):
     """
     if 'gzip' not in request.headers.get('Accept-Encoding', ''):
         return response  # Cliente no soporta
-    
+
     if len(response.data) < 1024:
         return response  # Muy pequeño
-    
+
     compressed = gzip.compress(response.data, compresslevel=6)
-    
+
     if len(compressed) < len(response.data):
         response.data = compressed
         response.headers['Content-Encoding'] = 'gzip'
         response.headers['Content-Length'] = len(compressed)
-    
+
     return response
 ```
 
 #### Ratios de Compresión
 
 | Tipo de Contenido | Original | Comprimido | Ratio |
-|-------------------|----------|------------|-------|
+| ----------------- | -------- | ---------- | ----- |
 | JSON (datos)      | 100 KB   | 15 KB      | 85%   |
 | HTML              | 50 KB    | 12 KB      | 76%   |
 | CSS               | 30 KB    | 8 KB       | 73%   |
@@ -490,23 +512,24 @@ def optimize_json_response(data, exclude_fields=None):
     """
     if isinstance(data, list):
         return [optimize_json_response(item) for item in data]
-    
+
     if hasattr(data, 'to_dict'):
         result = data.to_dict()
     else:
         result = data
-    
+
     # Excluir campos
     for field in (exclude_fields or []):
         result.pop(field, None)
-    
+
     # Eliminar nulls (opcional)
     result = {k: v for k, v in result.items() if v is not None}
-    
+
     return result
 ```
 
 **Ejemplo**:
+
 ```python
 # Sin optimizar
 {
@@ -549,10 +572,10 @@ def before_execute(conn, cursor, statement, parameters, context, executemany):
 def after_execute(conn, cursor, statement, parameters, context, executemany):
     """Calcular duración de query."""
     duration = time.time() - conn.info['query_start_time']
-    
+
     # Registrar en profiler
     profiler.record_query(statement, parameters, duration)
-    
+
     # Log si es lenta
     if duration > 0.1:  # >100ms
         logger.warning(f'Slow query ({duration*1000:.2f}ms): {statement[:200]}')
@@ -581,17 +604,17 @@ def start_timer():
 @app.after_request
 def log_timing(response):
     duration = (time.time() - g.start_time) * 1000
-    
+
     # Headers
     response.headers['X-Response-Time'] = f'{duration:.2f}ms'
-    
+
     # Log
     if duration > 500:  # >500ms
         logger.warning(f'Slow request: {request.path} took {duration:.2f}ms')
-    
+
     # Metrics
     metrics.record_request(duration)
-    
+
     return response
 ```
 
@@ -601,11 +624,11 @@ def log_timing(response):
 @monitor_performance(threshold_ms=1000)
 def procesar_prestamo(prestamo_id):
     start = time.time()
-    
+
     # Procesamiento...
-    
+
     duration = (time.time() - start) * 1000
-    
+
     if duration > 1000:
         logger.warning(f'procesar_prestamo took {duration:.2f}ms')
 ```
@@ -622,17 +645,17 @@ class PerformanceMetrics:
         'cache_misses': 0,       # Misses de cache
         'slow_requests': 0       # Requests >500ms
     }
-    
+
     def record_request(self, duration, cache_hit=False):
         self.metrics['requests'] += 1
         self.metrics['total_time'] += duration
         self.metrics['avg_time'] = self.metrics['total_time'] / self.metrics['requests']
-        
+
         if cache_hit:
             self.metrics['cache_hits'] += 1
         else:
             self.metrics['cache_misses'] += 1
-        
+
         if duration > 500:
             self.metrics['slow_requests'] += 1
 ```
@@ -664,11 +687,11 @@ class DevelopmentConfig(Config):
     # Cache simple para desarrollo
     CACHE_TYPE = 'SimpleCache'
     CACHE_DEFAULT_TIMEOUT = 300  # 5 min
-    
+
     # Profiling habilitado
     ENABLE_QUERY_PROFILING = True
     ENABLE_COMPRESSION = True
-    
+
     # Threshold bajo para detectar problemas
     SLOW_QUERY_THRESHOLD = 0.05  # 50ms
 
@@ -677,11 +700,11 @@ class ProductionConfig(Config):
     CACHE_TYPE = 'RedisCache'
     CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL')
     CACHE_DEFAULT_TIMEOUT = 600  # 10 min
-    
+
     # Sin profiling (overhead)
     ENABLE_QUERY_PROFILING = False
     ENABLE_COMPRESSION = True
-    
+
     # Threshold alto (solo emergencias)
     SLOW_QUERY_THRESHOLD = 0.5  # 500ms
 ```
@@ -728,13 +751,13 @@ Endpoint: GET /api/v1/prestamos
 
 ### Mejoras Totales
 
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| Response Time Promedio | 1000ms | 80ms | **92%** |
-| Queries por Request | 75 | 1.5 | **98%** |
-| Transfer Size | 375KB | 55KB | **85%** |
-| Cache Hit Rate | 0% | 82% | **+82%** |
-| Slow Requests (>500ms) | 45% | 2% | **95%** |
+| Métrica                | Antes  | Después | Mejora   |
+| ---------------------- | ------ | ------- | -------- |
+| Response Time Promedio | 1000ms | 80ms    | **92%**  |
+| Queries por Request    | 75     | 1.5     | **98%**  |
+| Transfer Size          | 375KB  | 55KB    | **85%**  |
+| Cache Hit Rate         | 0%     | 82%     | **+82%** |
+| Slow Requests (>500ms) | 45%    | 2%      | **95%**  |
 
 ### ROI de Optimización
 
@@ -748,6 +771,7 @@ Endpoint: GET /api/v1/prestamos
 ## 🎯 Checklist de Optimización
 
 ### Cache
+
 - [x] Flask-Caching configurado
 - [x] Decoradores @cache_response
 - [x] Decoradores @cache_query
@@ -755,6 +779,7 @@ Endpoint: GET /api/v1/prestamos
 - [x] Memoización para cálculos
 
 ### Database
+
 - [x] Eager loading (N+1 resuelto)
 - [x] Índices en columnas frecuentes
 - [x] Bulk operations
@@ -762,12 +787,14 @@ Endpoint: GET /api/v1/prestamos
 - [x] Query profiling
 
 ### Compression
+
 - [x] Flask-Compress habilitado
 - [x] Gzip para responses >1KB
 - [x] JSON optimizado
 - [x] Headers de compresión
 
 ### Monitoring
+
 - [x] Query profiling
 - [x] Performance monitoring
 - [x] Métricas globales

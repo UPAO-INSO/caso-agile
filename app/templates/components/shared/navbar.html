@@ -3,7 +3,10 @@
     <div class="flex items-center justify-between h-16">
       <!-- Logo y Nombre -->
       <div class="flex items-center">
-        <a href="{{ url_for('prestamos_view.index_view') }}" class="flex items-center space-x-3">
+        <a
+          href="{{ url_for('prestamos_view.index_view') }}"
+          class="flex items-center space-x-3"
+        >
           <div class="text-4xl">🏦</div>
           <div>
             <h1 class="text-2xl font-bold text-white">COMFY</h1>
@@ -19,8 +22,18 @@
           class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if request.path == '/' %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
           <span class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              ></path>
             </svg>
             Inicio
           </span>
@@ -31,43 +44,87 @@
           class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/clientes' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
           <span class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              ></path>
             </svg>
             Clientes
           </span>
         </a>
 
         <a
-          href="{{ url_for('prestamos.registrar_prestamo_view') }}"
-          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/prestamos/register' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
+          href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
+          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/prestamos' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
           <span class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              ></path>
             </svg>
-            Nuevo Préstamo
+            Préstamos
           </span>
         </a>
 
         <a
-          href="{{ url_for('clientes.buscar_cliente_view') }}"
-          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/buscar' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
+          href="{{ url_for('clientes.listar_clientes_view') }}"
+          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/clientes' in request.path and '/prestamos' not in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
           <span class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              ></path>
             </svg>
-            Buscar
+            Buscar Cliente
           </span>
         </a>
       </div>
 
       <!-- Botón de menú móvil -->
       <div class="md:hidden">
-        <button type="button" class="text-white hover:bg-blue-500 p-2 rounded-lg" id="mobile-menu-button">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        <button
+          type="button"
+          class="text-white hover:bg-blue-500 p-2 rounded-lg"
+          id="mobile-menu-button"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            ></path>
           </svg>
         </button>
       </div>
@@ -77,17 +134,35 @@
   <!-- Menú móvil (oculto por defecto) -->
   <div class="hidden md:hidden" id="mobile-menu">
     <div class="px-2 pt-2 pb-3 space-y-1">
-      <a href="{{ url_for('prestamos_view.index_view') }}" class="block px-3 py-2 rounded-md text-white hover:bg-blue-500">Inicio</a>
-      <a href="{{ url_for('clientes_view.listar_clientes_view') }}" class="block px-3 py-2 rounded-md text-white hover:bg-blue-500">Clientes</a>
-      <a href="{{ url_for('prestamos.registrar_prestamo_view') }}" class="block px-3 py-2 rounded-md text-white hover:bg-blue-500">Nuevo Préstamo</a>
-      <a href="{{ url_for('clientes.buscar_cliente_view') }}" class="block px-3 py-2 rounded-md text-white hover:bg-blue-500">Buscar</a>
+      <a
+        href="{{ url_for('prestamos_view.index_view') }}"
+        class="block px-3 py-2 rounded-md text-white hover:bg-blue-500"
+        >Inicio</a
+      >
+      <a
+        href="{{ url_for('clientes_view.listar_clientes_view') }}"
+        class="block px-3 py-2 rounded-md text-white hover:bg-blue-500"
+        >Clientes</a
+      >
+      <a
+        href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
+        class="block px-3 py-2 rounded-md text-white hover:bg-blue-500"
+        >Préstamos</a
+      >
+      <a
+        href="{{ url_for('clientes.listar_clientes_view') }}"
+        class="block px-3 py-2 rounded-md text-white hover:bg-blue-500"
+        >Buscar Cliente</a
+      >
     </div>
   </div>
 </nav>
 
 <script>
   // Toggle mobile menu
-  document.getElementById('mobile-menu-button')?.addEventListener('click', function() {
-    document.getElementById('mobile-menu')?.classList.toggle('hidden');
-  });
+  document
+    .getElementById("mobile-menu-button")
+    ?.addEventListener("click", function () {
+      document.getElementById("mobile-menu")?.classList.toggle("hidden");
+    });
 </script>

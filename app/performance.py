@@ -503,10 +503,69 @@ def get_metrics() -> PerformanceMetrics:
 
 
 # ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+def configure_performance(app):
+    """
+    Configura el sistema de optimización de performance.
+    
+    Args:
+        app: Instancia de Flask
+    """
+    # Configurar query profiling
+    enable_profiling = app.config.get('ENABLE_QUERY_PROFILING', False)
+    if enable_profiling:
+        configure_query_profiling(app)
+        app.logger.info('Query profiling habilitado')
+    
+    # Configurar compresión
+    enable_compression = app.config.get('ENABLE_COMPRESSION', True)
+    if enable_compression:
+        from flask_compress import Compress
+        Compress(app)
+        app.logger.info('Compresión de respuestas habilitada')
+    
+    # Configurar monitoreo de performance
+    @app.before_request
+    def start_timer():
+        """Inicia timer para medir duración del request."""
+        g.start_time = time.time()
+    
+    @app.after_request
+    def log_performance(response):
+        """Registra métricas de performance del request."""
+        if hasattr(g, 'start_time'):
+            duration = (time.time() - g.start_time) * 1000  # ms
+            
+            # Registrar en métricas
+            _metrics.record_request(duration)
+            
+            # Log de requests lentos
+            slow_threshold = app.config.get('SLOW_REQUEST_THRESHOLD', 500)
+            if duration > slow_threshold:
+                app.logger.warning(
+                    f'Slow request: {request.method} {request.path} '
+                    f'took {duration:.2f}ms (threshold: {slow_threshold}ms)'
+                )
+            
+            # Agregar header con duración
+            response.headers['X-Response-Time'] = f'{duration:.2f}ms'
+        
+        return response
+    
+    app.logger.info('Sistema de performance configurado')
+    app.logger.info(f'Slow request threshold: {app.config.get("SLOW_REQUEST_THRESHOLD", 500)}ms')
+
+
+# ============================================================================
 # EXPORTS
 # ============================================================================
 
 __all__ = [
+    # Configuration
+    'configure_performance',
+    
     # Query Profiling
     'QueryProfiler',
     'configure_query_profiling',

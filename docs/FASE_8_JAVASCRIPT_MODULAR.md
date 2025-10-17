@@ -26,6 +26,7 @@ app/static/js/
 Maneja todas las llamadas a la API REST.
 
 **Características:**
+
 - ✅ Función base `fetchAPI` con manejo de errores
 - ✅ API de Clientes (9 métodos)
 - ✅ API de Préstamos (6 métodos)
@@ -34,11 +35,12 @@ Maneja todas las llamadas a la API REST.
 - ✅ Manejo de errores HTTP
 
 **Ejemplo de uso:**
+
 ```javascript
-import { ClientesAPI, PrestamosAPI } from './modules/api.js';
+import { ClientesAPI, PrestamosAPI } from "./modules/api.js";
 
 // Buscar cliente por DNI
-const cliente = await ClientesAPI.buscarPorDNI('12345678');
+const cliente = await ClientesAPI.buscarPorDNI("12345678");
 
 // Crear nuevo préstamo
 const prestamo = await PrestamosAPI.registrar({
@@ -46,13 +48,14 @@ const prestamo = await PrestamosAPI.registrar({
   monto: 5000,
   tea: 20,
   cuotas: 12,
-  fecha_desembolso: '2024-01-15'
+  fecha_desembolso: "2024-01-15",
 });
 ```
 
 **Métodos disponibles:**
 
 **ClientesAPI:**
+
 - `buscarPorDNI(dni)` - Buscar cliente por DNI
 - `obtenerPorId(id)` - Obtener cliente por ID
 - `listarTodos()` - Listar todos los clientes
@@ -64,6 +67,7 @@ const prestamo = await PrestamosAPI.registrar({
 - `validarPEP(dni)` - Validar PEP
 
 **PrestamosAPI:**
+
 - `registrar(prestamoData)` - Registrar nuevo préstamo
 - `obtenerPorId(id)` - Obtener préstamo por ID
 - `listarPorCliente(clienteId)` - Listar préstamos de un cliente
@@ -77,6 +81,7 @@ const prestamo = await PrestamosAPI.registrar({
 Validaciones del lado del cliente antes de enviar datos al servidor.
 
 **Características:**
+
 - ✅ Validación de DNI peruano (8 dígitos)
 - ✅ Validación de email
 - ✅ Validación de teléfono peruano (9 dígitos, inicia con 9)
@@ -89,23 +94,24 @@ Validaciones del lado del cliente antes de enviar datos al servidor.
 - ✅ Validación de formularios completos
 
 **Ejemplo de uso:**
+
 ```javascript
-import { validarDNI, validarFormularioCliente } from './modules/validation.js';
+import { validarDNI, validarFormularioCliente } from "./modules/validation.js";
 
 // Validar DNI individual
-const dniValidation = validarDNI('12345678');
+const dniValidation = validarDNI("12345678");
 if (!dniValidation.valid) {
   console.log(dniValidation.message); // "El DNI debe tener 8 dígitos"
 }
 
 // Validar formulario completo
 const formData = {
-  dni: '12345678',
-  nombre: 'Juan',
-  apellido: 'Pérez',
-  email: 'juan@example.com',
-  telefono: '987654321',
-  direccion: 'Av. Ejemplo 123'
+  dni: "12345678",
+  nombre: "Juan",
+  apellido: "Pérez",
+  email: "juan@example.com",
+  telefono: "987654321",
+  direccion: "Av. Ejemplo 123",
 };
 
 const validation = validarFormularioCliente(formData);
@@ -115,6 +121,7 @@ if (!validation.valid) {
 ```
 
 **Funciones disponibles:**
+
 - `validarDNI(dni)` - Valida DNI peruano
 - `validarEmail(email)` - Valida formato de email
 - `validarTelefono(telefono)` - Valida teléfono peruano
@@ -134,6 +141,7 @@ if (!validation.valid) {
 Manejo de interfaz de usuario y manipulación del DOM.
 
 **Características:**
+
 - ✅ Sistema de alertas/toast personalizables
 - ✅ Estados de carga en botones
 - ✅ Spinners de carga
@@ -146,28 +154,30 @@ Manejo de interfaz de usuario y manipulación del DOM.
 - ✅ Formateo de moneda y fechas
 
 **Ejemplo de uso:**
+
 ```javascript
-import { showAlert, setButtonLoading, showFormErrors } from './modules/ui.js';
+import { showAlert, setButtonLoading, showFormErrors } from "./modules/ui.js";
 
 // Mostrar alerta
-showAlert('Operación exitosa', 'success', 3000);
-showAlert('Error al procesar', 'error');
+showAlert("Operación exitosa", "success", 3000);
+showAlert("Error al procesar", "error");
 
 // Estado de carga en botón
-const button = document.getElementById('submit-btn');
-setButtonLoading(button, true, 'Procesando...');
+const button = document.getElementById("submit-btn");
+setButtonLoading(button, true, "Procesando...");
 // ... operación asíncrona ...
 setButtonLoading(button, false);
 
 // Mostrar errores de validación
 const errors = {
-  dni: 'El DNI es inválido',
-  email: 'El email es obligatorio'
+  dni: "El DNI es inválido",
+  email: "El email es obligatorio",
 };
-showFormErrors('client-form', errors);
+showFormErrors("client-form", errors);
 ```
 
 **Funciones disponibles:**
+
 - `showAlert(message, type, duration)` - Mostrar alerta/toast
 - `setButtonLoading(button, loading, loadingText)` - Estado de carga en botón
 - `showLoading(element, show)` - Mostrar spinner de carga
@@ -187,6 +197,7 @@ showFormErrors('client-form', errors);
 Gestión de estado reactivo de la aplicación (reemplaza variables globales).
 
 **Características:**
+
 - ✅ Store centralizado de estado
 - ✅ Sistema de suscripción reactivo
 - ✅ Getters y setters tipados
@@ -195,14 +206,19 @@ Gestión de estado reactivo de la aplicación (reemplaza variables globales).
 - ✅ Notificaciones de cambios
 
 **Ejemplo de uso:**
+
 ```javascript
-import { setCurrentClient, getCurrentClient, subscribe } from './modules/state.js';
+import {
+  setCurrentClient,
+  getCurrentClient,
+  subscribe,
+} from "./modules/state.js";
 
 // Establecer cliente actual
 setCurrentClient({
   id: 1,
-  dni: '12345678',
-  nombre: 'Juan Pérez'
+  dni: "12345678",
+  nombre: "Juan Pérez",
 });
 
 // Obtener cliente actual
@@ -211,9 +227,9 @@ console.log(cliente.dni); // '12345678'
 
 // Suscribirse a cambios
 const unsubscribe = subscribe((newState, prevState) => {
-  console.log('Estado cambió:', newState);
+  console.log("Estado cambió:", newState);
   if (newState.currentClient !== prevState.currentClient) {
-    console.log('Cliente cambió');
+    console.log("Cliente cambió");
   }
 });
 
@@ -222,6 +238,7 @@ unsubscribe();
 ```
 
 **Funciones disponibles:**
+
 - `get(key)` - Obtener valor del estado
 - `set(keyOrState, value)` - Actualizar estado
 - `getState()` - Obtener todo el estado
@@ -242,6 +259,7 @@ unsubscribe();
 ## 🔄 Refactorización Realizada
 
 ### Archivo Original: `client-search.js`
+
 - **Líneas:** 899
 - **Problemas:**
   - Código monolítico
@@ -251,6 +269,7 @@ unsubscribe();
   - Difícil de mantener y testear
 
 ### Archivo Modernizado: `client-search-modern.js`
+
 - **Líneas:** 409 (-54% de código)
 - **Mejoras:**
   - ✅ Uso de módulos ES6
@@ -265,30 +284,36 @@ unsubscribe();
 ## 🎯 Beneficios
 
 ### 1. **Reutilización de Código**
+
 Los módulos pueden importarse en cualquier archivo JavaScript:
+
 ```javascript
 // En cualquier archivo .js
-import { ClientesAPI } from './modules/api.js';
-import { validarDNI } from './modules/validation.js';
-import { showAlert } from './modules/ui.js';
+import { ClientesAPI } from "./modules/api.js";
+import { validarDNI } from "./modules/validation.js";
+import { showAlert } from "./modules/ui.js";
 ```
 
 ### 2. **Mantenibilidad**
+
 - Cada módulo tiene una responsabilidad única
 - Fácil localizar y corregir bugs
 - Cambios aislados no afectan otros módulos
 
 ### 3. **Validación del Lado del Cliente**
+
 - Feedback inmediato al usuario
 - Reduce llamadas innecesarias al servidor
 - Mejora la experiencia de usuario
 
 ### 4. **Testabilidad**
+
 - Funciones puras y aisladas
 - Fácil escribir tests unitarios
 - Mockeo simple de dependencias
 
 ### 5. **Escalabilidad**
+
 - Estructura clara para agregar nuevas funcionalidades
 - Módulos independientes
 - Fácil agregar nuevos endpoints
@@ -301,7 +326,10 @@ Para usar los módulos en templates HTML, agregar como módulos ES6:
 
 ```html
 <!-- En base.html o en el template específico -->
-<script type="module" src="{{ url_for('static', filename='js/client-search-modern.js') }}"></script>
+<script
+  type="module"
+  src="{{ url_for('static', filename='js/client-search-modern.js') }}"
+></script>
 
 <!-- O importar módulos específicos -->
 <script type="module">
@@ -325,17 +353,20 @@ Para usar los módulos en templates HTML, agregar como módulos ES6:
 ## 🔧 Próximos Pasos
 
 1. **Refactorizar archivos restantes:**
+
    - ✅ `client-search.js` → `client-search-modern.js` (completado)
    - ⏳ `loan-modal.js` → Modularizar
    - ⏳ `utils.js` → Integrar con módulos
 
 2. **Agregar más funcionalidades:**
+
    - ⏳ AJAX para búsqueda en tiempo real
    - ⏳ Auto-guardado de formularios
    - ⏳ Filtros dinámicos en tablas
    - ⏳ Paginación AJAX
 
 3. **Testing:**
+
    - ⏳ Tests unitarios para módulos
    - ⏳ Tests de integración
 
@@ -348,14 +379,14 @@ Para usar los módulos en templates HTML, agregar como módulos ES6:
 
 ## 📊 Métricas
 
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| Líneas de código | 899 | 409 | -54% |
-| Archivos monolíticos | 1 | 0 | -100% |
-| Módulos reutilizables | 0 | 4 | +400% |
-| Validación cliente | ❌ | ✅ | +100% |
-| Manejo de estado | Global | Centralizado | +100% |
-| Funciones duplicadas | Múltiples | 0 | -100% |
+| Métrica               | Antes     | Después      | Mejora |
+| --------------------- | --------- | ------------ | ------ |
+| Líneas de código      | 899       | 409          | -54%   |
+| Archivos monolíticos  | 1         | 0            | -100%  |
+| Módulos reutilizables | 0         | 4            | +400%  |
+| Validación cliente    | ❌        | ✅           | +100%  |
+| Manejo de estado      | Global    | Centralizado | +100%  |
+| Funciones duplicadas  | Múltiples | 0            | -100%  |
 
 ---
 
@@ -390,5 +421,5 @@ Para usar los módulos en templates HTML, agregar como módulos ES6:
 
 **Fase 8 completada exitosamente** ✨
 
-*Creado en: 2024*
-*Última actualización: 2024*
+_Creado en: 2024_
+_Última actualización: 2024_

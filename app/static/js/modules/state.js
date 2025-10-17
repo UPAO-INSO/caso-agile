@@ -10,7 +10,7 @@ class StateManager {
       currentPrestamo: null,
       isLoading: false,
       filters: {},
-      searchResults: []
+      searchResults: [],
     };
     this.listeners = [];
   }
@@ -40,7 +40,7 @@ class StateManager {
   set(keyOrState, value) {
     const previousState = { ...this.state };
 
-    if (typeof keyOrState === 'object') {
+    if (typeof keyOrState === "object") {
       // Actualización múltiple
       this.state = { ...this.state, ...keyOrState };
     } else {
@@ -59,7 +59,7 @@ class StateManager {
    */
   subscribe(listener) {
     this.listeners.push(listener);
-    
+
     // Retornar función para desuscribirse
     return () => {
       const index = this.listeners.indexOf(listener);
@@ -75,11 +75,11 @@ class StateManager {
    * @param {Object} currentState - Estado actual
    */
   notify(previousState, currentState) {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(currentState, previousState);
       } catch (error) {
-        console.error('Error en listener:', error);
+        console.error("Error en listener:", error);
       }
     });
   }
@@ -89,13 +89,13 @@ class StateManager {
    */
   reset() {
     const previousState = { ...this.state };
-    
+
     this.state = {
       currentClient: null,
       currentPrestamo: null,
       isLoading: false,
       filters: {},
-      searchResults: []
+      searchResults: [],
     };
 
     this.notify(previousState, this.state);
@@ -106,7 +106,7 @@ class StateManager {
    * @param {Object|null} client - Datos del cliente
    */
   setCurrentClient(client) {
-    this.set('currentClient', client);
+    this.set("currentClient", client);
   }
 
   /**
@@ -114,7 +114,7 @@ class StateManager {
    * @returns {Object|null}
    */
   getCurrentClient() {
-    return this.get('currentClient');
+    return this.get("currentClient");
   }
 
   /**
@@ -122,7 +122,7 @@ class StateManager {
    * @param {Object|null} prestamo - Datos del préstamo
    */
   setCurrentPrestamo(prestamo) {
-    this.set('currentPrestamo', prestamo);
+    this.set("currentPrestamo", prestamo);
   }
 
   /**
@@ -130,7 +130,7 @@ class StateManager {
    * @returns {Object|null}
    */
   getCurrentPrestamo() {
-    return this.get('currentPrestamo');
+    return this.get("currentPrestamo");
   }
 
   /**
@@ -138,7 +138,7 @@ class StateManager {
    * @param {boolean} loading - Estado de carga
    */
   setLoading(loading) {
-    this.set('isLoading', loading);
+    this.set("isLoading", loading);
   }
 
   /**
@@ -146,7 +146,7 @@ class StateManager {
    * @returns {boolean}
    */
   isLoading() {
-    return this.get('isLoading');
+    return this.get("isLoading");
   }
 
   /**
@@ -154,7 +154,7 @@ class StateManager {
    * @param {Object} filters - Filtros a aplicar
    */
   setFilters(filters) {
-    this.set('filters', { ...this.state.filters, ...filters });
+    this.set("filters", { ...this.state.filters, ...filters });
   }
 
   /**
@@ -162,14 +162,14 @@ class StateManager {
    * @returns {Object}
    */
   getFilters() {
-    return this.get('filters');
+    return this.get("filters");
   }
 
   /**
    * Limpiar filtros
    */
   clearFilters() {
-    this.set('filters', {});
+    this.set("filters", {});
   }
 
   /**
@@ -177,7 +177,7 @@ class StateManager {
    * @param {Array} results - Resultados
    */
   setSearchResults(results) {
-    this.set('searchResults', results);
+    this.set("searchResults", results);
   }
 
   /**
@@ -185,14 +185,14 @@ class StateManager {
    * @returns {Array}
    */
   getSearchResults() {
-    return this.get('searchResults');
+    return this.get("searchResults");
   }
 
   /**
    * Limpiar resultados de búsqueda
    */
   clearSearchResults() {
-    this.set('searchResults', []);
+    this.set("searchResults", []);
   }
 }
 
@@ -209,7 +209,8 @@ export const reset = () => state.reset();
 // Exportar funciones específicas
 export const setCurrentClient = (client) => state.setCurrentClient(client);
 export const getCurrentClient = () => state.getCurrentClient();
-export const setCurrentPrestamo = (prestamo) => state.setCurrentPrestamo(prestamo);
+export const setCurrentPrestamo = (prestamo) =>
+  state.setCurrentPrestamo(prestamo);
 export const getCurrentPrestamo = () => state.getCurrentPrestamo();
 export const setLoading = (loading) => state.setLoading(loading);
 export const isLoading = () => state.isLoading();

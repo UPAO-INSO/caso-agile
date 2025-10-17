@@ -192,6 +192,7 @@ document.addEventListener("keydown", function (e) {
 async function verCronogramaPagos() {
   const monto = document.getElementById("monto")?.value;
   const cuotas = document.getElementById("cuotas")?.value;
+  const interes_tea = document.getElementById("interes_tea")?.value;
 
   if (!monto || !cuotas) {
     alert("Por favor ingrese el monto y numero de cuotas primero");
@@ -248,6 +249,7 @@ async function verCronogramaPagos() {
   document.getElementById(
     "cronograma-cuotas"
   ).textContent = `${numCuotas} meses`;
+  document.getElementById("cronograma_tea").textContent = `${interes_tea}% TEA`;
 
   const tbody = document.getElementById("cronograma-table-body");
   tbody.innerHTML = "";

@@ -1,6 +1,7 @@
 # 📘 Guía de Uso: Fase 11 - Optimization & Performance
 
 ## 📑 Tabla de Contenidos
+
 1. [Sistema de Cache](#sistema-de-cache)
 2. [Optimización de Queries](#optimización-de-queries)
 3. [Compresión de Respuestas](#compresión-de-respuestas)
@@ -177,10 +178,10 @@ from app.cache import paginate_query
 def listar_clientes():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-    
+
     query = Cliente.query.order_by(Cliente.id)
     result = paginate_query(query, page, per_page)
-    
+
     return jsonify({
         'items': [c.to_dict() for c in result['items']],
         'total': result['total'],
@@ -200,7 +201,7 @@ from app.performance import paginate_and_optimize
 @cache_response(timeout=300)
 def listar_clientes():
     page = request.args.get('page', 1, type=int)
-    
+
     # Pagina y excluye campos innecesarios
     result = paginate_and_optimize(
         Cliente.query,
@@ -208,7 +209,7 @@ def listar_clientes():
         per_page=20,
         exclude_fields=['password', 'created_at']
     )
-    
+
     return jsonify(result)
 ```
 
@@ -324,7 +325,7 @@ def query_stats():
     """Ver todas las queries del request."""
     profiler = get_profiler()
     stats = profiler.get_stats()
-    
+
     return jsonify(stats)
     # {
     #   'total_queries': 15,
@@ -342,7 +343,7 @@ def slow_queries():
     """Ver solo queries lentas."""
     profiler = get_profiler()
     slow = profiler.get_slow_queries(threshold_ms=100)
-    
+
     return jsonify(slow)
 ```
 
@@ -512,19 +513,19 @@ api_bp = Blueprint('api', __name__)
 @cache_response(timeout=300, key_prefix='clientes_list')
 def listar_clientes():
     page = request.args.get('page', 1, type=int)
-    
+
     # Eager loading + paginación + optimización
     query = Cliente.query.options(
         joinedload(Cliente.prestamos)
     ).order_by(Cliente.id)
-    
+
     result = paginate_and_optimize(
         query,
         page=page,
         per_page=20,
         exclude_fields=['password', 'internal_notes']
     )
-    
+
     return jsonify(result)
 
 # Crear cliente (invalida cache)
@@ -533,12 +534,12 @@ def listar_clientes():
 @monitor_performance(threshold_ms=500)
 def crear_cliente():
     data = request.get_json()
-    
+
     # Validar...
     cliente = Cliente(**data)
     db.session.add(cliente)
     db.session.commit()
-    
+
     return jsonify(cliente.to_dict()), 201
 
 # Reporte complejo (monitoreo + cache)
@@ -551,10 +552,10 @@ def reporte_prestamos():
         joinedload(Prestamo.cliente),
         joinedload(Prestamo.cuotas)
     ).all()
-    
+
     # Generar reporte (operación costosa)
     reporte = generar_reporte_completo(prestamos)
-    
+
     return jsonify(reporte)
 ```
 

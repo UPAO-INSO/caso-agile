@@ -1,37 +1,41 @@
-{# 
-  Componente: Paginación
-  Uso: {% include 'components/pagination.html' with 
-         current_page=1, 
-         total_pages=10, 
-         base_url='/clientes' 
-       %}
-#}
-{% if total_pages > 1 %}
-<nav class="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6" aria-label="Pagination">
+{# Componente: Paginación Uso: {% include 'components/pagination.html' with
+current_page=1, total_pages=10, base_url='/clientes' %} #} {% if total_pages > 1
+%}
+<nav
+  class="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6"
+  aria-label="Pagination"
+>
   <div class="hidden sm:block">
     <p class="text-sm text-gray-700">
-      Página <span class="font-medium">{{ current_page }}</span> de <span class="font-medium">{{ total_pages }}</span>
+      Página <span class="font-medium">{{ current_page }}</span> de
+      <span class="font-medium">{{ total_pages }}</span>
     </p>
   </div>
   <div class="flex flex-1 justify-between sm:justify-end">
     {% if current_page > 1 %}
-    <a href="{{ base_url }}?page={{ current_page - 1 }}" 
-       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+    <a
+      href="{{ base_url }}?page={{ current_page - 1 }}"
+      class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+    >
       Anterior
     </a>
     {% else %}
-    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+    <span
+      class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
+    >
       Anterior
     </span>
-    {% endif %}
-    
-    {% if current_page < total_pages %}
-    <a href="{{ base_url }}?page={{ current_page + 1 }}" 
-       class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+    {% endif %} {% if current_page < total_pages %}
+    <a
+      href="{{ base_url }}?page={{ current_page + 1 }}"
+      class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+    >
       Siguiente
     </a>
     {% else %}
-    <span class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+    <span
+      class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
+    >
       Siguiente
     </span>
     {% endif %}

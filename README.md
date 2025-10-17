@@ -23,6 +23,7 @@ Aplicación web para gestión de préstamos bancarios con validación de PEP (Pe
 ## 🏗️ Arquitectura
 
 ### Application Factory Pattern
+
 ```python
 from app import create_app
 
@@ -30,6 +31,7 @@ app = create_app('development')  # o 'production', 'testing'
 ```
 
 ### Service Layer
+
 ```
 Controllers (routes.py)     → Solo manejan HTTP
     ↓ delegan a
@@ -41,6 +43,7 @@ Models (model/)             → Definición de datos
 ```
 
 ### Estructura del Proyecto
+
 ```
 app/
 ├── __init__.py             # Application Factory
@@ -77,6 +80,7 @@ instance/                   # ⚠️ Configuración sensible (no versionada)
 ## 🛠️ Tecnologías
 
 ### Backend
+
 - **Python 3.10+**
 - **Flask 3.1** — Framework web
 - **SQLAlchemy 2.0** — ORM
@@ -87,11 +91,13 @@ instance/                   # ⚠️ Configuración sensible (no versionada)
 - **Pandas** — Procesamiento de datasets
 
 ### Frontend
+
 - **Jinja2** — Motor de plantillas
 - **TailwindCSS** — Framework CSS
 - **Alpine.js** — Interactividad ligera
 
 ### Database
+
 - **PostgreSQL** — Base de datos principal
 
 ---

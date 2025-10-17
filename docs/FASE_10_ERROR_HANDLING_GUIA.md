@@ -39,20 +39,20 @@ from app.errors import ValidationError
 @api_v1_bp.route('/clientes', methods=['POST'])
 def crear_cliente():
     data = request.get_json()
-    
+
     # Validar campos requeridos
     if not data.get('dni'):
         raise ValidationError(
             message='El DNI es requerido',
             payload={'field': 'dni'}
         )
-    
+
     if not data.get('nombres'):
         raise ValidationError(
             message='El nombre es requerido',
             payload={'field': 'nombres'}
         )
-    
+
     # Validar formato de DNI
     dni = data.get('dni')
     if len(dni) != 8 or not dni.isdigit():
@@ -60,12 +60,13 @@ def crear_cliente():
             message='El DNI debe tener 8 dígitos',
             payload={'field': 'dni', 'value': dni}
         )
-    
+
     # Continuar con la creación...
     return {'message': 'Cliente creado'}, 201
 ```
 
 **Respuesta en caso de error:**
+
 ```json
 {
   "error": "El DNI debe tener 8 dígitos",
@@ -84,17 +85,18 @@ from app.clients.models import Cliente
 @api_v1_bp.route('/clientes/<int:id>', methods=['GET'])
 def obtener_cliente(id):
     cliente = Cliente.query.get(id)
-    
+
     if not cliente:
         raise NotFoundError(
             message=f'Cliente con ID {id} no encontrado',
             payload={'resource': 'Cliente', 'id': id}
         )
-    
+
     return cliente.to_dict(), 200
 ```
 
 **Respuesta en caso de error:**
+
 ```json
 {
   "error": "Cliente con ID 123 no encontrado",
@@ -117,7 +119,7 @@ def crear_cliente():
         db.session.add(cliente)
         db.session.commit()
         return cliente.to_dict(), 201
-    
+
     except IntegrityError:
         db.session.rollback()
         raise ConflictError(
@@ -127,6 +129,7 @@ def crear_cliente():
 ```
 
 **Respuesta en caso de error:**
+
 ```json
 {
   "error": "Ya existe un cliente con DNI 12345678",
@@ -145,13 +148,13 @@ from flask import session
 @api_v1_bp.route('/admin/usuarios', methods=['GET'])
 def listar_usuarios():
     user_role = session.get('role')
-    
+
     if user_role != 'admin':
         raise ForbiddenError(
             message='Necesitas permisos de administrador',
             payload={'required_role': 'admin', 'user_role': user_role}
         )
-    
+
     # Continuar con operación admin...
     return {'usuarios': [...]}, 200
 ```
@@ -168,7 +171,7 @@ def consultar_sunat():
         response = requests.post('https://api.sunat.gob.pe/...', timeout=5)
         response.raise_for_status()
         return response.json(), 200
-    
+
     except requests.exceptions.RequestException as e:
         raise ServiceUnavailableError(
             message='El servicio de SUNAT no está disponible',
@@ -206,31 +209,31 @@ from app.errors import ValidationError, NotFoundError, log_error
 def crear_prestamo():
     try:
         data = request.get_json()
-        
+
         # Validar datos
         if data.get('monto', 0) <= 0:
             raise ValidationError('El monto debe ser mayor a cero')
-        
+
         # Verificar cliente existe
         cliente = Cliente.query.get(data['cliente_id'])
         if not cliente:
             raise NotFoundError(f'Cliente {data["cliente_id"]} no encontrado')
-        
+
         # Crear préstamo
         prestamo = Prestamo(**data)
         db.session.add(prestamo)
         db.session.commit()
-        
+
         return prestamo.to_dict(), 201
-    
+
     except ValidationError:
         # Ya está manejado por el error handler global
         raise
-    
+
     except NotFoundError:
         # Ya está manejado por el error handler global
         raise
-    
+
     except Exception as e:
         # Log del error inesperado
         log_error(e, level='error', include_trace=True)
@@ -258,31 +261,24 @@ La aplicación incluye páginas de error personalizadas para los códigos más c
 Todas las páginas heredan de `base.html` y usan Tailwind CSS. Para personalizar:
 
 ```html
-{% extends "base.html" %}
-
-{% block title %}Mi Error Personalizado{% endblock %}
-
+{% extends "base.html" %} {% block title %}Mi Error Personalizado{% endblock %}
 {% block content %}
 <div class="min-h-screen flex items-center justify-center">
-    <div class="max-w-lg w-full bg-white rounded-2xl shadow-xl p-12">
-        <h1 class="text-6xl font-bold text-red-600 mb-4">
-            {{ error_code }}
-        </h1>
-        <p class="text-xl text-gray-600 mb-8">
-            {{ error_message }}
-        </p>
-        
-        <!-- Botones de acción -->
-        <div class="flex gap-4">
-            <button onclick="window.history.back()" 
-                    class="px-6 py-3 bg-blue-600 text-white rounded-lg">
-                Volver Atrás
-            </button>
-            <a href="/" class="px-6 py-3 bg-gray-200 rounded-lg">
-                Ir al Inicio
-            </a>
-        </div>
+  <div class="max-w-lg w-full bg-white rounded-2xl shadow-xl p-12">
+    <h1 class="text-6xl font-bold text-red-600 mb-4">{{ error_code }}</h1>
+    <p class="text-xl text-gray-600 mb-8">{{ error_message }}</p>
+
+    <!-- Botones de acción -->
+    <div class="flex gap-4">
+      <button
+        onclick="window.history.back()"
+        class="px-6 py-3 bg-blue-600 text-white rounded-lg"
+      >
+        Volver Atrás
+      </button>
+      <a href="/" class="px-6 py-3 bg-gray-200 rounded-lg"> Ir al Inicio </a>
     </div>
+  </div>
 </div>
 {% endblock %}
 ```
@@ -436,12 +432,14 @@ def calcular_tea(monto, tasa, cuotas):
 ### 1. Usar Excepciones Específicas
 
 ❌ **Mal:**
+
 ```python
 if not cliente:
     return {'error': 'No encontrado'}, 404
 ```
 
 ✅ **Bien:**
+
 ```python
 from app.errors import NotFoundError
 
@@ -452,11 +450,13 @@ if not cliente:
 ### 2. Incluir Contexto en Excepciones
 
 ❌ **Mal:**
+
 ```python
 raise ValidationError('Datos inválidos')
 ```
 
 ✅ **Bien:**
+
 ```python
 raise ValidationError(
     message='El DNI debe tener 8 dígitos',
@@ -472,6 +472,7 @@ raise ValidationError(
 ### 3. Rollback en Errores de BD
 
 ❌ **Mal:**
+
 ```python
 try:
     db.session.add(cliente)
@@ -481,6 +482,7 @@ except Exception:
 ```
 
 ✅ **Bien:**
+
 ```python
 try:
     db.session.add(cliente)
@@ -494,16 +496,18 @@ except Exception as e:
 ### 4. No Exponer Detalles Internos en Producción
 
 ❌ **Mal:**
+
 ```python
 except Exception as e:
     return {'error': str(e)}, 500  # Expone traceback
 ```
 
 ✅ **Bien:**
+
 ```python
 except Exception as e:
     log_error(e, level='error', include_trace=True)
-    
+
     if current_app.config.get('DEBUG'):
         return {'error': str(e)}, 500
     else:
@@ -532,6 +536,7 @@ logger.critical('Base de datos no disponible')
 ### 6. Usar Try-Except Específico
 
 ❌ **Mal:**
+
 ```python
 try:
     # código
@@ -540,6 +545,7 @@ except:  # Captura TODO, incluso KeyboardInterrupt
 ```
 
 ✅ **Bien:**
+
 ```python
 try:
     # código
@@ -559,6 +565,7 @@ except SQLAlchemyError as e:
 ### 7. Proporcionar Acciones Útiles en Errores
 
 ✅ **Bien:**
+
 ```python
 raise ValidationError(
     message='El monto del préstamo excede el límite permitido',
@@ -598,9 +605,9 @@ def crear_cliente():
     # 1. Validar request
     if not request.is_json:
         raise ValidationError('Content-Type debe ser application/json')
-    
+
     data = request.get_json()
-    
+
     # 2. Validar campos requeridos
     required_fields = ['dni', 'nombres', 'email']
     for field in required_fields:
@@ -609,7 +616,7 @@ def crear_cliente():
                 f'Campo requerido: {field}',
                 payload={'field': field}
             )
-    
+
     # 3. Validar formato de DNI
     dni = data['dni']
     if len(dni) != 8 or not dni.isdigit():
@@ -617,46 +624,46 @@ def crear_cliente():
             'El DNI debe tener 8 dígitos',
             payload={'field': 'dni', 'value': dni}
         )
-    
+
     # 4. Intentar crear cliente
     try:
         cliente = Cliente(**data)
         db.session.add(cliente)
         db.session.commit()
-        
+
         # Log exitoso
         logger.log_user_action(
             user_id=request.remote_addr,
             action='crear_cliente',
             details=f'DNI: {dni}'
         )
-        
+
         logger.log_database_operation(
             operation='INSERT',
             table='clientes',
             record_id=str(cliente.id)
         )
-        
+
         return cliente.to_dict(), 201
-    
+
     except IntegrityError:
         db.session.rollback()
-        
+
         # Log de conflicto
         logger.warning(
             f'Intento de crear cliente duplicado',
             dni=dni,
             ip=request.remote_addr
         )
-        
+
         raise ConflictError(
             f'Ya existe un cliente con DNI {dni}',
             payload={'field': 'dni', 'value': dni}
         )
-    
+
     except Exception as e:
         db.session.rollback()
-        
+
         # Log de error inesperado
         log_error(e, level='error', include_trace=True)
         raise
@@ -668,14 +675,14 @@ def obtener_cliente(id):
     Obtener un cliente por ID con manejo de errores.
     """
     cliente = Cliente.query.get(id)
-    
+
     if not cliente:
         logger.warning(f'Cliente no encontrado', cliente_id=id)
         raise NotFoundError(
             f'Cliente {id} no encontrado',
             payload={'resource': 'Cliente', 'id': id}
         )
-    
+
     logger.info(f'Cliente consultado', cliente_id=id)
     return cliente.to_dict(), 200
 ```

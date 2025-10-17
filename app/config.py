@@ -71,7 +71,8 @@ class Config:
     ENABLE_QUERY_PROFILING = _str_to_bool(os.environ.get('ENABLE_QUERY_PROFILING', 'false'))
     ENABLE_COMPRESSION = _str_to_bool(os.environ.get('ENABLE_COMPRESSION', 'true'))
     COMPRESSION_MIN_SIZE = int(os.environ.get('COMPRESSION_MIN_SIZE', '1024'))  # 1KB
-    SLOW_QUERY_THRESHOLD = float(os.environ.get('SLOW_QUERY_THRESHOLD', '0.1'))  # 100ms
+    SLOW_QUERY_THRESHOLD = float(os.environ.get('SLOW_QUERY_THRESHOLD', '0.1'))  # 100ms en segundos
+    SLOW_REQUEST_THRESHOLD = int(os.environ.get('SLOW_REQUEST_THRESHOLD', '500'))  # 500ms
 
 
 class DevelopmentConfig(Config):

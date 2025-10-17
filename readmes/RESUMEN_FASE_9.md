@@ -32,6 +32,7 @@ app/security.py (614 líneas)
 **Propósito:** Limitar número de peticiones por usuario/IP
 
 ### Características
+
 ```
 ✅ Límite configurable por endpoint
 ✅ Ventana de tiempo personalizable
@@ -42,6 +43,7 @@ app/security.py (614 líneas)
 ```
 
 ### Ejemplo de Uso
+
 ```python
 @app.route('/api/clientes', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
@@ -51,15 +53,17 @@ def crear_cliente():
 ```
 
 ### Límites Recomendados
-| Operación | Límite | Razón |
-|-----------|--------|-------|
-| **GET (lectura)** | 30-50 req/min | Operaciones frecuentes |
-| **POST (crear)** | 10-20 req/min | Operaciones moderadas |
-| **PUT (actualizar)** | 10 req/min | Operaciones moderadas |
-| **DELETE** | 5 req/min | Operaciones sensibles |
-| **API Externa** | 5 req/min | Costosas/limitadas |
+
+| Operación            | Límite        | Razón                  |
+| -------------------- | ------------- | ---------------------- |
+| **GET (lectura)**    | 30-50 req/min | Operaciones frecuentes |
+| **POST (crear)**     | 10-20 req/min | Operaciones moderadas  |
+| **PUT (actualizar)** | 10 req/min    | Operaciones moderadas  |
+| **DELETE**           | 5 req/min     | Operaciones sensibles  |
+| **API Externa**      | 5 req/min     | Costosas/limitadas     |
 
 ### Headers de Respuesta
+
 ```http
 X-RateLimit-Limit: 10
 X-RateLimit-Remaining: 7
@@ -75,42 +79,49 @@ X-RateLimit-Window: 60
 ### Validadores Disponibles (6)
 
 #### 1. DNI Peruano
+
 ```python
 is_valid, error = validator.validate_dni('12345678')
 # Valida: 8 dígitos numéricos
 ```
 
 #### 2. Email
+
 ```python
 is_valid, error = validator.validate_email('user@example.com')
 # Valida: Formato RFC 5322
 ```
 
 #### 3. Teléfono Peruano
+
 ```python
 is_valid, error = validator.validate_phone('987654321')
 # Valida: 9 dígitos, comienza con 9
 ```
 
 #### 4. Monto Monetario
+
 ```python
 is_valid, error = validator.validate_amount(5000, min_amount=0, max_amount=50000)
 # Valida: S/ 0 - S/ 50,000
 ```
 
 #### 5. TEA (Tasa Efectiva Anual)
+
 ```python
 is_valid, error = validator.validate_tea(20.5)
 # Valida: 0% - 100%
 ```
 
 #### 6. Número de Cuotas
+
 ```python
 is_valid, error = validator.validate_cuotas(12)
 # Valida: 1 - 36 cuotas
 ```
 
 ### Respuesta de Validación
+
 ```python
 (is_valid: bool, error_message: Optional[str])
 
@@ -130,24 +141,28 @@ is_valid, error = validator.validate_cuotas(12)
 ### Métodos Disponibles (4)
 
 #### 1. Sanitizar HTML
+
 ```python
 limpio = sanitizer.sanitize_html('<script>alert("XSS")</script>')
 # Resultado: &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;
 ```
 
 #### 2. Sanitizar SQL
+
 ```python
 limpio = sanitizer.sanitize_sql("'; DROP TABLE users; --")
 # Resultado: " DROP TABLE users "
 ```
 
 #### 3. Sanitizar Filename
+
 ```python
 limpio = sanitizer.sanitize_filename('../../../etc/passwd')
 # Resultado: etcpasswd
 ```
 
 #### 4. Sanitizar Diccionario
+
 ```python
 datos = {
     'nombre': '<b>Juan</b>',
@@ -162,12 +177,12 @@ limpio = sanitizer.sanitize_dict(datos)
 
 ### Protección Contra
 
-| Ataque | Método | Protección |
-|--------|--------|------------|
-| **XSS** | `sanitize_html()` | ✅ HTML escapado |
-| **SQL Injection** | `sanitize_sql()` + ORM | ✅ Caracteres peligrosos removidos |
-| **Path Traversal** | `sanitize_filename()` | ✅ Rutas relativas bloqueadas |
-| **Injection General** | `sanitize_dict()` | ✅ Sanitización recursiva |
+| Ataque                | Método                 | Protección                         |
+| --------------------- | ---------------------- | ---------------------------------- |
+| **XSS**               | `sanitize_html()`      | ✅ HTML escapado                   |
+| **SQL Injection**     | `sanitize_sql()` + ORM | ✅ Caracteres peligrosos removidos |
+| **Path Traversal**    | `sanitize_filename()`  | ✅ Rutas relativas bloqueadas      |
+| **Injection General** | `sanitize_dict()`      | ✅ Sanitización recursiva          |
 
 ---
 
@@ -180,16 +195,17 @@ limpio = sanitizer.sanitize_dict(datos)
 ```
 1. Cliente solicita formulario
    └─> Servidor genera token CSRF
-   
+
 2. Cliente envía formulario con token
    └─> Servidor valida token
-   
+
 3. Token válido?
    ├─ ✅ Procesar petición
    └─ ❌ Retornar 403 Forbidden
 ```
 
 ### Uso en Backend
+
 ```python
 # Generar token
 from app.security import csrf_protection
@@ -209,21 +225,23 @@ def endpoint():
 ```
 
 ### Uso en Frontend (JavaScript)
+
 ```javascript
-fetch('/api/clientes', {
-  method: 'POST',
+fetch("/api/clientes", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken  // Token del servidor
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrfToken, // Token del servidor
   },
-  body: JSON.stringify(data)
+  body: JSON.stringify(data),
 });
 ```
 
 ### Uso en Templates (HTML)
+
 ```html
 <form method="POST" action="/api/clientes">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
   <!-- resto del formulario -->
 </form>
 ```
@@ -236,27 +254,29 @@ fetch('/api/clientes', {
 
 ### Headers Aplicados Automáticamente
 
-| Header | Valor | Protección |
-|--------|-------|------------|
-| **X-Content-Type-Options** | `nosniff` | MIME sniffing |
-| **X-Frame-Options** | `DENY` | Clickjacking |
-| **X-XSS-Protection** | `1; mode=block` | XSS (navegador) |
-| **Content-Security-Policy** | `default-src 'self'...` | XSS avanzado |
-| **Referrer-Policy** | `strict-origin-when-cross-origin` | Información de referrer |
-| **Permissions-Policy** | `geolocation=(), camera=()...` | APIs del navegador |
+| Header                      | Valor                             | Protección              |
+| --------------------------- | --------------------------------- | ----------------------- |
+| **X-Content-Type-Options**  | `nosniff`                         | MIME sniffing           |
+| **X-Frame-Options**         | `DENY`                            | Clickjacking            |
+| **X-XSS-Protection**        | `1; mode=block`                   | XSS (navegador)         |
+| **Content-Security-Policy** | `default-src 'self'...`           | XSS avanzado            |
+| **Referrer-Policy**         | `strict-origin-when-cross-origin` | Información de referrer |
+| **Permissions-Policy**      | `geolocation=(), camera=()...`    | APIs del navegador      |
 
 ### Content Security Policy (CSP)
+
 ```http
-Content-Security-Policy: 
-  default-src 'self'; 
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; 
-  style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; 
-  img-src 'self' data: https:; 
-  font-src 'self' data:; 
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com;
+  style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+  img-src 'self' data: https:;
+  font-src 'self' data:;
   connect-src 'self';
 ```
 
 ### Configuración
+
 ✅ **Aplicado automáticamente** en `app/__init__.py`
 ✅ **No requiere código adicional** en endpoints
 ✅ **Configurado para producción** (ajustar para HTTPS)
@@ -268,6 +288,7 @@ Content-Security-Policy:
 **Propósito:** Hashear passwords de forma segura
 
 ### Algoritmo
+
 ```
 PBKDF2-HMAC-SHA256
 ├── 100,000 iteraciones
@@ -278,6 +299,7 @@ PBKDF2-HMAC-SHA256
 ### Uso
 
 #### Crear Password
+
 ```python
 password = 'mi_password_seguro'
 hashed, salt = password_hasher.hash_password(password)
@@ -288,6 +310,7 @@ usuario.salt = salt
 ```
 
 #### Verificar Password
+
 ```python
 password_input = request.form['password']
 is_valid = password_hasher.verify_password(
@@ -305,6 +328,7 @@ else:
 ```
 
 ### Características de Seguridad
+
 ✅ **PBKDF2:** Estándar de industria (NIST)
 ✅ **100,000 iteraciones:** Resistente a brute force
 ✅ **SHA-256:** Hash criptográfico seguro
@@ -351,23 +375,23 @@ MEJORA: +∞% (de 0 a 100%) 🚀
 
 ## 🛡️ OWASP Top 10 (2021) - Cobertura
 
-| # | Vulnerabilidad | Status | Comentario |
-|---|----------------|--------|------------|
-| 1 | **Broken Access Control** | ⚠️ Parcial | Requiere auth/authz completo (Fase 10+) |
-| 2 | **Cryptographic Failures** | ✅ Completo | Password hashing + HTTPS (prod) |
-| 3 | **Injection** | ✅ Completo | Sanitization + ORM + Validation |
-| 4 | **Insecure Design** | ✅ Completo | Rate limiting + Validation |
-| 5 | **Security Misconfiguration** | ✅ Completo | Security headers configurados |
-| 6 | **Vulnerable Components** | ⏳ Pendiente | Auditoría de dependencias |
-| 7 | **Authentication Failures** | ✅ Completo | Password hashing implementado |
-| 8 | **Software/Data Integrity** | ⚠️ Parcial | CSRF implementado |
-| 9 | **Logging Failures** | ⏳ Pendiente | Fase 10 |
-| 10 | **SSRF** | ⚠️ Parcial | Validación de URLs parcial |
+| #   | Vulnerabilidad                | Status       | Comentario                              |
+| --- | ----------------------------- | ------------ | --------------------------------------- |
+| 1   | **Broken Access Control**     | ⚠️ Parcial   | Requiere auth/authz completo (Fase 10+) |
+| 2   | **Cryptographic Failures**    | ✅ Completo  | Password hashing + HTTPS (prod)         |
+| 3   | **Injection**                 | ✅ Completo  | Sanitization + ORM + Validation         |
+| 4   | **Insecure Design**           | ✅ Completo  | Rate limiting + Validation              |
+| 5   | **Security Misconfiguration** | ✅ Completo  | Security headers configurados           |
+| 6   | **Vulnerable Components**     | ⏳ Pendiente | Auditoría de dependencias               |
+| 7   | **Authentication Failures**   | ✅ Completo  | Password hashing implementado           |
+| 8   | **Software/Data Integrity**   | ⚠️ Parcial   | CSRF implementado                       |
+| 9   | **Logging Failures**          | ⏳ Pendiente | Fase 10                                 |
+| 10  | **SSRF**                      | ⚠️ Parcial   | Validación de URLs parcial              |
 
 ```
 Cobertura: 7/10 completo ✅
           3/10 parcial ⚠️
-          
+
 Total: 70% de OWASP Top 10 🟢
 ```
 
@@ -383,19 +407,19 @@ from app.security import rate_limit, validator, sanitizer, require_csrf_token
 @require_csrf_token                       # 2. CSRF Protection
 def crear_cliente_seguro():
     data = request.get_json()
-    
+
     # 3. Input Validation
     is_valid_dni, error_dni = validator.validate_dni(data.get('dni'))
     if not is_valid_dni:
         return {'error': error_dni}, 400
-    
+
     is_valid_email, error_email = validator.validate_email(data.get('email'))
     if not is_valid_email:
         return {'error': error_email}, 400
-    
+
     # 4. Input Sanitization
     datos_limpios = sanitizer.sanitize_dict(data)
-    
+
     # 5. Processing (datos ya seguros)
     try:
         cliente = crear_cliente(**datos_limpios)
@@ -451,16 +475,16 @@ TOTAL: 5 archivos | ~1,854 líneas agregadas
 
 ### Cobertura de Ataques
 
-| Ataque | Antes | Después | Mitigación |
-|--------|-------|---------|------------|
-| **XSS (Cross-Site Scripting)** | ❌ Vulnerable | ✅ Protegido | Sanitization + CSP |
-| **SQL Injection** | ⚠️ Parcial (ORM) | ✅ Protegido | Sanitization + ORM |
-| **CSRF** | ❌ Vulnerable | ✅ Protegido | Token validation |
-| **Clickjacking** | ❌ Vulnerable | ✅ Protegido | X-Frame-Options |
-| **MIME Sniffing** | ❌ Vulnerable | ✅ Protegido | X-Content-Type-Options |
-| **DDoS / Abuse** | ❌ Vulnerable | ✅ Protegido | Rate Limiting |
-| **Weak Passwords** | ❌ Vulnerable | ✅ Protegido | Password Hashing |
-| **Data Injection** | ❌ Vulnerable | ✅ Protegido | Input Validation |
+| Ataque                         | Antes            | Después      | Mitigación             |
+| ------------------------------ | ---------------- | ------------ | ---------------------- |
+| **XSS (Cross-Site Scripting)** | ❌ Vulnerable    | ✅ Protegido | Sanitization + CSP     |
+| **SQL Injection**              | ⚠️ Parcial (ORM) | ✅ Protegido | Sanitization + ORM     |
+| **CSRF**                       | ❌ Vulnerable    | ✅ Protegido | Token validation       |
+| **Clickjacking**               | ❌ Vulnerable    | ✅ Protegido | X-Frame-Options        |
+| **MIME Sniffing**              | ❌ Vulnerable    | ✅ Protegido | X-Content-Type-Options |
+| **DDoS / Abuse**               | ❌ Vulnerable    | ✅ Protegido | Rate Limiting          |
+| **Weak Passwords**             | ❌ Vulnerable    | ✅ Protegido | Password Hashing       |
+| **Data Injection**             | ❌ Vulnerable    | ✅ Protegido | Input Validation       |
 
 **Ataques Mitigados:** 8/8 (100%) 🛡️
 
@@ -495,7 +519,9 @@ Security headers:        6
 ## 🎓 Conceptos y Patrones Aplicados
 
 ### 1. Defense in Depth
+
 Múltiples capas de seguridad:
+
 ```
 Cliente → Rate Limit → Validation → Sanitization → Processing
           └─ Primera    └─ Segunda   └─ Tercera      └─ Seguro
@@ -503,7 +529,9 @@ Cliente → Rate Limit → Validation → Sanitization → Processing
 ```
 
 ### 2. Fail Secure
+
 Si algo falla, fallar de forma segura:
+
 ```python
 try:
     procesar_datos()
@@ -512,7 +540,9 @@ except Exception:
 ```
 
 ### 3. Least Privilege
+
 Límites más restrictivos para operaciones sensibles:
+
 ```
 GET:    50 req/min  (lectura)
 POST:   10 req/min  (escritura)
@@ -520,7 +550,9 @@ DELETE:  5 req/min  (sensible)
 ```
 
 ### 4. Input Validation
+
 Nunca confiar en el cliente:
+
 ```python
 # Validar SIEMPRE en el servidor
 is_valid, error = validator.validate_dni(dni)
@@ -529,7 +561,9 @@ if not is_valid:
 ```
 
 ### 5. Separation of Concerns
+
 Módulo de seguridad independiente:
+
 ```python
 from app.security import rate_limit, validator, sanitizer
 # Reutilizable en toda la aplicación
@@ -540,6 +574,7 @@ from app.security import rate_limit, validator, sanitizer
 ## ⚠️ Consideraciones para Producción
 
 ### 1. Rate Limiting → Redis
+
 ```python
 # Actual (desarrollo)
 rate_limiter = RateLimiter()  # Memoria
@@ -550,6 +585,7 @@ limiter = Limiter(storage_uri="redis://localhost:6379")
 ```
 
 ### 2. CSRF → Flask-WTF
+
 ```python
 # Actual (desarrollo)
 csrf_protection = CSRFProtection()
@@ -560,6 +596,7 @@ csrf = CSRFProtect(app)
 ```
 
 ### 3. HTTPS Obligatorio
+
 ```python
 # Habilitar HSTS en producción
 if app.config['ENV'] == 'production':
@@ -568,6 +605,7 @@ if app.config['ENV'] == 'production':
 ```
 
 ### 4. Secrets Management
+
 ```python
 # ❌ NO hacer
 SECRET_KEY = 'hardcoded_secret'
@@ -577,6 +615,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 ```
 
 ### 5. Dependencias Actualizadas
+
 ```bash
 # Auditar regularmente
 pip list --outdated
@@ -590,6 +629,7 @@ pip-audit  # Detectar vulnerabilidades
 ### Completado ✅
 
 - [x] Crear módulo `app/security.py`
+
   - [x] RateLimiter class
   - [x] InputSanitizer class
   - [x] InputValidator class (6 validadores)
@@ -598,16 +638,19 @@ pip-audit  # Detectar vulnerabilidades
   - [x] add_security_headers function
 
 - [x] Actualizar `app/__init__.py`
+
   - [x] Importar security module
   - [x] Configurar security headers globalmente
-  - [x] Agregar _configure_security function
+  - [x] Agregar \_configure_security function
 
 - [x] Crear ejemplo de endpoints seguros
+
   - [x] 10 endpoints con todas las medidas
   - [x] Comentarios explicativos
   - [x] Mejores prácticas aplicadas
 
 - [x] Documentación completa
+
   - [x] Guía de uso (FASE_9_SEGURIDAD_GUIA.md)
   - [x] Documentación técnica (FASE_9_VALIDACION_SEGURIDAD.md)
   - [x] Resumen visual (este archivo)
@@ -694,9 +737,9 @@ La aplicación está **lista para producción** con las mejoras recomendadas (Re
 
 **🎊 ¡Fase 9 completada con éxito!**
 
-*Progreso Total: 8 de 12 fases (66.7%) ✨*
+_Progreso Total: 8 de 12 fases (66.7%) ✨_
 
 ---
 
-*Creado: Octubre 2025*
-*Última actualización: Octubre 2025*
+_Creado: Octubre 2025_
+_Última actualización: Octubre 2025_

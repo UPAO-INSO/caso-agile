@@ -12,16 +12,19 @@
 **Objetivo**: Establecer arquitectura base con Application Factory Pattern
 
 **Archivos creados**:
+
 - ✅ `app/extensions.py` - Centralización de extensiones Flask (db, migrate, mail)
 - ✅ `app/config.py` - Clases de configuración por ambiente (Dev, Prod, Testing)
 - ✅ `instance/config.py.example` - Template de configuración sensible
 - ✅ `requirements-dev.txt` - Dependencias de desarrollo (pytest, flake8, black, isort)
 
 **Archivos modificados**:
+
 - ✅ `app/__init__.py` - Refactorizado a Application Factory Pattern con `create_app()`
 - ✅ 11+ archivos actualizados: imports cambiados de `from app import db` → `from app.extensions import db`
 
 **Impacto**:
+
 - ✅ **Eliminación de circular imports**
 - ✅ **Configuración basada en entornos**
 - ✅ **Testing validado**: App inicializa correctamente
@@ -35,16 +38,19 @@
 **Servicios creados**:
 
 1. **EmailService** (`app/services/email_service.py`)
+
    - `enviar_confirmacion_prestamo()` - Email con PDF adjunto
    - `enviar_cronograma_simple()` - Email simple de cronograma
    - **Beneficio**: Reutilización de lógica de email en múltiples endpoints
 
 2. **PDFService** (`app/services/pdf_service.py`)
+
    - `generar_cronograma_pdf()` - PDF básico de cronograma
    - `generar_cronograma_detallado_pdf()` - PDF detallado con capital/intereses
    - **Tecnología**: ReportLab, soporte multi-página
 
 3. **FinancialService** (`app/services/financial_service.py`)
+
    - `tea_to_tem()` - Conversión TEA → TEM
    - `calcular_cuota_fija()` - Cálculo de cuota con sistema francés
    - `generar_cronograma_pagos()` - Cronograma completo de amortización
@@ -52,12 +58,14 @@
    - **Constante**: `UIT_VALOR = Decimal('5350.00')`
 
 4. **PEPService** (`app/services/pep_service.py`)
+
    - `cargar_dataset_pep()` - Carga de dataset de personas expuestas políticamente
    - `validar_pep()` - Validación de DNI contra dataset
    - `get_estadisticas()` - Estadísticas del dataset
    - **Implementación**: Cache en memoria con pandas, patrón Singleton
 
 5. **PrestamoService** (`app/services/prestamo_service.py`)
+
    - `obtener_o_crear_cliente()` - Gestión de clientes
    - `validar_prestamo_activo()` - Validación de préstamos vigentes
    - `determinar_tipo_declaracion()` - Lógica de declaraciones juradas
@@ -75,12 +83,14 @@
    - `actualizar_cliente()` - Actualización con logging
 
 **Archivos modificados**:
+
 - ✅ `app/routes.py` - Usa `EmailService.enviar_cronograma_simple()`
 - ✅ `app/prestamos/routes.py` - **REDUCIDO 465→294 líneas (↓37%)**
 - ✅ `app/clients/crud.py` - **REDUCIDO 313→171 líneas (↓45%)** ⭐
 - ✅ `app/common/utils.py` - Delega a `FinancialService` con backward compatibility
 
 **Impacto**:
+
 - ✅ **Reducción de código duplicado**: 200+ líneas de API/validación removidas
 - ✅ **Separación de concerns**: Routes solo manejan HTTP, servicios contienen lógica
 - ✅ **Testabilidad**: Servicios pueden ser testeados independientemente
@@ -93,6 +103,7 @@
 **Objetivo**: Simplificar controlador de préstamos usando servicios
 
 **Antes**:
+
 ```python
 # 465 líneas con lógica mezclada:
 # - Validación de clientes
@@ -103,18 +114,20 @@
 ```
 
 **Después**:
+
 ```python
 # 294 líneas, controlador limpio:
 @prestamos_bp.route('/register', methods=['POST'])
 def registrar_prestamo():
     dto = PrestamoCreateDTO.model_validate(payload)
-    
+
     # Delegar toda la lógica al servicio
     respuesta, error, status_code = PrestamoService.registrar_prestamo_completo(...)
     return jsonify(respuesta), status_code
 ```
 
 **Mejoras**:
+
 - ✅ **Reducción de 171 líneas (37%)**
 - ✅ **Función principal**: 250+ líneas → 20 líneas
 - ✅ **Actualización de estado**: 40 líneas → 15 líneas
@@ -128,6 +141,7 @@ def registrar_prestamo():
 **Objetivo**: Simplificar CRUD de clientes usando ClienteService
 
 **Antes** (313 líneas):
+
 ```python
 # Lógica compleja mezclada:
 # - 150+ líneas de consulta API RENIEC
@@ -137,6 +151,7 @@ def registrar_prestamo():
 ```
 
 **Después** (171 líneas):
+
 ```python
 # CRUD limpio con delegación:
 def crear_cliente(dni, correo_electronico, pep_declarado=False):
@@ -152,6 +167,7 @@ def consultar_dni_api(dni, correo_electronico=None):
 ```
 
 **Mejoras**:
+
 - ✅ **Reducción de 142 líneas (45%)**
 - ✅ **Lógica de API extraída** a ClienteService (150 líneas)
 - ✅ **Validación PEP centralizada** con detección de discrepancias
@@ -160,6 +176,7 @@ def consultar_dni_api(dni, correo_electronico=None):
 - ✅ **Código más testeable** - servicios aislados
 
 **Testing**:
+
 ```bash
 ✓ App refactorizada creada exitosamente
 ✓ ClienteService importado correctamente
@@ -171,6 +188,7 @@ def consultar_dni_api(dni, correo_electronico=None):
 ## 📋 Fases Pendientes
 
 ### 🔜 FASE 2: Separación API vs Views (0%)
+
 - **Estado**: No iniciado
 - **Estructura**:
   - `app/api/v1/` - Endpoints JSON
@@ -178,6 +196,7 @@ def consultar_dni_api(dni, correo_electronico=None):
 - **Tareas**: Reorganizar blueprints, actualizar imports
 
 ### 🔜 FASE 6-7: Templates y Components (0%)
+
 - **Estado**: No iniciado
 - **Macros a crear**:
   - `_modal.html`
@@ -189,6 +208,7 @@ def consultar_dni_api(dni, correo_electronico=None):
   - `lista_clientes.html`: 644 → 150 líneas
 
 ### 🔜 FASE 8: JavaScript Modules (0%)
+
 - **Estado**: No iniciado
 - **Archivo objetivo**: `client-search.js` (896 líneas)
 - **Módulos a crear**:
@@ -199,6 +219,7 @@ def consultar_dni_api(dni, correo_electronico=None):
   - `main.js` (entry point)
 
 ### 🔜 FASE 9-12: Quality & Docs (0%)
+
 - **Estado**: No iniciado
 - **Tareas**:
   - CSS consolidation
@@ -214,29 +235,32 @@ def consultar_dni_api(dni, correo_electronico=None):
 ## 📊 Métricas de Progreso
 
 ### Reducción de Código
-| Archivo | Antes | Después | Reducción |
-|---------|-------|---------|-----------|
-| `prestamos/routes.py` | 465 | 294 | **-171 líneas (-37%)** |
-| `clients/crud.py` | 313 | 171 | **-142 líneas (-45%)** ⭐ |
-| `common/utils.py` | ~140 | ~95 | **-45 líneas (-32%)** |
-| **Total** | **918** | **560** | **-358 líneas (-39%)** |
+
+| Archivo               | Antes   | Después | Reducción                 |
+| --------------------- | ------- | ------- | ------------------------- |
+| `prestamos/routes.py` | 465     | 294     | **-171 líneas (-37%)**    |
+| `clients/crud.py`     | 313     | 171     | **-142 líneas (-45%)** ⭐ |
+| `common/utils.py`     | ~140    | ~95     | **-45 líneas (-32%)**     |
+| **Total**             | **918** | **560** | **-358 líneas (-39%)**    |
 
 ### Arquitectura
-| Componente | Estado | Impacto |
-|------------|--------|---------|
-| Application Factory | ✅ | Testing, configuración por ambiente |
-| Service Layer | ✅ | Separación de concerns, reutilización |
-| Extensions centralizadas | ✅ | No circular imports |
-| Configuration Management | ✅ | Dev/Prod/Testing environments |
-| ClienteService | ✅ | API RENIEC centralizada, validación PEP ⭐ |
+
+| Componente               | Estado | Impacto                                    |
+| ------------------------ | ------ | ------------------------------------------ |
+| Application Factory      | ✅     | Testing, configuración por ambiente        |
+| Service Layer            | ✅     | Separación de concerns, reutilización      |
+| Extensions centralizadas | ✅     | No circular imports                        |
+| Configuration Management | ✅     | Dev/Prod/Testing environments              |
+| ClienteService           | ✅     | API RENIEC centralizada, validación PEP ⭐ |
 
 ### Calidad de Código
-| Aspecto | Antes | Ahora |
-|---------|-------|-------|
-| Separación de concerns | ❌ Mezclado | ✅ Separado |
-| Reutilización | ❌ Código duplicado | ✅ Servicios compartidos |
-| Testabilidad | ❌ Difícil | ✅ Mejorada |
-| Mantenibilidad | ⚠️ Media | ✅ Alta |
+
+| Aspecto                | Antes               | Ahora                    |
+| ---------------------- | ------------------- | ------------------------ |
+| Separación de concerns | ❌ Mezclado         | ✅ Separado              |
+| Reutilización          | ❌ Código duplicado | ✅ Servicios compartidos |
+| Testabilidad           | ❌ Difícil          | ✅ Mejorada              |
+| Mantenibilidad         | ⚠️ Media            | ✅ Alta                  |
 
 ---
 
@@ -268,12 +292,14 @@ def consultar_dni_api(dni, correo_electronico=None):
 ## 📝 Notas Técnicas
 
 ### Decisiones de Diseño
+
 1. **Service Layer Pattern**: Lógica de negocio separada de HTTP handlers
 2. **Backward Compatibility**: `common/utils.py` mantiene interfaz legacy delegando a servicios
 3. **Transaction Management**: Servicios manejan transacciones DB (rollback en errores)
 4. **Error Handling**: Servicios retornan tuplas `(resultado, error, status_code)`
 
 ### Patrones Implementados
+
 - ✅ Application Factory Pattern
 - ✅ Service Layer Pattern
 - ✅ Singleton Pattern (PEPService cache)

@@ -12,7 +12,7 @@ Este documento muestra ejemplos concretos del código antes y después de la ref
 @prestamos_bp.route('/register', methods=['POST'])
 def registrar_prestamo():
     # ... validación del payload (40 líneas) ...
-    
+
     dni = dto.dni
     correo_electronico = dto.correo_electronico
     monto_total = dto.monto
@@ -23,20 +23,20 @@ def registrar_prestamo():
     # Obtener o crear cliente (15 líneas de código inline)
     from app.clients.crud import obtener_cliente_por_dni
     cliente = obtener_cliente_por_dni(dni)
-    
+
     if not cliente:
         from app.clients.crud import crear_cliente
         cliente_dict, error_cliente = crear_cliente(dni, correo_electronico, pep_declarado=False)
         if error_cliente:
             return error_handler.respond(f'Error al crear cliente: {error_cliente}', 400)
         cliente = obtener_cliente_por_dni(dni)
-    
+
     if not cliente:
         return error_handler.respond(f'No se pudo crear o encontrar el cliente con DNI {dni}.', 404)
-    
+
     # Validar préstamo activo (10 líneas)
     prestamo_activo = prestamo_activo_cliente(cliente.cliente_id, EstadoPrestamoEnum.VIGENTE)
-    
+
     if prestamo_activo:
         return jsonify({
             'error': 'PRESTAMO_ACTIVO',
@@ -48,7 +48,7 @@ def registrar_prestamo():
 
     # Determinar declaración jurada (20 líneas)
     requiere_dj = False
-    tipos_dj = set() 
+    tipos_dj = set()
 
     if monto_total > FinancialService.UIT_VALOR:
         requiere_dj = True
@@ -60,7 +60,7 @@ def registrar_prestamo():
 
     declaracion_id = None
     tipo_declaracion_enum = None
-    
+
     if requiere_dj:
         if TipoDeclaracionEnum.USO_PROPIO in tipos_dj and TipoDeclaracionEnum.PEP in tipos_dj:
             tipo_declaracion_enum = TipoDeclaracionEnum.AMBOS
@@ -76,16 +76,16 @@ def registrar_prestamo():
             nueva_dj = DeclaracionJurada(
                 cliente_id=cliente.cliente_id,
                 tipo_declaracion=tipo_declaracion_enum,
-                fecha_firma=date.today(), 
-                firmado=True 
+                fecha_firma=date.today(),
+                firmado=True
             )
             modelo_declaracion, error_dj = crear_declaracion(nueva_dj)
-            
+
             if error_dj:
                 return error_handler.respond(f'Error al crear declaracion jurada: {error_dj}', 500)
-            
+
             declaracion_id = modelo_declaracion.declaracion_id
-        
+
         # Crear préstamo (15 líneas)
         nuevo_prestamo = Prestamo(
             cliente_id=cliente.cliente_id,
@@ -96,12 +96,12 @@ def registrar_prestamo():
             requiere_dec_jurada=requiere_dj,
             declaracion_id=declaracion_id
         )
-        
+
         modelo_prestamo = crear_prestamo(nuevo_prestamo)
 
         # Generar cronograma (1 línea)
         cronograma = FinancialService.generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento)
-        
+
         # Crear cuotas (20 líneas)
         cuotas_a_crear = []
         for item in cronograma:
@@ -115,7 +115,7 @@ def registrar_prestamo():
                 saldo_capital=item['saldo_capital']
             )
             cuotas_a_crear.append(cuota)
-        
+
         crear_cuotas_bulk(cuotas_a_crear)
 
         # Enviar email (1 línea)
@@ -153,7 +153,7 @@ def registrar_prestamo():
                 for c in cronograma
             ]
         }
-        
+
         if requiere_dj:
             respuesta['declaracion_jurada'] = {
                 'declaracion_id': modelo_declaracion.declaracion_id,
@@ -175,6 +175,7 @@ def registrar_prestamo():
 ```
 
 **Problemas**:
+
 - ❌ 250+ líneas de lógica de negocio en controlador HTTP
 - ❌ Violación del Single Responsibility Principle
 - ❌ Difícil de testear (requiere mocks HTTP)
@@ -186,6 +187,7 @@ def registrar_prestamo():
 ### ✅ DESPUÉS (60 líneas totales)
 
 #### routes.py (20 líneas)
+
 ```python
 @prestamos_bp.route('/register', methods=['POST'])
 def registrar_prestamo():
@@ -210,20 +212,21 @@ def registrar_prestamo():
         plazo=dto.plazo,
         f_otorgamiento=dto.f_otorgamiento
     )
-    
+
     if error:
         if status_code == 400 and respuesta and 'error' in respuesta:
             return jsonify(respuesta), status_code
         return error_handler.respond(error, status_code)
-    
+
     return jsonify(respuesta), status_code
 ```
 
 #### prestamo_service.py (250 líneas - lógica reutilizable)
+
 ```python
 class PrestamoService:
     """Servicio para manejar la lógica de negocios de préstamos"""
-    
+
     @staticmethod
     def registrar_prestamo_completo(
         dni: str,
@@ -235,7 +238,7 @@ class PrestamoService:
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
         """
         Registra un préstamo completo con todas sus dependencias.
-        
+
         Maneja:
         1. Obtención/creación del cliente
         2. Validación de préstamos activos
@@ -249,21 +252,21 @@ class PrestamoService:
             cliente, error = PrestamoService.obtener_o_crear_cliente(dni, correo_electronico)
             if error:
                 return None, error, 400
-            
+
             # 2. Validar préstamo activo
             tiene_activo, info_prestamo = PrestamoService.validar_prestamo_activo(cliente.cliente_id)
             if tiene_activo:
                 return {...}, error_msg, 400
-            
+
             # 3. Determinar si requiere declaración jurada
             requiere_dj, tipo_declaracion = PrestamoService.determinar_tipo_declaracion(
                 monto_total, cliente.pep
             )
-            
+
             # 4-8: Crear DJ, préstamo, cuotas, enviar email...
-            
+
             return respuesta, None, 201
-            
+
         except Exception as exc:
             db.session.rollback()
             logger.error(f"Error en registrar_prestamo_completo: {exc}", exc_info=True)
@@ -271,6 +274,7 @@ class PrestamoService:
 ```
 
 **Beneficios**:
+
 - ✅ **Controlador limpio**: Solo maneja HTTP (validación y delegación)
 - ✅ **Lógica centralizada**: PrestamoService reutilizable
 - ✅ **Testabilidad**: Servicio testeable sin HTTP
@@ -291,23 +295,23 @@ try:
         sender=('Banco UPAO', app.config['MAIL_USERNAME']),
         recipients=[cliente.correo_electronico]
     )
-    
+
     msg.body = f"""
     Estimado/a {cliente.nombre_completo},
-    
+
     Su préstamo ha sido aprobado con los siguientes detalles:
-    
+
     Monto Total: S/ {modelo_prestamo.monto_total}
     Tasa de Interés Anual (TEA): {modelo_prestamo.interes_tea}%
     Plazo: {modelo_prestamo.plazo} meses
     Fecha de Otorgamiento: {modelo_prestamo.f_otorgamiento.strftime('%d/%m/%Y')}
-    
+
     Adjunto encontrará el cronograma de pagos detallado.
-    
+
     Saludos cordiales,
     Banco UPAO
     """
-    
+
     msg.html = f"""
     <html>
         <body>
@@ -325,24 +329,25 @@ try:
         </body>
     </html>
     """
-    
+
     # Generar PDF...
     pdf_bytes = generar_cronograma_pdf(...)
-    
+
     msg.attach(
         filename=f'cronograma_prestamo_{modelo_prestamo.prestamo_id}.pdf',
         content_type='application/pdf',
         data=pdf_bytes
     )
-    
+
     mail.send(msg)
     logger.info(f"Email enviado a {cliente.correo_electronico}")
-    
+
 except Exception as e:
     logger.error(f"Error al enviar email: {e}")
 ```
 
 **Problemas**:
+
 - ❌ Código duplicado en múltiples lugares
 - ❌ HTML hardcodeado (difícil de mantener)
 - ❌ Lógica de email mezclada con lógica de préstamos
@@ -353,16 +358,18 @@ except Exception as e:
 ### ✅ DESPUÉS (1 línea en routes.py)
 
 #### routes.py
+
 ```python
 # Simple y limpio
 EmailService.enviar_confirmacion_prestamo(cliente, modelo_prestamo, cronograma)
 ```
 
 #### email_service.py (centralizado y reutilizable)
+
 ```python
 class EmailService:
     """Servicio para envío de correos electrónicos"""
-    
+
     @staticmethod
     def enviar_confirmacion_prestamo(
         cliente: Cliente,
@@ -378,11 +385,11 @@ class EmailService:
                 sender=('Banco UPAO', current_app.config['MAIL_USERNAME']),
                 recipients=[cliente.correo_electronico]
             )
-            
+
             # Renderizar templates (separación de contenido)
             msg.body = EmailService._renderizar_email_texto(cliente, prestamo)
             msg.html = EmailService._renderizar_email_html(cliente, prestamo)
-            
+
             # Adjuntar PDF generado por PDFService
             pdf_bytes = PDFService.generar_cronograma_pdf(prestamo, cronograma)
             msg.attach(
@@ -390,17 +397,18 @@ class EmailService:
                 content_type='application/pdf',
                 data=pdf_bytes
             )
-            
+
             mail.send(msg)
             logger.info(f"✓ Email enviado a {cliente.correo_electronico}")
             return True
-            
+
         except Exception as exc:
             logger.error(f"✗ Error al enviar email: {exc}", exc_info=True)
             return False
 ```
 
 **Beneficios**:
+
 - ✅ **DRY**: No hay código duplicado
 - ✅ **Reutilizable**: Misma función en todos los endpoints
 - ✅ **Mantenible**: Cambios de template centralizados
@@ -418,18 +426,18 @@ class EmailService:
 def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
     tem_decimal = tea_to_tem(interes_tea)
     tem = tem_decimal / Decimal('100')
-    
+
     cuota_fija_un = calcular_cuota_fija(monto_total, tem, plazo)
     cuota_fija = cuota_fija_un.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-    
+
     saldo = monto_total
     cronograma = []
-    
+
     for i in range(1, plazo + 1):
         fecha_vencimiento = f_otorgamiento + timedelta(days=30 * i)
         monto_interes_un = saldo * tem
         monto_capital_un = cuota_fija - monto_interes_un
-        
+
         if i == plazo:
             monto_capital_un = saldo
             cuota_un = monto_capital_un + monto_interes_un
@@ -437,15 +445,16 @@ def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
         else:
             cuota_un = cuota_fija
             saldo_final_un = saldo - monto_capital_un
-        
+
         # Redondeos...
         cronograma.append({...})
         saldo = saldo_final_un
-    
+
     return cronograma
 ```
 
 **Problemas**:
+
 - ❌ Lógica compleja en archivo de utilidades
 - ❌ Difícil de testear unitariamente
 - ❌ Constantes hardcodeadas (UIT_VALOR)
@@ -456,36 +465,37 @@ def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
 ### ✅ DESPUÉS (servicio documentado y reutilizable)
 
 #### financial_service.py
+
 ```python
 class FinancialService:
     """Servicio para cálculos financieros y cronogramas de préstamos"""
-    
+
     # Constantes del negocio
     UIT_VALOR = Decimal('5350.00')
     DIAS_POR_CUOTA = 30
-    
+
     @staticmethod
     def tea_to_tem(tea: Decimal) -> Decimal:
         """
         Convierte Tasa Efectiva Anual (TEA) a Tasa Efectiva Mensual (TEM).
-        
+
         Fórmula: TEM = ((1 + TEA)^(1/12) - 1) * 100
-        
+
         Args:
             tea: Tasa efectiva anual (ej: 24.0 para 24%)
-            
+
         Returns:
             TEM como porcentaje (ej: 1.81 para 1.81%)
         """
         tea_decimal = tea / Decimal('100')
         base = Decimal('1') + tea_decimal
         exponente = Decimal('1') / Decimal('12')
-        
+
         tem_decimal = base ** exponente - Decimal('1')
         tem_porcentaje = tem_decimal * Decimal('100')
-        
+
         return tem_porcentaje.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-    
+
     @staticmethod
     def generar_cronograma_pagos(
         monto_total: Decimal,
@@ -495,39 +505,39 @@ class FinancialService:
     ) -> List[Dict[str, Any]]:
         """
         Genera cronograma de pagos usando sistema de amortización francés.
-        
+
         El sistema francés mantiene cuota fija durante todo el plazo,
         variando la proporción de capital e intereses en cada cuota.
-        
+
         Args:
             monto_total: Monto del préstamo
             interes_tea: Tasa efectiva anual
             plazo: Número de cuotas (meses)
             f_otorgamiento: Fecha de otorgamiento del préstamo
-            
+
         Returns:
             Lista de diccionarios con información de cada cuota
         """
         # Convertir TEA a TEM
         tem_porcentaje = FinancialService.tea_to_tem(interes_tea)
         tem = tem_porcentaje / Decimal('100')
-        
+
         # Calcular cuota fija
         cuota_fija = FinancialService.calcular_cuota_fija(monto_total, tem, plazo)
-        
+
         # Generar cronograma
         saldo = monto_total
         cronograma = []
-        
+
         for i in range(1, plazo + 1):
             fecha_vencimiento = f_otorgamiento + timedelta(
                 days=FinancialService.DIAS_POR_CUOTA * i
             )
-            
+
             # Cálculos de la cuota
             monto_interes = (saldo * tem).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             monto_capital = (cuota_fija - monto_interes).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            
+
             # Ajuste última cuota
             if i == plazo:
                 monto_capital = saldo
@@ -536,7 +546,7 @@ class FinancialService:
             else:
                 cuota_actual = cuota_fija
                 saldo_final = saldo - monto_capital
-            
+
             cronograma.append({
                 'numero_cuota': i,
                 'fecha_vencimiento': fecha_vencimiento,
@@ -545,13 +555,14 @@ class FinancialService:
                 'monto_interes': monto_interes,
                 'saldo_capital': saldo_final
             })
-            
+
             saldo = saldo_final
-        
+
         return cronograma
 ```
 
 #### common/utils.py (backward compatibility)
+
 ```python
 def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
     """
@@ -565,6 +576,7 @@ def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
 ```
 
 **Beneficios**:
+
 - ✅ **Documentado**: Fórmulas explicadas con docstrings
 - ✅ **Constantes centralizadas**: `UIT_VALOR` en un solo lugar
 - ✅ **Testeable**: Métodos estáticos fáciles de testear
@@ -613,6 +625,7 @@ from app.services.prestamo_service import PrestamoService
 ```
 
 **Beneficios**:
+
 - ✅ **Sin circular imports**: extensions.py rompe el ciclo
 - ✅ **Organizado**: Agrupado por tipo (stdlib, flask, app, services)
 - ✅ **Menos imports**: Servicios encapsulan dependencias
@@ -622,21 +635,22 @@ from app.services.prestamo_service import PrestamoService
 
 ## 📊 Resumen de Mejoras
 
-| Aspecto | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| **Líneas en routes.py** | 465 | 294 | ↓ 37% |
-| **Función registrar_prestamo** | 250 líneas | 20 líneas | ↓ 92% |
-| **Código duplicado** | Email en 3 lugares | 1 servicio | ↓ 67% |
-| **Imports** | 25+ imports | 12 imports | ↓ 52% |
-| **Testabilidad** | Difícil (HTTP mocks) | Fácil (unit tests) | +∞ |
-| **Mantenibilidad** | Baja | Alta | +200% |
-| **Separación de concerns** | No | Sí | ✅ |
+| Aspecto                        | Antes                | Después            | Mejora |
+| ------------------------------ | -------------------- | ------------------ | ------ |
+| **Líneas en routes.py**        | 465                  | 294                | ↓ 37%  |
+| **Función registrar_prestamo** | 250 líneas           | 20 líneas          | ↓ 92%  |
+| **Código duplicado**           | Email en 3 lugares   | 1 servicio         | ↓ 67%  |
+| **Imports**                    | 25+ imports          | 12 imports         | ↓ 52%  |
+| **Testabilidad**               | Difícil (HTTP mocks) | Fácil (unit tests) | +∞     |
+| **Mantenibilidad**             | Baja                 | Alta               | +200%  |
+| **Separación de concerns**     | No                   | Sí                 | ✅     |
 
 ---
 
 ## 🎯 Patrones Aplicados
 
 ### Service Layer Pattern
+
 ```
 Controller (routes.py)
     ↓ delega a
@@ -648,6 +662,7 @@ Model (prestamos.py)
 ```
 
 ### Separation of Concerns
+
 ```
 HTTP Layer (routes.py)          → Solo maneja request/response
 Business Logic (services/)      → Lógica de negocio reutilizable
@@ -656,6 +671,7 @@ Models (model/)                 → Definición de datos
 ```
 
 ### Dependency Injection
+
 ```python
 # Antes: dependencias hardcodeadas
 from app import db

@@ -3,7 +3,7 @@
  * Maneja todas las llamadas a la API REST
  */
 
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = "/api/v1";
 
 /**
  * Realiza una petición fetch con manejo de errores
@@ -14,28 +14,33 @@ const API_BASE_URL = '/api/v1';
 async function fetchAPI(url, options = {}) {
   const defaultOptions = {
     headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
+      "Content-Type": "application/json",
+      ...options.headers,
     },
-    ...options
+    ...options,
   };
 
   try {
     const response = await fetch(url, defaultOptions);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.error || `HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     // Si es un DELETE o no hay contenido, retornar success
-    if (response.status === 204 || response.headers.get('content-length') === '0') {
+    if (
+      response.status === 204 ||
+      response.headers.get("content-length") === "0"
+    ) {
       return { success: true };
     }
 
     return await response.json();
   } catch (error) {
-    console.error('API Error:', error);
+    console.error("API Error:", error);
     throw error;
   }
 }
@@ -77,8 +82,8 @@ export const ClientesAPI = {
    */
   async crear(clienteData) {
     return fetchAPI(`${API_BASE_URL}/clientes`, {
-      method: 'POST',
-      body: JSON.stringify(clienteData)
+      method: "POST",
+      body: JSON.stringify(clienteData),
     });
   },
 
@@ -90,8 +95,8 @@ export const ClientesAPI = {
    */
   async actualizar(id, clienteData) {
     return fetchAPI(`${API_BASE_URL}/clientes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(clienteData)
+      method: "PUT",
+      body: JSON.stringify(clienteData),
     });
   },
 
@@ -102,7 +107,7 @@ export const ClientesAPI = {
    */
   async eliminar(id) {
     return fetchAPI(`${API_BASE_URL}/clientes/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   },
 
@@ -131,7 +136,7 @@ export const ClientesAPI = {
    */
   async validarPEP(dni) {
     return fetchAPI(`${API_BASE_URL}/clientes/validar-pep/${dni}`);
-  }
+  },
 };
 
 /**
@@ -145,8 +150,8 @@ export const PrestamosAPI = {
    */
   async registrar(prestamoData) {
     return fetchAPI(`${API_BASE_URL}/prestamos`, {
-      method: 'POST',
-      body: JSON.stringify(prestamoData)
+      method: "POST",
+      body: JSON.stringify(prestamoData),
     });
   },
 
@@ -185,14 +190,14 @@ export const PrestamosAPI = {
    */
   async actualizarEstado(id, estado) {
     return fetchAPI(`${API_BASE_URL}/prestamos/${id}/estado`, {
-      method: 'PUT',
-      body: JSON.stringify({ estado })
+      method: "PUT",
+      body: JSON.stringify({ estado }),
     });
-  }
+  },
 };
 
 export default {
   ClientesAPI,
   PrestamosAPI,
-  fetchAPI
+  fetchAPI,
 };

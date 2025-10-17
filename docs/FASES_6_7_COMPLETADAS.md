@@ -16,9 +16,11 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ### 📄 **Páginas Principales (4 templates)**
 
 #### 1. **`pages/clientes/lista.html`** (110 líneas)
+
 **Propósito:** Mostrar lista de todos los clientes registrados
 
 **Características:**
+
 - ✅ Tabla responsive con información completa
 - ✅ Badges para estados (PEP / Regular)
 - ✅ Acciones rápidas (Ver detalle, Ver préstamos)
@@ -27,6 +29,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 - ✅ Botón "Nuevo Cliente" destacado
 
 **Componentes usados:**
+
 - `components/button.html`
 - `components/badge.html`
 - `components/empty_state.html`
@@ -34,9 +37,11 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 #### 2. **`pages/clientes/detalle.html`** (130 líneas)
+
 **Propósito:** Mostrar información completa de un cliente
 
 **Características:**
+
 - ✅ Diseño en dos columnas con información organizada
 - ✅ Breadcrumb navigation
 - ✅ Badges de estado PEP
@@ -45,6 +50,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 - ✅ Botones de acción (Ver préstamos, Editar, Volver)
 
 **Datos mostrados:**
+
 - DNI, nombre completo, correo, teléfono, dirección
 - Estado PEP con badge visual
 - Resumen de préstamos del cliente
@@ -52,9 +58,11 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 #### 3. **`pages/prestamos/cliente_prestamos.html`** (150 líneas)
+
 **Propósito:** Listar todos los préstamos de un cliente específico
 
 **Características:**
+
 - ✅ Breadcrumb con navegación jerárquica
 - ✅ 4 cards de estadísticas (Total, Vigentes, Cancelados, Monto Total)
 - ✅ Tabla detallada de préstamos
@@ -64,6 +72,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 - ✅ Estado vacío personalizado
 
 **Estadísticas calculadas:**
+
 - Total de préstamos
 - Préstamos vigentes (filtrado por estado)
 - Préstamos cancelados (filtrado por estado)
@@ -72,9 +81,11 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 #### 4. **`pages/prestamos/detalle.html`** (190 líneas)
+
 **Propósito:** Mostrar el cronograma completo de un préstamo
 
 **Características:**
+
 - ✅ Breadcrumb navigation
 - ✅ Información del cliente (DNI, nombre, estado PEP)
 - ✅ Detalles del préstamo (monto, TEA, plazo, fecha, estado)
@@ -85,6 +96,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 - ✅ Resaltado de filas pagadas (fondo verde)
 
 **Información del cronograma:**
+
 - N° de cuota, fecha de vencimiento
 - Monto de cuota, capital, interés
 - Saldo capital restante
@@ -95,7 +107,9 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ## 🧩 Componentes Reutilizables (10 componentes)
 
 ### 1. **`components/card.html`**
+
 **Uso:** Tarjetas con título e ícono
+
 ```jinja
 {% include 'components/card.html' with title='Título', icon='🎯' %}
 ```
@@ -103,30 +117,38 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 2. **`components/badge.html`**
+
 **Uso:** Etiquetas de estado con colores
+
 ```jinja
 {% include 'components/badge.html' with type='success', text='Activo' %}
 ```
+
 **Tipos:** success (verde), error (rojo), warning (amarillo), info (azul)
 
 ---
 
 ### 3. **`components/button.html`**
+
 **Uso:** Botones con estilos consistentes
+
 ```jinja
-{% include 'components/button.html' with 
+{% include 'components/button.html' with
   text='Click aquí',
   type='primary',
   href='/ruta',
   icon='➕'
 %}
 ```
+
 **Tipos:** primary, secondary, danger, success
 
 ---
 
 ### 4. **`components/table.html`**
+
 **Uso:** Tablas responsive con estilos
+
 ```jinja
 {% call(header) table('tabla-id') %}
   <!-- Headers y contenido -->
@@ -136,9 +158,11 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 5. **`components/empty_state.html`**
+
 **Uso:** Mensajes cuando no hay datos
+
 ```jinja
-{% include 'components/empty_state.html' with 
+{% include 'components/empty_state.html' with
   icon='📭',
   title='No hay datos',
   message='Agrega tu primer elemento',
@@ -150,7 +174,9 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 6. **`components/breadcrumb.html`**
+
 **Uso:** Navegación jerárquica
+
 ```jinja
 {% set breadcrumbs = [
   {'text': 'Inicio', 'url': '/'},
@@ -163,9 +189,11 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 7. **`components/pagination.html`**
+
 **Uso:** Paginación de listas
+
 ```jinja
-{% include 'components/pagination.html' with 
+{% include 'components/pagination.html' with
   current_page=1,
   total_pages=10,
   base_url='/clientes'
@@ -175,11 +203,13 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 8. **`components/macros/form_macros.html`**
+
 **Macros Jinja2 para formularios:**
+
 ```jinja
-{% from 'components/macros/form_macros.html' import 
-   input_field, 
-   select_field, 
+{% from 'components/macros/form_macros.html' import
+   input_field,
+   select_field,
    textarea_field,
    checkbox_field,
    submit_button,
@@ -192,6 +222,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ```
 
 **Macros disponibles:**
+
 - `input_field` - Campos de texto, número, email, etc.
 - `select_field` - Selectores dropdown
 - `textarea_field` - Áreas de texto
@@ -202,7 +233,9 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 9. **`components/shared/navbar.html`** (MEJORADO)
+
 **Características nuevas:**
+
 - ✅ Diseño moderno con gradiente azul
 - ✅ Logo con emoji 🏦
 - ✅ 4 enlaces de navegación con iconos SVG
@@ -211,6 +244,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 - ✅ Efectos hover suaves
 
 **Enlaces:**
+
 - Inicio
 - Clientes
 - Nuevo Préstamo
@@ -219,7 +253,9 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 ---
 
 ### 10. **`components/shared/footer.html`** (MEJORADO)
+
 **Características nuevas:**
+
 - ✅ Diseño en 3 columnas
 - ✅ Sección de información
 - ✅ Enlaces rápidos
@@ -237,6 +273,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 **Después:** Landing page completa y moderna
 
 **Nuevas características:**
+
 - ✅ Hero section con título grande y descripción
 - ✅ 3 tarjetas de acceso rápido (Clientes, Nuevo Préstamo, Buscar)
 - ✅ Efectos hover con shadow
@@ -246,6 +283,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 - ✅ Diseño en grid responsive
 
 **Tarjetas de acceso rápido:**
+
 1. **Clientes** (borde azul) → Lista de clientes
 2. **Nuevo Préstamo** (borde verde) → Formulario de registro
 3. **Buscar Cliente** (borde morado) → Búsqueda por DNI
@@ -254,41 +292,46 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 
 ## 📊 Métricas de las Fases 6-7
 
-| Métrica | Valor |
-|---------|-------|
-| **Templates creados** | 4 páginas principales |
-| **Componentes nuevos** | 10 componentes reutilizables |
-| **Templates mejorados** | 3 (index, navbar, footer) |
-| **Líneas de código** | ~900 líneas de Jinja2/HTML |
-| **Macros Jinja2** | 6 macros para formularios |
-| **Páginas responsive** | 100% mobile-friendly |
+| Métrica                 | Valor                        |
+| ----------------------- | ---------------------------- |
+| **Templates creados**   | 4 páginas principales        |
+| **Componentes nuevos**  | 10 componentes reutilizables |
+| **Templates mejorados** | 3 (index, navbar, footer)    |
+| **Líneas de código**    | ~900 líneas de Jinja2/HTML   |
+| **Macros Jinja2**       | 6 macros para formularios    |
+| **Páginas responsive**  | 100% mobile-friendly         |
 
 ---
 
 ## 🎯 Principios Aplicados
 
 ### 1. **DRY (Don't Repeat Yourself)**
+
 - Componentes reutilizables en vez de código duplicado
 - Macros para elementos de formulario comunes
 - Estilos consistentes a través de componentes
 
 ### 2. **Separation of Concerns**
+
 - Templates separados por funcionalidad
 - Componentes compartidos en `/components`
 - Macros en `/components/macros`
 
 ### 3. **Mobile-First Design**
+
 - Todos los templates son responsive
 - Grid system de Tailwind CSS
 - Menú móvil en navbar
 
 ### 4. **User Experience**
+
 - Breadcrumbs para navegación
 - Estados vacíos informativos
 - Feedback visual con badges y colores
 - Acciones claras con botones destacados
 
 ### 5. **Consistencia Visual**
+
 - Paleta de colores definida (azul, verde, rojo, amarillo)
 - Tipografía consistente
 - Espaciado uniforme
@@ -301,6 +344,7 @@ Se han modularizado y optimizado los templates HTML, creando **componentes reuti
 Los templates se integran perfectamente con los blueprints creados en Fase 2:
 
 ### **Views Blueprint - Clientes**
+
 ```python
 @clientes_view_bp.route('/clientes')
 def listar_clientes_view():
@@ -312,6 +356,7 @@ def ver_cliente_view(cliente_id):
 ```
 
 ### **Views Blueprint - Préstamos**
+
 ```python
 @prestamos_view_bp.route('/')
 def index_view():
@@ -331,26 +376,31 @@ def ver_prestamo_view(prestamo_id):
 ## ✅ Beneficios Obtenidos
 
 ### 1. **Desarrollo Más Rápido**
+
 - Componentes listos para reusar
 - No necesitas reescribir código HTML repetitivo
 - Macros aceleran la creación de formularios
 
 ### 2. **Mantenibilidad**
+
 - Cambios en un componente se reflejan en todas las páginas
 - Estructura clara y organizada
 - Fácil de encontrar y modificar templates
 
 ### 3. **Consistencia**
+
 - Mismo look & feel en todo el sitio
 - Componentes con comportamiento predecible
 - Experiencia de usuario coherente
 
 ### 4. **Escalabilidad**
+
 - Fácil agregar nuevas páginas usando componentes existentes
 - Sistema de diseño bien definido
 - Arquitectura preparada para crecer
 
 ### 5. **Accesibilidad**
+
 - Semantic HTML
 - ARIA labels en navegación
 - Responsive design para todos los dispositivos
@@ -417,17 +467,20 @@ app/templates/
 ## 🚀 Próximos Pasos Sugeridos
 
 ### Opción 1: **Fase 8 - JavaScript Modular** ⭐ RECOMENDADO
+
 - Actualizar JS para usar API `/api/v1/`
 - Separar en módulos ES6
 - Validación en cliente
 - Mejorar interactividad
 
 ### Opción 2: **Fase 5 - Tests Unitarios**
+
 - Tests para templates (verificar renderizado)
 - Tests de integración para views
 - Coverage de componentes
 
 ### Opción 3: **Fase 9 - Validación & Seguridad**
+
 - CSRF tokens en formularios
 - Validación de inputs
 - Sanitización de datos
@@ -446,7 +499,7 @@ app/templates/
   <!-- Header con botón -->
   <div class="mb-6 flex justify-between items-center">
     <h1 class="text-3xl font-bold">Mi Lista</h1>
-    {% include 'components/button.html' with 
+    {% include 'components/button.html' with
       text='Nuevo Item',
       type='primary',
       icon='➕',
@@ -461,7 +514,7 @@ app/templates/
         <!-- Contenido de tabla -->
       </table>
     {% else %}
-      {% include 'components/empty_state.html' with 
+      {% include 'components/empty_state.html' with
         icon='📭',
         title='No hay items',
         action_href='/nuevo'
@@ -483,7 +536,7 @@ Las **Fases 6 y 7** han transformado completamente la capa de presentación:
 ✅ **3 templates mejorados** con mejor UX  
 ✅ **Sistema de diseño consistente** con paleta de colores definida  
 ✅ **100% responsive** para móviles y tablets  
-✅ **Principios DRY aplicados** en toda la arquitectura de templates  
+✅ **Principios DRY aplicados** en toda la arquitectura de templates
 
 **Estado:** 🟢 COMPLETADO  
 **Siguiente paso:** Elegir Fase 5 (Tests), Fase 8 (JavaScript) o Fase 9 (Seguridad)

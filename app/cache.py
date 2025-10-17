@@ -416,10 +416,50 @@ def paginate_query(query, page: int = 1, per_page: int = 20):
 
 
 # ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+def configure_cache(app):
+    """
+    Configura el sistema de caching para la aplicación Flask.
+    
+    Args:
+        app: Instancia de Flask
+    
+    Returns:
+        Cache: Instancia del cache configurado
+    """
+    from flask_caching import Cache
+    
+    # Inicializar Flask-Caching
+    cache = Cache()
+    cache.init_app(app)
+    
+    # Logging
+    cache_type = app.config.get('CACHE_TYPE', 'SimpleCache')
+    timeout = app.config.get('CACHE_DEFAULT_TIMEOUT', 300)
+    
+    app.logger.info(f'Cache configurado: {cache_type}')
+    app.logger.info(f'Cache timeout por defecto: {timeout}s')
+    
+    if cache_type == 'RedisCache':
+        redis_url = app.config.get('CACHE_REDIS_URL', 'redis://localhost:6379/0')
+        app.logger.info(f'Redis URL: {redis_url}')
+    elif cache_type == 'FileSystemCache':
+        cache_dir = app.config.get('CACHE_DIR', 'cache')
+        app.logger.info(f'Cache directory: {cache_dir}')
+    
+    return cache
+
+
+# ============================================================================
 # EXPORTS
 # ============================================================================
 
 __all__ = [
+    # Configuration
+    'configure_cache',
+    
     # Decorators
     'cache_response',
     'cache_query',
