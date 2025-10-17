@@ -69,6 +69,10 @@ def create_app(config_name=None):
     # Configurar manejo de errores
     _configure_error_handlers(app)
     
+    # Configurar cache y optimización
+    _configure_cache(app)
+    _configure_performance(app)
+    
     # Configurar seguridad
     _configure_security(app)
     
@@ -166,3 +170,25 @@ def _configure_error_handlers(app):
     from app.errors import register_error_handlers
     register_error_handlers(app)
     app.logger.info('Error handlers configurados')
+
+def _configure_cache(app):
+    """
+    Configura el sistema de caching.
+    - Flask-Caching con múltiples backends (SimpleCache, Redis, FileSystem)
+    - Cache para respuestas de API
+    - Cache para queries de base de datos
+    """
+    from app.cache import configure_cache
+    configure_cache(app)
+    app.logger.info('Sistema de cache configurado')
+
+def _configure_performance(app):
+    """
+    Configura las herramientas de optimización de rendimiento.
+    - Query profiling
+    - Compression middleware
+    - Performance monitoring
+    """
+    from app.performance import configure_performance
+    configure_performance(app)
+    app.logger.info('Performance optimization configurado')

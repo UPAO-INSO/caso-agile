@@ -60,6 +60,18 @@ class Config:
     # API Externa DNI
     DNI_API_KEY = os.environ.get('DNI_API_KEY')
     DNI_API_URL = os.environ.get('DNI_API_URL', 'https://api.apis.net.pe/v2/reniec/dni')
+    
+    # Cache Configuration
+    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')  # SimpleCache, RedisCache, FileSystemCache
+    CACHE_DEFAULT_TIMEOUT = int(os.environ.get('CACHE_DEFAULT_TIMEOUT', '300'))  # 5 minutos
+    CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', 'redis://localhost:6379/0')
+    CACHE_DIR = os.environ.get('CACHE_DIR', 'cache')
+    
+    # Performance Configuration
+    ENABLE_QUERY_PROFILING = _str_to_bool(os.environ.get('ENABLE_QUERY_PROFILING', 'false'))
+    ENABLE_COMPRESSION = _str_to_bool(os.environ.get('ENABLE_COMPRESSION', 'true'))
+    COMPRESSION_MIN_SIZE = int(os.environ.get('COMPRESSION_MIN_SIZE', '1024'))  # 1KB
+    SLOW_QUERY_THRESHOLD = float(os.environ.get('SLOW_QUERY_THRESHOLD', '0.1'))  # 100ms
 
 
 class DevelopmentConfig(Config):
@@ -81,6 +93,14 @@ class DevelopmentConfig(Config):
     LOG_LEVEL = 'DEBUG'
     LOG_REQUESTS = True
     LOG_RESPONSES = True
+    
+    # Cache en desarrollo (SimpleCache para desarrollo rápido)
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 300  # 5 minutos
+    
+    # Performance profiling habilitado en desarrollo
+    ENABLE_QUERY_PROFILING = True
+    ENABLE_COMPRESSION = True
 
 
 class ProductionConfig(Config):
@@ -97,6 +117,14 @@ class ProductionConfig(Config):
     
     # Mail production
     MAIL_DEBUG = False
+    
+    # Cache con Redis en producción
+    CACHE_TYPE = 'RedisCache'
+    CACHE_DEFAULT_TIMEOUT = 600  # 10 minutos
+    
+    # Performance profiling deshabilitado (overhead mínimo)
+    ENABLE_QUERY_PROFILING = False
+    ENABLE_COMPRESSION = True
 
 
 class TestingConfig(Config):
