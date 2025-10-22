@@ -1,11 +1,18 @@
 from sqlalchemy.orm import relationship
 from app import db
 
+''' ESTA ES LA BASE DE DATOS
+
+Te preguntarás: ¿Cuál es lo nuevo? xd
+    - Lo nuevo es: fecha_nacimiento como campo obligatorio 
+Solo si ha de ser necesario se debe de recrear toda la BD, dale sin miedo pq estamos en Desarrollo 
+    '''
 
 class Cliente(db.Model):
     __tablename__ = 'clientes'
     cliente_id = db.Column(db.Integer, primary_key=True)
     dni = db.Column(db.String(8), unique=True, nullable=False)
+    fecha_nacimiento = db.Column(db.Date, nullable=False)
     nombre_completo = db.Column(db.String(200), nullable=False)
     apellido_paterno = db.Column(db.String(100), nullable=False)
     apellido_materno = db.Column(db.String(100))
@@ -20,6 +27,7 @@ class Cliente(db.Model):
         return {
             'cliente_id': self.cliente_id,
             'dni': self.dni,
+            'fecha_nacimiento': self.fecha_nacimiento.isoformat() if self.fecha_nacimiento else None,
             'nombre_completo': self.nombre_completo,
             'apellido_paterno': self.apellido_paterno,
             'apellido_materno': self.apellido_materno,

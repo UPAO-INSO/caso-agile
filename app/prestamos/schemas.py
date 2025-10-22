@@ -1,11 +1,19 @@
 from datetime import date
 from decimal import Decimal
-
 from pydantic import BaseModel, ConfigDict, Field, FieldValidationInfo, field_validator
 
+''' ESTA ES LA LÓGICA DEL CLIENTE
+TENER EN CUENTA:
+   templates : Vistas dinámicas 
+   crud.py   : LÓGICA DE NEGOCIO
+   routes.py : Rutas URL - endpoints
+   schemas.py: Define la estructura y validación  ←------ ESTAMOS AQUÍ                            
+q hay de nuevo?
+    - SOLO SE HA AGREGADO el str de fecha_nacimiento'''
 
 class PrestamoCreateDTO(BaseModel):
     dni: str = Field(..., description="Documento nacional de identidad del cliente")
+    fecha_nacimiento: str = Field(..., description="Fecha de nacimiento del cliente")
     monto: Decimal = Field(..., description="Monto total del préstamo")
     interes_tea: Decimal = Field(..., description="Tasa Efectiva Anual en porcentaje")
     plazo: int = Field(..., description="Número de meses del crédito")

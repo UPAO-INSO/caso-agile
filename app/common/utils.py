@@ -3,6 +3,17 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
+''' ESTA ES LA LÓGICA PARA CALCULAR LOS PORCENTAJES
+TENER EN CUENTA:
+    - TEA → 10% = 0.10
+	- TEM → (1 + TEA)^{1/n} - 1                              
+Recalcular los porcentajes para asegurar - en teoría está bien ahora
+
+Se Busca: 
+    - La variable del TEA debe ser dinámico, no es un valor fijo 
+    - Darle una ojeada
+ '''
+
 # Valor de la UIT (Unidad Impositiva Tributaria) - Perú 2025
 # S/ 5,350.00
 UIT_VALOR = Decimal('5350.00')
@@ -14,12 +25,7 @@ if not logger.handlers:
     logging.basicConfig(level=logging.INFO)
 
 def tea_to_tem(tea):
-    """
-    Convierte la Tasa Efectiva Anual (TEA) en Tasa Efectiva Mensual (TEM).
-    :tea: Tasa efectiva anual en porcentaje (Decimal o float)
-    :return: Tasa efectiva mensual (Decimal)
-    """
-    tea_decimal = Decimal(tea) / Decimal('100.00') #Porcentajea a decimal (eg. 25% -> 0.25)
+    tea_decimal = Decimal('10.00') / Decimal('100.00') #Porcentajea a decimal (eg. 25% -> 0.25)
     tem = ((Decimal('1') + tea_decimal) ** (Decimal('1') / Decimal('12'))) - Decimal('1')
     return tem
 

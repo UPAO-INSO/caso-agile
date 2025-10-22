@@ -494,7 +494,7 @@ async function crearNuevoPrestamo(event) {
     const prestamoData = {
       dni: window.currentClient.dni,
       monto: parseFloat(monto),
-      interes_tea: 30.0, // TEA fijo por defecto
+      interes_tea: 10.0,
       plazo: parseInt(cuotas),
       f_otorgamiento: new Date().toISOString().split('T')[0] // Fecha actual YYYY-MM-DD
     };
