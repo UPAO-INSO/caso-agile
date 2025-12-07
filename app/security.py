@@ -14,10 +14,6 @@ import hashlib
 import secrets
 
 
-# ========================
-# RATE LIMITING
-# ========================
-
 class RateLimiter:
     """
     Rate limiter simple basado en memoria.
@@ -123,10 +119,6 @@ def rate_limit(max_requests: int = 100, window: int = 60, key_func=None):
     return decorator
 
 
-# ========================
-# INPUT SANITIZATION
-# ========================
-
 class InputSanitizer:
     """Sanitizador de inputs para prevenir XSS y SQL injection."""
     
@@ -225,10 +217,6 @@ class InputSanitizer:
 # Instancia global del sanitizer
 sanitizer = InputSanitizer()
 
-
-# ========================
-# INPUT VALIDATION
-# ========================
 
 class InputValidator:
     """Validadores de input para datos comunes."""
@@ -370,10 +358,6 @@ class InputValidator:
 validator = InputValidator()
 
 
-# ========================
-# SECURE HEADERS
-# ========================
-
 def add_security_headers(response):
     """
     Agregar headers de seguridad a las respuestas.
@@ -415,10 +399,6 @@ def add_security_headers(response):
     
     return response
 
-
-# ========================
-# CSRF PROTECTION
-# ========================
 
 class CSRFProtection:
     """Protección CSRF simple."""
@@ -481,10 +461,6 @@ def require_csrf_token(f):
     return decorated_function
 
 
-# ========================
-# PASSWORD HASHING
-# ========================
-
 class PasswordHasher:
     """Utilidad para hashear passwords de forma segura."""
     
@@ -515,10 +491,6 @@ class PasswordHasher:
 # Instancia global del password hasher
 password_hasher = PasswordHasher()
 
-
-# ========================
-# EXPORTS
-# ========================
 
 __all__ = [
     'rate_limiter',

@@ -8,7 +8,7 @@ from typing import Tuple, Optional, Dict, Any
 import requests
 
 from app.extensions import db
-from app.clients.model.clients import Cliente
+from app.models import Cliente
 from app.services.pep_service import PEPService
 
 logger = logging.getLogger(__name__)

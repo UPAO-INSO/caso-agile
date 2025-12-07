@@ -13,10 +13,6 @@ from werkzeug.exceptions import HTTPException
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, OperationalError
 
 
-# ============================================================================
-# CUSTOM EXCEPTIONS
-# ============================================================================
-
 class AppException(Exception):
     """Excepción base de la aplicación"""
     
@@ -82,10 +78,6 @@ class ServiceUnavailableError(AppException):
     def __init__(self, message: str = "Servicio no disponible", payload: Optional[Dict] = None):
         super().__init__(message, status_code=503, payload=payload)
 
-
-# ============================================================================
-# ERROR HANDLERS
-# ============================================================================
 
 def register_error_handlers(app):
     """
@@ -311,10 +303,6 @@ def handle_generic_exception(error: Exception):
     ), 500
 
 
-# ============================================================================
-# DECORATORS
-# ============================================================================
-
 def handle_errors(func):
     """
     Decorator para manejar errores en endpoints.
@@ -358,10 +346,6 @@ def handle_errors(func):
     
     return wrapper
 
-
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
 
 def is_api_request() -> bool:
     """
@@ -439,10 +423,6 @@ def log_error(error: Exception, level: str = 'error', include_trace: bool = Fals
         trace = traceback.format_exc()
         logger.error(f'Stack trace:\n{trace}')
 
-
-# ============================================================================
-# EXPORTS
-# ============================================================================
 
 __all__ = [
     # Exceptions

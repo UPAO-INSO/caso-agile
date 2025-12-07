@@ -1,9 +1,3 @@
-"""
-Performance Optimization Module
-Herramientas para monitorear y optimizar el rendimiento de la aplicación.
-Incluye profiling de queries, optimización de database, y métricas.
-"""
-
 from functools import wraps
 from typing import Callable, Optional, List, Dict, Any
 from flask import current_app, g, request
@@ -12,10 +6,6 @@ from sqlalchemy.engine import Engine
 from datetime import datetime
 import time
 
-
-# ============================================================================
-# QUERY PROFILING
-# ============================================================================
 
 class QueryProfiler:
     """
@@ -175,10 +165,6 @@ def get_profiler() -> QueryProfiler:
     return _profiler
 
 
-# ============================================================================
-# PERFORMANCE MONITORING
-# ============================================================================
-
 def monitor_performance(threshold_ms: float = 500):
     """
     Decorator para monitorear rendimiento de funciones.
@@ -240,10 +226,6 @@ def time_function(func: Callable) -> Callable:
     
     return wrapper
 
-
-# ============================================================================
-# DATABASE OPTIMIZATION
-# ============================================================================
 
 class DatabaseOptimizer:
     """
@@ -326,11 +308,6 @@ class DatabaseOptimizer:
         
         return suggestions
 
-
-# ============================================================================
-# RESPONSE OPTIMIZATION
-# ============================================================================
-
 def optimize_json_response(data: Any, exclude_fields: Optional[List[str]] = None) -> dict:
     """
     Optimiza respuestas JSON eliminando campos innecesarios.
@@ -394,11 +371,6 @@ def paginate_and_optimize(query, page: int, per_page: int, exclude_fields: Optio
     
     return result
 
-
-# ============================================================================
-# LAZY LOADING HELPERS
-# ============================================================================
-
 def lazy_load_relationship(model_instance, relationship_name: str, filters: Optional[dict] = None):
     """
     Carga una relación de forma lazy solo cuando se necesita.
@@ -432,10 +404,6 @@ def lazy_load_relationship(model_instance, relationship_name: str, filters: Opti
     
     return query.all()
 
-
-# ============================================================================
-# METRICS COLLECTION
-# ============================================================================
 
 class PerformanceMetrics:
     """
@@ -501,11 +469,6 @@ def get_metrics() -> PerformanceMetrics:
     """Obtiene la instancia global de métricas."""
     return _metrics
 
-
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-
 def configure_performance(app):
     """
     Configura el sistema de optimización de performance.
@@ -557,10 +520,6 @@ def configure_performance(app):
     app.logger.info('Sistema de performance configurado')
     app.logger.info(f'Slow request threshold: {app.config.get("SLOW_REQUEST_THRESHOLD", 500)}ms')
 
-
-# ============================================================================
-# EXPORTS
-# ============================================================================
 
 __all__ = [
     # Configuration

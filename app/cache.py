@@ -415,10 +415,6 @@ def paginate_query(query, page: int = 1, per_page: int = 20):
     }
 
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-
 def configure_cache(app):
     """
     Configura el sistema de caching para la aplicación Flask.
@@ -451,10 +447,6 @@ def configure_cache(app):
     
     return cache
 
-
-# ============================================================================
-# EXPORTS
-# ============================================================================
 
 __all__ = [
     # Configuration

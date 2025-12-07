@@ -8,15 +8,21 @@ import logging
 from typing import Tuple, Optional, Dict, Any, List
 
 from app.extensions import db
-from app.cuotas.model.cuotas import Cuota
-from app.cuotas.crud import crear_cuotas_bulk
-from app.declaraciones.crud import crear_declaracion
-from app.declaraciones.model.declaraciones import DeclaracionJurada, TipoDeclaracionEnum
-from app.prestamos.crud import crear_prestamo
-from app.prestamos.model.prestamos import Prestamo, EstadoPrestamoEnum
-from app.clients.crud import obtener_cliente_por_dni, crear_cliente
-from app.clients.model.clients import Cliente
-
+from app.models import (
+    Cuota, 
+    DeclaracionJurada, 
+    TipoDeclaracionEnum,
+    Prestamo,
+    EstadoPrestamoEnum,
+    Cliente
+)
+from app.crud import (
+    crear_cuotas_bulk,
+    crear_declaracion,
+    crear_prestamo,
+    obtener_cliente_por_dni,
+    crear_cliente
+)
 from app.services.financial_service import FinancialService
 from app.services.email_service import EmailService
 
@@ -69,7 +75,7 @@ class PrestamoService:
             Tuple[tiene_activo, info_prestamo]: Boolean indicando si tiene préstamo activo 
                                                  y dict con info del préstamo si existe
         """
-        from app.clients.crud import prestamo_activo_cliente
+        from app.crud import prestamo_activo_cliente
         
         prestamo_activo = prestamo_activo_cliente(cliente_id, EstadoPrestamoEnum.VIGENTE)
         

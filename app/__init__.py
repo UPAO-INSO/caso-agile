@@ -87,50 +87,56 @@ def _register_models(app):
     Importa todos los modelos de SQLAlchemy para que Alembic los detecte.
     Esto es necesario para las migraciones automáticas.
     """
-    for mod_name in MODULES:
-        try:
-            # Intentar importar el modelo del módulo
-            importlib.import_module(f'.{mod_name}.model.{mod_name}', package='app')
-        except ImportError:
-            try:
-                # Intentar con estructura alternativa (models.py en lugar de model/modulo.py)
-                importlib.import_module(f'.{mod_name}.models', package='app')
-            except ImportError as exc:
-                app.logger.warning(f'No se pudo importar modelo {mod_name}: {exc}')
+    # Importar todos los modelos desde el paquete centralizado
+    from app.models import (
+        Cliente, 
+        Prestamo, 
+        Cuota, 
+        DeclaracionJurada
+    )
+    app.logger.info('Modelos registrados correctamente')
 
 
 def _register_blueprints(app):
     """
     Registra blueprints principales de la aplicación.
     """
-    from app.routes import main as main_blueprint
-    app.register_blueprint(main_blueprint)
+    from app.routes import (
+        main_bp,
+        api_v1_bp,
+        clientes_view_bp,
+        prestamos_view_bp,
+        clientes_bp,
+        prestamos_bp,
+        cuotas_bp,
+        declaraciones_bp
+    )
+    
+    # Registrar blueprint principal
+    app.register_blueprint(main_bp)
     
     # Registrar API v1
-    from app.api.v1 import api_v1_bp
     app.register_blueprint(api_v1_bp)
     
-    # Registrar Views
-    from app.views import clientes_view_bp, prestamos_view_bp
+    # Registrar vistas HTML
     app.register_blueprint(clientes_view_bp)
     app.register_blueprint(prestamos_view_bp)
+    
+    # Registrar módulos
+    app.register_blueprint(clientes_bp)
+    app.register_blueprint(prestamos_bp)
+    app.register_blueprint(cuotas_bp)
+    app.register_blueprint(declaraciones_bp)
+    
+    app.logger.info('Blueprints registrados correctamente')
 
 
 def _register_modules(app):
     """
-    Registra módulos dinámicamente llamando a su función init_app() si existe.
-    Cada módulo puede tener su propio blueprint que se registra automáticamente.
+    Función heredada - ya no es necesaria con la nueva estructura.
+    Los módulos ahora se registran directamente en _register_blueprints.
     """
-    for mod_name in MODULES:
-        try:
-            pkg = importlib.import_module(f'.{mod_name}', package='app')
-            init_fn = getattr(pkg, 'init_app', None)
-            
-            if callable(init_fn):
-                init_fn(app)
-                app.logger.debug(f'Módulo {mod_name} inicializado correctamente')
-        except Exception as exc:
-            app.logger.warning(f'No se pudo inicializar el módulo {mod_name}: {exc}')
+    pass
 
 def _configure_security(app):
     """

@@ -12,10 +12,6 @@ from typing import Optional
 from flask import Flask, request, has_request_context
 
 
-# ============================================================================
-# LOGGING CONFIGURATION
-# ============================================================================
-
 def configure_logging(app: Flask):
     """
     Configura el sistema de logging de la aplicación.
@@ -84,10 +80,6 @@ def configure_logging(app: Flask):
     app.logger.info(f'Directorio de logs: {log_dir}')
 
 
-# ============================================================================
-# CUSTOM FORMATTER
-# ============================================================================
-
 class CustomFormatter(logging.Formatter):
     """
     Formatter personalizado que agrega información del request.
@@ -103,10 +95,6 @@ class CustomFormatter(logging.Formatter):
         
         return super().format(record)
 
-
-# ============================================================================
-# REQUEST LOGGING
-# ============================================================================
 
 def register_request_logging(app: Flask):
     """
@@ -161,10 +149,6 @@ def register_request_logging(app: Flask):
     
     app.logger.info('Request/Response logging configurado')
 
-
-# ============================================================================
-# STRUCTURED LOGGING HELPERS
-# ============================================================================
 
 class Logger:
     """
@@ -251,10 +235,6 @@ class Logger:
         )
 
 
-# ============================================================================
-# PERFORMANCE LOGGING
-# ============================================================================
-
 import time
 from functools import wraps
 
@@ -297,10 +277,6 @@ def log_performance(func):
     
     return wrapper
 
-
-# ============================================================================
-# EXPORTS
-# ============================================================================
 
 __all__ = [
     'configure_logging',
