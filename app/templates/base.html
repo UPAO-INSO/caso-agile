@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title or "Mi sitio Flask" }}</title>
+    <script
+      src="https://kit.fontawesome.com/cf7e82587e.js"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
@@ -33,16 +37,14 @@
     {% include 'components/shared/navbar.html' %}
 
     <main class="flex-1 p-6">
-      {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-          <div class="flash-wrapper">
-            {% for category, message in messages %}
-              <div class="flash flash-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
-      {% block content %}{% endblock %}
+      {% with messages = get_flashed_messages(with_categories=True) %} {% if
+      messages %}
+      <div class="flash-wrapper">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
     </main>
 
     {% include 'components/shared/footer.html' %}

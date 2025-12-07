@@ -4,6 +4,7 @@ Endpoints que renderizan templates HTML
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 import logging
+from datetime import datetime
 
 from app.prestamos.crud import (
     listar_prestamos_por_cliente_id,
@@ -79,7 +80,8 @@ def ver_prestamo_view(prestamo_id):
             'pages/prestamos/detalle.html',
             prestamo=prestamo,
             cuotas=cuotas,
-            resumen=resumen
+            resumen=resumen,
+            hoy=datetime.now().date()
         )
     except Exception as e:
         logger.error(f"Error al obtener préstamo {prestamo_id}: {str(e)}")

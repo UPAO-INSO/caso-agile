@@ -1,4 +1,5 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} {% from 'components/macros/badge_macros.html' import
+badge %} {% block content %}
 <div class="max-w-5xl mx-auto">
   <!-- Breadcrumb -->
   <nav class="mb-6 text-sm">
@@ -17,7 +18,9 @@
 
   <!-- Header -->
   <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">👤 Detalle del Cliente</h1>
+    <h1 class="text-3xl font-bold text-gray-900">
+      <i class="fa-solid fa-user mr-2"></i> Detalle del Cliente
+    </h1>
   </div>
 
   <!-- Información del Cliente -->
@@ -34,10 +37,7 @@
           <label class="text-sm font-medium text-gray-500"
             >Nombre Completo</label
           >
-          <p class="text-lg text-gray-900">
-            {{ cliente.nombre_completo }} {{ cliente.apellido_paterno }} {{
-            cliente.apellido_materno }}
-          </p>
+          <p class="text-lg text-gray-900">{{ cliente.nombre_completo }}</p>
         </div>
 
         <div>
@@ -67,10 +67,8 @@
         <div>
           <label class="text-sm font-medium text-gray-500">Estado PEP</label>
           <div class="mt-1">
-            {% if cliente.pep %} {% include 'components/badge.html' with
-            type='warning', text='Persona Políticamente Expuesta' %} {% else %}
-            {% include 'components/badge.html' with type='success',
-            text='Cliente Regular' %} {% endif %}
+            {% if cliente.pep %} {{ badge('warning', 'PEP') }} {% else %} {{
+            badge('success', 'Regular') }} {% endif %}
           </div>
         </div>
       </div>
@@ -78,11 +76,20 @@
 
     <!-- Acciones -->
     <div class="mt-6 pt-6 border-t border-gray-200 flex gap-3">
-      {% include 'components/button.html' with text='Ver Préstamos',
-      type='primary', icon='💰',
-      href=url_for('prestamos_view.ver_prestamos_cliente_view',
-      cliente_id=cliente.cliente_id) %} {% include 'components/button.html' with
-      text='Editar Cliente', type='secondary', icon='✏️', href='#' %}
+      <a
+        href="{{ url_for('prestamos_view.ver_prestamos_cliente_view', cliente_id=cliente.cliente_id) }}"
+        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        <i class="fa-solid fa-money-bill-wave mr-2"></i>
+        Ver Préstamos
+      </a>
+
+      <button
+        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        <i class="fa-solid fa-pen-to-square mr-2"></i>
+        Editar Cliente
+      </button>
 
       <a
         href="{{ url_for('clientes_view.listar_clientes_view') }}"
@@ -96,7 +103,7 @@
   <!-- Resumen de Préstamos -->
   <div class="bg-white rounded-lg shadow-md p-6">
     <h2 class="text-xl font-bold text-gray-900 mb-4">
-      📊 Resumen de Préstamos
+      <i class="fa-solid fa-chart-line mr-2"></i> Resumen de Préstamos
     </h2>
 
     {% if cliente.prestamos %}
@@ -134,12 +141,17 @@
       Ver todos los préstamos →
     </a>
     {% else %}
-    <p class="text-gray-500">
+    <p class="text-gray-500 mb-4">
       Este cliente aún no tiene préstamos registrados.
     </p>
-    {% include 'components/button.html' with text='Ver Préstamos',
-    type='primary', icon='💰',
-    href=url_for('prestamos.list_clientes_con_prestamos') %} {% endif %}
+    <a
+      href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
+      class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+    >
+      <i class="fa-solid fa-money-bill-wave mr-2"></i>
+      Ver Préstamos
+    </a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

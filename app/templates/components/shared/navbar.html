@@ -7,7 +7,7 @@
           href="{{ url_for('prestamos_view.index_view') }}"
           class="flex items-center space-x-3"
         >
-          <div class="text-4xl">🏦</div>
+          <i class="fa-solid fa-landmark"></i>
           <div>
             <h1 class="text-2xl font-bold text-white">COMFY</h1>
             <p class="text-xs text-blue-100">Sistema de Préstamos</p>
@@ -19,9 +19,9 @@
       <div class="hidden md:flex items-center space-x-1">
         <a
           href="{{ url_for('prestamos_view.index_view') }}"
-          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if request.path == '/' %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
+          class="nav-item px-4 py-2 rounded-lg transition-colors {% if request.path == '/' %}bg-blue-800 text-gray-200 font-semibold {% else %} text-gray-800 hover:bg-blue-500{% endif %}"
         >
-          <span class="flex items-center">
+          <span class="flex items-center text-gray-100">
             <svg
               class="w-5 h-5 mr-2"
               fill="none"
@@ -41,9 +41,9 @@
 
         <a
           href="{{ url_for('clientes_view.listar_clientes_view') }}"
-          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/clientes' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
+          class="nav-item px-4 py-2 rounded-lg transition-colors {% if '/clientes' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
-          <span class="flex items-center">
+          <span class="flex items-center text-gray-100">
             <svg
               class="w-5 h-5 mr-2"
               fill="none"
@@ -65,7 +65,7 @@
           href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
           class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/prestamos' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
-          <span class="flex items-center">
+          <span class="flex items-center text-gray-100">
             <svg
               class="w-5 h-5 mr-2"
               fill="none"

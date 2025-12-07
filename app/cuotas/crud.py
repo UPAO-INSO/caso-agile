@@ -67,16 +67,21 @@ def obtener_resumen_cuotas(prestamo_id): # → Obtener un resumen del estado de 
     cuotas_pagadas = sum(1 for c in cuotas if c.monto_pagado and c.monto_pagado > 0)
     cuotas_pendientes = total_cuotas - cuotas_pagadas
     
-    monto_total_pagado = sum(c.monto_pagado for c in cuotas if c.monto_pagado)
-    monto_total_pendiente = sum(c.monto_cuota for c in cuotas if not c.monto_pagado or c.monto_pagado == 0)
+    total_pagado = sum(c.monto_pagado for c in cuotas if c.monto_pagado)
+    total_pendiente = sum(c.monto_cuota for c in cuotas if not c.monto_pagado or c.monto_pagado == 0)
     
     cuotas_vencidas = [c for c in cuotas if c.fecha_vencimiento < date.today() and (not c.monto_pagado or c.monto_pagado == 0)]
+    total_vencido = sum(c.monto_cuota for c in cuotas_vencidas)
+    
+    total_pagar = sum(c.monto_cuota for c in cuotas)
     
     return {
         'total_cuotas': total_cuotas,
         'cuotas_pagadas': cuotas_pagadas,
         'cuotas_pendientes': cuotas_pendientes,
-        'monto_total_pagado': float(monto_total_pagado),
-        'monto_total_pendiente': float(monto_total_pendiente),
+        'total_pagado': float(total_pagado),
+        'total_pendiente': float(total_pendiente),
+        'total_vencido': float(total_vencido),
+        'total_pagar': float(total_pagar),
         'cuotas_vencidas': len(cuotas_vencidas)
     }

@@ -2,9 +2,7 @@
 <div class="max-w-7xl mx-auto">
   <!-- Hero Section -->
   <div class="mb-8 text-center">
-    <h1 class="text-5xl font-bold text-gray-900 mb-3">
-      🏦 Sistema de Préstamos
-    </h1>
+    <h1 class="text-5xl font-bold text-gray-900 mb-3">Sistema de Préstamos</h1>
     <p class="text-xl text-gray-600">
       Gestione préstamos y consulte información de clientes de manera eficiente
     </p>
@@ -18,7 +16,16 @@
       class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300 border-t-4 border-blue-500"
     >
       <div class="flex items-center mb-4">
-        <div class="text-5xl mr-4">👥</div>
+        <!-- <i class="fa-solid fa-user"></i> -->
+        <svg
+          class="w-7 h-7"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 640 640"
+        >
+          <path
+            d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
+          />
+        </svg>
         <h2 class="text-2xl font-bold text-gray-800">Clientes</h2>
       </div>
       <p class="text-gray-600 mb-4">
@@ -48,7 +55,15 @@
       class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300 border-t-4 border-green-500"
     >
       <div class="flex items-center mb-4">
-        <div class="text-5xl mr-4">💰</div>
+        <svg
+          class="w-7 h-7"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 640 640"
+        >
+          <path
+            d="M384 224L480 224L480 160L384 160L384 224zM96 224L96 144C96 117.5 117.5 96 144 96L496 96C522.5 96 544 117.5 544 144L544 240C544 266.5 522.5 288 496 288L144 288C117.5 288 96 266.5 96 240L96 224zM256 480L480 480L480 416L256 416L256 480zM96 480L96 400C96 373.5 117.5 352 144 352L496 352C522.5 352 544 373.5 544 400L544 496C544 522.5 522.5 544 496 544L144 544C117.5 544 96 522.5 96 496L96 480z"
+          />
+        </svg>
         <h2 class="text-2xl font-bold text-gray-800">Préstamos</h2>
       </div>
       <p class="text-gray-600 mb-4">
@@ -78,7 +93,9 @@
       class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300 border-t-4 border-purple-500"
     >
       <div class="flex items-center mb-4">
-        <div class="text-5xl mr-4">🔍</div>
+        <div class="text-5xl mr-4 text-purple-500">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
         <h2 class="text-2xl font-bold text-gray-800">Buscar Cliente</h2>
       </div>
       <p class="text-gray-600 mb-4">
@@ -106,13 +123,14 @@
   <!-- Formulario de Registro/Búsqueda -->
   <div class="bg-white rounded-lg shadow-md p-8">
     <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-      <span class="mr-3">📋</span> Registro y Consulta de Préstamos
+      <i class="fa-solid fa-clipboard-list mr-3 text-gray-700"></i> Registro y
+      Consulta de Préstamos
     </h2>
     {% include "components/form.html" %}
   </div>
 
   <!-- Características -->
-  <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
     <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6">
       <h3 class="text-xl font-bold text-blue-900 mb-3">✨ Características</h3>
       <ul class="space-y-2 text-blue-800">
@@ -190,7 +208,8 @@
       </div>
     </div>
   </div>
+</div> -->
+  {% endblock %} {% block scripts %}
+  <script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
+  {% endblock %}
 </div>
-{% endblock %} {% block scripts %}
-<script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
-{% endblock %}

@@ -42,7 +42,7 @@ class PEPService:
             df = pd.read_excel(DATASET_PEP_PATH)
             
             # Buscar columna de DNI
-            columnas_posibles = ['DNI', 'DOCUMENTO', 'NRO_DOCUMENTO', 'NUMERO_DOCUMENTO']
+            columnas_posibles = ['DNI', 'DOCUMENTO', 'NRO_DOCUMENTO', 'NUMERO_DOCUMENTO', 'DOCUMENTOIDENTIDAD']
             col_dni = None
             
             for columna in columnas_posibles:

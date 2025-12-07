@@ -132,7 +132,7 @@ def obtener_clientes_con_prestamos_info(page=1, per_page=5, dni=None):
     Obtiene clientes con información agregada de sus préstamos.
     
     Incluye:
-    - Monto total prestado
+    - Monto total prestado (suma correcta sin duplicados)
     - Total de préstamos
     - Total de cuotas
     - Préstamos vigentes
@@ -145,22 +145,33 @@ def obtener_clientes_con_prestamos_info(page=1, per_page=5, dni=None):
     Returns:
         Pagination: Objeto de paginación con datos agregados
     """
-    from sqlalchemy import func, case
+    from sqlalchemy import func, case, select
     from app.cuotas.model.cuotas import Cuota
     from app.prestamos.model.prestamos import EstadoPrestamoEnum
     
+    # Subconsulta para contar cuotas por préstamo (evita multiplicación)
+    cuotas_subquery = (
+        select(
+            Cuota.prestamo_id,
+            func.count(Cuota.cuota_id).label('num_cuotas')
+        )
+        .group_by(Cuota.prestamo_id)
+        .subquery()
+    )
+    
+    # Query principal con LEFT JOIN a la subconsulta
     query = db.session.query(
         Cliente,
         func.coalesce(func.sum(Prestamo.monto_total), 0).label('monto_total_prestado'),
-        func.count(func.distinct(Prestamo.prestamo_id)).label('total_prestamos'),
-        func.count(Cuota.cuota_id).label('total_cuotas'),
-        func.coalesce(func.count(func.distinct(
-            case((Prestamo.estado == EstadoPrestamoEnum.VIGENTE, Prestamo.prestamo_id))
-        )), 0).label('prestamos_vigentes')
+        func.count(Prestamo.prestamo_id).label('total_prestamos'),
+        func.coalesce(func.sum(cuotas_subquery.c.num_cuotas), 0).label('total_cuotas'),
+        func.sum(
+            case((Prestamo.estado == EstadoPrestamoEnum.VIGENTE, 1), else_=0)
+        ).label('prestamos_vigentes')
     ).outerjoin(
         Prestamo, Cliente.cliente_id == Prestamo.cliente_id
     ).outerjoin(
-        Cuota, Prestamo.prestamo_id == Cuota.prestamo_id
+        cuotas_subquery, Prestamo.prestamo_id == cuotas_subquery.c.prestamo_id
     ).group_by(Cliente.cliente_id)
     
     if dni:

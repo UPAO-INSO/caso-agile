@@ -258,9 +258,7 @@ function showClientRegisteredModal(cliente) {
   modalOverlay.className = "modal-overlay";
   modalOverlay.id = "client-registered-modal";
 
-  const nombreCompleto = `${cliente.nombre_completo || ""} ${
-    cliente.apellido_paterno
-  } ${cliente.apellido_materno}`;
+  const nombreCompleto = `${cliente.nombre_completo || ""}`;
 
   modalOverlay.innerHTML = `
     <div class="modal-content">

@@ -101,8 +101,7 @@
             <td
               class="px-6 py-4 text-sm text-gray-700 border-b border-gray-100"
             >
-              {{ cliente.nombre_completo }} {{ cliente.apellido_paterno }} {{
-              cliente.apellido_materno }}
+              {{ cliente.nombre_completo }}
             </td>
             <td class="px-6 py-4 border-b border-gray-100">
               {% if cliente.pep %}
@@ -131,8 +130,8 @@
             >
               {% if monto_total > 0 %}
               <span class="text-blue-600"
-                >S/ {{ "%.2f"|format(monto_total) }}</span
-              >
+                >S/ {{ "%.2f" | format(monto_total) }}
+              </span>
               <span class="text-xs text-gray-500 block mt-0.5"
                 >{{ total_prestamos }} préstamo{{ 's' if total_prestamos != 1
                 else '' }}</span
@@ -351,7 +350,7 @@
         // Actualizar info del cliente en el modal
         document.getElementById(
           "modalClienteNombre"
-        ).textContent = `${cliente.nombre_completo} ${cliente.apellido_paterno} ${cliente.apellido_materno}`;
+        ).textContent = `${cliente.nombre_completo}`;
         document.getElementById(
           "modalClienteDni"
         ).textContent = `DNI: ${cliente.dni}`;

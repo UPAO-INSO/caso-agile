@@ -27,7 +27,7 @@ def listar_clientes_view():
     except Exception as e:
         logger.error(f"Error al listar clientes: {str(e)}")
         flash('Error al cargar la lista de clientes', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.home'))
 
 
 @clientes_view_bp.route('/clientes/<int:cliente_id>')

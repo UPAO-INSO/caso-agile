@@ -104,7 +104,7 @@ def obtener_prestamo_api(prestamo_id):
         'cliente': {
             'cliente_id': prestamo.cliente.cliente_id,
             'dni': prestamo.cliente.dni,
-            'nombre_completo': f"{prestamo.cliente.nombre_completo} {prestamo.cliente.apellido_paterno} {prestamo.cliente.apellido_materno}",
+            'nombre_completo': f"{prestamo.cliente.nombre_completo}",
             'pep': prestamo.cliente.pep
         },
         'cronograma': [

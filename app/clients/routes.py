@@ -152,4 +152,5 @@ def listar_clientes_view():
     dni = request.args.get('dni', '')
     
     clientes_paginados = crud.obtener_clientes_con_prestamos_info(page=page, per_page=5, dni=dni)
+    print(list(clientes_paginados))
     return render_template('lista_clientes.html', clientes=clientes_paginados)

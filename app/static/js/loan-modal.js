@@ -51,9 +51,7 @@ function saveLoanChanges() {
     // Información del cliente para mostrar en el modal
     cliente: {
       dni: window.currentClient.dni,
-      nombre_completo: `${window.currentClient.nombre_completo || ""} ${
-        window.currentClient.apellido_paterno || ""
-      } ${window.currentClient.apellido_materno || ""}`.trim(),
+      nombre_completo: `${window.currentClient.nombre_completo || ""}`,
     },
   };
 
@@ -246,10 +244,12 @@ async function verCronogramaPagos() {
   document.getElementById(
     "cronograma-monto"
   ).textContent = `S/ ${montoTotal.toFixed(2)}`;
+
   document.getElementById(
     "cronograma-cuotas"
   ).textContent = `${numCuotas} meses`;
-  document.getElementById("cronograma_tea").textContent = `${interes_tea}% TEA`;
+
+  document.getElementById("cronograma-tea").textContent = `${interes_tea}% TEA`;
 
   const tbody = document.getElementById("cronograma-table-body");
   tbody.innerHTML = "";
