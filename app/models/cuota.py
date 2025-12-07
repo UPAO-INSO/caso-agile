@@ -16,8 +16,9 @@ class Cuota(db.Model):
     monto_pagado = db.Column(db.Numeric(12, 2), nullable=True)
     prestamo_id = db.Column(db.Integer, db.ForeignKey('prestamos.prestamo_id'), nullable=False)
 
-    # Relación Lógica
+    # Relaciones Lógicas
     prestamo = relationship("Prestamo", back_populates="cuotas")
+    pagos = relationship("Pago", back_populates="cuota", cascade="all, delete-orphan")
 
     __table_args__ = (
         db.UniqueConstraint('prestamo_id', 'numero_cuota', name='uq_prestamo_numero_cuota'),

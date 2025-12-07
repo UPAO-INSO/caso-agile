@@ -92,7 +92,8 @@ def _register_models(app):
         Cliente, 
         Prestamo, 
         Cuota, 
-        DeclaracionJurada
+        DeclaracionJurada,
+        Pago
     )
     app.logger.info('Modelos registrados correctamente')
 
@@ -109,7 +110,8 @@ def _register_blueprints(app):
         clientes_bp,
         prestamos_bp,
         cuotas_bp,
-        declaraciones_bp
+        declaraciones_bp,
+        pagos_bp
     )
     
     # Registrar blueprint principal
@@ -127,6 +129,7 @@ def _register_blueprints(app):
     app.register_blueprint(prestamos_bp)
     app.register_blueprint(cuotas_bp)
     app.register_blueprint(declaraciones_bp)
+    app.register_blueprint(pagos_bp)
     
     app.logger.info('Blueprints registrados correctamente')
 
