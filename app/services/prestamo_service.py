@@ -7,7 +7,7 @@ from decimal import Decimal
 import logging
 from typing import Tuple, Optional, Dict, Any, List
 
-from app.extensions import db
+from app.common.extensions import db
 from app.models import (
     Cuota, 
     DeclaracionJurada, 
@@ -336,7 +336,7 @@ class PrestamoService:
         Returns:
             Tuple[respuesta_dict, error, status_code]
         """
-        from app.prestamos.crud import obtener_prestamo_por_id
+        from app.crud.prestamo_crud import obtener_prestamo_por_id
         
         prestamo = obtener_prestamo_por_id(prestamo_id)
         

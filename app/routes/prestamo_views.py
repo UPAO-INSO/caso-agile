@@ -2,7 +2,7 @@
 Views - Endpoints de Préstamos
 Endpoints que renderizan templates HTML
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash
 import logging
 from datetime import datetime
 

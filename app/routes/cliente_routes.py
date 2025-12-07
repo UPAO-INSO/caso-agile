@@ -1,7 +1,5 @@
 from flask import render_template, request, jsonify
-import requests
 import os
-from app.extensions import db
 from app.models import Cliente, EstadoPrestamoEnum
 from app.routes import clientes_bp
 from app import crud
@@ -100,7 +98,7 @@ def buscar_cliente_por_dni(dni): # → Endpoint para buscar cliente por DNI en l
         return jsonify({'error': 'Cliente no encontrado'}), 404
     
     # Verificar si tiene prestamo activo
-    from app.prestamos.model.prestamos import Prestamo, EstadoPrestamoEnum
+    from app.models.prestamo import Prestamo, EstadoPrestamoEnum
     prestamo_activo = Prestamo.query.filter_by(
         cliente_id=cliente.cliente_id,
         estado=EstadoPrestamoEnum.VIGENTE
@@ -152,4 +150,4 @@ def listar_clientes_view():
     
     clientes_paginados = crud.obtener_clientes_con_prestamos_info(page=page, per_page=5, dni=dni)
     print(list(clientes_paginados))
-    return render_template('lista_clientes.html', clientes=clientes_paginados)
+    return render_template('pages/clientes/lista_clientes.html', clientes=clientes_paginados)

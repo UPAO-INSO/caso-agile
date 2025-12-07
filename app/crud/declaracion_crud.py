@@ -1,4 +1,4 @@
-from app.extensions import db
+from app.common.extensions import db
 
 def crear_declaracion(declaracion):
     try:

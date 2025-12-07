@@ -3,18 +3,17 @@ API v1 - Endpoints de Préstamos
 Endpoints REST que retornan JSON
 """
 from flask import jsonify, request
-from decimal import Decimal
 import logging
 from pydantic import ValidationError
 
 from app.routes import api_v1_bp
-from app.extensions import db
+from app.common.extensions import db
 from app.crud import (
     listar_prestamos_por_cliente_id,
     obtener_prestamo_por_id,
     obtener_cliente_por_id
 )
-from app.schemas import PrestamoCreateDTO
+from app.common.schemas import PrestamoCreateDTO
 from app.models import EstadoPrestamoEnum
 from app.common.error_handler import ErrorHandler
 from app.services.prestamo_service import PrestamoService
@@ -79,7 +78,7 @@ def registrar_prestamo_api():
 @api_v1_bp.route('/prestamos/<int:prestamo_id>', methods=['GET'])
 def obtener_prestamo_api(prestamo_id):
     """Obtiene la información completa de un préstamo"""
-    from app.cuotas.crud import listar_cuotas_por_prestamo, obtener_resumen_cuotas
+    from app.crud.cuota_crud import listar_cuotas_por_prestamo, obtener_resumen_cuotas
     
     prestamo = obtener_prestamo_por_id(prestamo_id)
     
@@ -173,7 +172,7 @@ def listar_prestamos_cliente_api(cliente_id):
 @api_v1_bp.route('/clientes/<int:cliente_id>/prestamos/detalle', methods=['GET'])
 def obtener_prestamos_cliente_con_cronogramas_api(cliente_id):
     """Obtiene todos los préstamos de un cliente con sus cronogramas"""
-    from app.cuotas.crud import listar_cuotas_por_prestamo
+    from app.crud.cuota_crud import listar_cuotas_por_prestamo
     
     cliente = obtener_cliente_por_id(cliente_id)
     if not cliente:
@@ -239,3 +238,44 @@ def actualizar_estado_prestamo_api(prestamo_id):
         return jsonify({'error': error}), status_code
     
     return jsonify(respuesta), status_code
+
+@api_v1_bp.route('/prestamos/cliente/<int:cliente_id>/json', methods=['GET'])
+def obtener_prestamos_cliente_json(cliente_id):
+    """Endpoint JSON para obtener todos los préstamos de un cliente con sus cronogramas"""
+    from app.crud.cuota_crud import listar_cuotas_por_prestamo
+    
+    cliente = obtener_cliente_por_id(cliente_id)
+    if not cliente:
+        return jsonify({'error': 'Cliente no encontrado'}), 404
+    
+    prestamos_del_cliente = listar_prestamos_por_cliente_id(cliente_id)
+    
+    prestamos_data = []
+    for prestamo in prestamos_del_cliente:
+        # Obtener cronograma de cuotas
+        cuotas = listar_cuotas_por_prestamo(prestamo.prestamo_id)
+        
+        cronograma_data = [{
+            'numero_cuota': c.numero_cuota,
+            'fecha_vencimiento': c.fecha_vencimiento.strftime('%d/%m/%Y'),
+            'monto_cuota': float(c.monto_cuota),
+            'monto_capital': float(c.monto_capital),
+            'monto_interes': float(c.monto_interes),
+            'saldo_capital': float(c.saldo_capital),
+            'pagado': bool(c.monto_pagado)
+        } for c in cuotas]
+        
+        prestamo_dict = {
+            'prestamo_id': prestamo.prestamo_id,
+            'monto_total': float(prestamo.monto_total),
+            'interes_tea': float(prestamo.interes_tea),
+            'plazo': prestamo.plazo,
+            'f_otorgamiento': prestamo.f_otorgamiento.strftime('%d/%m/%Y'),
+            'estado': prestamo.estado.value,
+            'requiere_dec_jurada': prestamo.requiere_dec_jurada,
+            'cronograma': cronograma_data
+        }
+        
+        prestamos_data.append(prestamo_dict)
+    
+    return jsonify(prestamos_data), 200

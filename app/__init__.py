@@ -13,8 +13,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Importar extensiones centralizadas
-from app.extensions import db, migrate, mail
-from app.config import get_config
+from app.common.extensions import db, migrate, mail
+from app.common.config import get_config
 
 # Módulos que se registrarán automáticamente
 MODULES = ['clients', 'prestamos', 'declaraciones', 'cuotas']
@@ -145,7 +145,7 @@ def _configure_security(app):
     - CORS (si es necesario)
     - Rate limiting
     """
-    from app.security import add_security_headers
+    from app.common.security import add_security_headers
     
     # Agregar security headers a todas las respuestas
     @app.after_request
@@ -161,7 +161,7 @@ def _configure_logging(app):
     - Logging a consola
     - Logging de requests/responses
     """
-    from app.logging_config import configure_logging
+    from app.common.logging_config import configure_logging
     configure_logging(app)
     app.logger.info('Sistema de logging configurado')
 
@@ -173,7 +173,7 @@ def _configure_error_handlers(app):
     - Errores de base de datos
     - Páginas de error personalizadas
     """
-    from app.errors import register_error_handlers
+    from app.common.errors import register_error_handlers
     register_error_handlers(app)
     app.logger.info('Error handlers configurados')
 
@@ -184,7 +184,7 @@ def _configure_cache(app):
     - Cache para respuestas de API
     - Cache para queries de base de datos
     """
-    from app.cache import configure_cache
+    from app.common.cache import configure_cache
     configure_cache(app)
     app.logger.info('Sistema de cache configurado')
 
@@ -195,6 +195,6 @@ def _configure_performance(app):
     - Compression middleware
     - Performance monitoring
     """
-    from app.performance import configure_performance
+    from app.common.performance import configure_performance
     configure_performance(app)
     app.logger.info('Performance optimization configurado')

@@ -5,7 +5,7 @@ Centraliza fórmulas de TEA, TEM, cronogramas y sistema francés.
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 logger = logging.getLogger(__name__)

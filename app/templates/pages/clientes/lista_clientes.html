@@ -357,7 +357,7 @@
 
         // Obtener préstamos del cliente (necesitamos crear un endpoint JSON)
         const prestamosResponse = await fetch(
-          `/api/v1/prestamos/cliente/${clienteId}/json`
+          `/prestamos/cliente/${clienteId}/json`
         );
 
         if (!prestamosResponse.ok) {

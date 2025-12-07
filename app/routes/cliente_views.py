@@ -2,7 +2,7 @@
 Views - Endpoints de Clientes
 Endpoints que renderizan templates HTML
 """
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash
 import logging
 
 from app.routes import clientes_view_bp

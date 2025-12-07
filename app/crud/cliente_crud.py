@@ -2,7 +2,7 @@
 CRUD de Clientes
 Operaciones de base de datos para el modelo Cliente
 """
-from app.extensions import db
+from app.common.extensions import db
 from app.models import Cliente, Prestamo
 from app.services.cliente_service import ClienteService
 from app.services.pep_service import PEPService

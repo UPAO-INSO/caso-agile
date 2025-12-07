@@ -3,7 +3,7 @@ from decimal import Decimal
 import logging
 from pydantic import ValidationError
 
-from app.extensions import db
+from app.common.extensions import db
 from app.crud import (
     listar_prestamos_por_cliente_id,
     obtener_prestamo_por_id,
@@ -12,7 +12,7 @@ from app.crud import (
 )
 from app.common.error_handler import ErrorHandler
 from app.models import EstadoPrestamoEnum
-from app.schemas import PrestamoCreateDTO
+from app.common.schemas import PrestamoCreateDTO
 from app.routes import prestamos_bp
 from app.services.prestamo_service import PrestamoService
 
@@ -65,7 +65,7 @@ def registrar_prestamo():
 
 @prestamos_bp.route('/api/prestamo/<int:prestamo_id>', methods=['GET'])
 def obtener_prestamo_api(prestamo_id): # → Endpoint para obtener la información completa de un préstamo
-    from app.cuotas.crud import listar_cuotas_por_prestamo, obtener_resumen_cuotas
+    from app.crud.cuota_crud import listar_cuotas_por_prestamo, obtener_resumen_cuotas
     
     prestamo = obtener_prestamo_por_id(prestamo_id)
     
@@ -124,7 +124,7 @@ def obtener_prestamo_api(prestamo_id): # → Endpoint para obtener la informaci�
 
 @prestamos_bp.route('/api/cliente/<int:cliente_id>/prestamos', methods=['GET'])
 def listar_prestamos_cliente_api(cliente_id): # → Endpoint para listar todos los préstamos de un cliente
-    from app.clients.crud import obtener_cliente_por_id
+    from app.crud.cliente_crud import obtener_cliente_por_id
     
     cliente = obtener_cliente_por_id(cliente_id)
     if not cliente:
@@ -170,7 +170,7 @@ def list_clientes_con_prestamos():
         'pep': 'Sí' if c.pep else 'No',
     } for c in clientes_con_prestamos]
     
-    return render_template('list_clients.html', clientes=listado_clientes, title="Consulta de Clientes con Historial")
+    return render_template('pages/clientes/list_clients.html', clientes=listado_clientes, title="Consulta de Clientes con Historial")
 
 @prestamos_bp.route('/clientes/<int:cliente_id>', methods=['GET'])
 def list_prestamos_por_cliente(cliente_id):
@@ -189,14 +189,14 @@ def list_prestamos_por_cliente(cliente_id):
         'f_otorgamiento': p.f_otorgamiento.strftime('%d-%m-%Y')
     } for p in prestamos_del_cliente]
     
-    return render_template('list.html', 
+    return render_template('pages/list.html', 
                            cliente=cliente,
                            prestamos=listado_prestamos, 
                            title=f"Préstamos de {cliente.nombre_completo}")
 
 @prestamos_bp.route('/prestamo/<int:prestamo_id>', methods=['GET'])
 def detail_prestamo(prestamo_id): # → Detalle de un préstamo
-    from app.cuotas.crud import listar_cuotas_por_prestamo
+    from app.crud.cuota_crud import listar_cuotas_por_prestamo
     
     prestamo = obtener_prestamo_por_id(prestamo_id)
     
@@ -230,7 +230,7 @@ def detail_prestamo(prestamo_id): # → Detalle de un préstamo
         'tipo_dj': prestamo.declaracion_jurada.tipo_declaracion.value if prestamo.declaracion_jurada else 'N/A'
     }
 
-    return render_template('detail.html', prestamo=datos_prestamo, cronograma=cronograma_data, title=f"Detalle Préstamo {prestamo_id}")
+    return render_template('pages/detail.html', prestamo=datos_prestamo, cronograma=cronograma_data, title=f"Detalle Préstamo {prestamo_id}")
 
 @prestamos_bp.route('/actualizar-estado/<int:prestamo_id>', methods=['POST'])
 def actualizar_estado_prestamo(prestamo_id):
@@ -257,7 +257,7 @@ def actualizar_estado_prestamo(prestamo_id):
 @prestamos_bp.route('/cliente/<int:cliente_id>/json', methods=['GET'])
 def obtener_prestamos_cliente_json(cliente_id):
     """Endpoint JSON para obtener todos los préstamos de un cliente con sus cronogramas"""
-    from app.cuotas.crud import listar_cuotas_por_prestamo
+    from app.crud.cuota_crud import listar_cuotas_por_prestamo
     
     cliente = obtener_cliente_por_id(cliente_id)
     if not cliente:

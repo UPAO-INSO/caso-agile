@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import render_template
 from app.models import Cuota
 from app.routes import cuotas_bp
 

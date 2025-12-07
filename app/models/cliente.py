@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from app.extensions import db
+from app.common.extensions import db
 
 
 class Cliente(db.Model):

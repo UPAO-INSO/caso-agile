@@ -7,7 +7,7 @@ import logging
 from typing import Tuple, Optional, Dict, Any
 import requests
 
-from app.extensions import db
+from app.common.extensions import db
 from app.models import Cliente
 from app.services.pep_service import PEPService
 

@@ -1,4 +1,4 @@
-from app.extensions import db
+from app.common.extensions import db
 from app.models import Prestamo
 
 def crear_prestamo(prestamo): # → Crear un nuevo préstamo
@@ -47,7 +47,7 @@ def eliminar_prestamo(prestamo_id): # → Eliminar un préstamo (soft delete)
             return False, "Préstamo no encontrado"
         
         # Soft delete - cambiar estado en lugar de eliminar
-        from app.prestamos.model.prestamos import EstadoPrestamoEnum
+        from app.models.prestamo import EstadoPrestamoEnum
         prestamo.estado = EstadoPrestamoEnum.CANCELADO
         
         db.session.commit()

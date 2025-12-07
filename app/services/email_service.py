@@ -7,7 +7,7 @@ Centraliza la lógica de composición y envío de emails.
 import logging
 from flask import render_template
 from flask_mail import Message
-from app.extensions import mail
+from app.common.extensions import mail
 from app.services.pdf_service import PDFService
 
 logger = logging.getLogger(__name__)
