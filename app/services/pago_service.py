@@ -58,6 +58,7 @@ class PagoService:
         prestamo_id: int,
         cuota_id: int,
         monto_pagado: Decimal,
+        medio_pago: str, 
         fecha_pago: Optional[date] = None,
         comprobante_referencia: Optional[str] = None,
         observaciones: Optional[str] = None
@@ -91,6 +92,13 @@ class PagoService:
             if monto_pagado <= 0:
                 return None, "El monto del pago debe ser mayor a cero", 400
 
+            # Validar medio de pago
+            try:
+                medio_pago_enum = MedioPagoEnum[medio_pago]
+            except KeyError:
+                return None, f"Medio de pago inválido: {medio_pago}", 400
+
+
             fecha_pago = fecha_pago or date.today()
 
             # Actualizar moras de todas las cuotas
@@ -121,7 +129,7 @@ class PagoService:
                 )
                 monto_mora_total += mora_pagada
 
-            # Registrar el pago principal (con medio_pago por defecto TRANSFERENCIA)
+            # Registrar el pago principal
             nuevo_pago, error_pago = registrar_pago(
                 cuota_id=cuota_id,
                 monto_pagado=monto_pagado,
@@ -143,6 +151,7 @@ class PagoService:
                 'monto_pagado': float(monto_pagado),
                 'monto_mora_pagado': float(monto_mora_total),
                 'fecha_pago': fecha_pago.isoformat(),
+                'medio_pago': medio_pago_enum,
                 'detalles_aplicacion': detalles_pago,
                 'comprobante_referencia': comprobante_referencia
             }
