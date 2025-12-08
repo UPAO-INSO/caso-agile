@@ -122,10 +122,60 @@ class PagoService:
             # Obtener la cuota
             cuota = Cuota.query.get(cuota_id)
             
-            # 3. Calcular mora según RF4
+            # 3. Determinar si debe aplicarse mora
             fecha_pago_efectivo = fecha_pago or date.today()
-            monto_mora, dias_atraso = MoraService.calcular_mora_cuota(cuota, fecha_pago_efectivo)
-            
+            fecha_venc = cuota.fecha_vencimiento
+
+            # 3.a) Si paga antes o en la fecha de vencimiento -> NO hay mora
+            if fecha_pago_efectivo <= fecha_venc:
+                monto_mora = Decimal("0.00")
+                dias_atraso = 0
+            else:
+                # Verificar si en la CUOTA ACTUAL hubo pago dentro del mes de su vencimiento.
+                pago_en_mismo_mes_cuota_actual = any(
+                    p.fecha_pago and p.monto_pagado and p.monto_pagado > 0
+                    and p.fecha_pago.year == fecha_venc.year
+                    and p.fecha_pago.month == fecha_venc.month
+                    for p in (cuota.pagos or [])
+                )
+                if pago_en_mismo_mes_cuota_actual:
+                    # Pago parcial en el mes de vencimiento anula mora para esta cuota
+                    monto_mora = Decimal("0.00")
+                    dias_atraso = 0
+                else:
+                    # Buscar todas las cuotas del mismo préstamo vencidas ANTES de la fecha de pago
+                    cuotas_vencidas = Cuota.query.filter(
+                        Cuota.prestamo_id == prestamo_id,
+                        Cuota.fecha_vencimiento < fecha_pago_efectivo
+                    ).all()
+
+                    cuotas_a_contar = []
+                    for c in cuotas_vencidas:
+                        # 1) Si la cuota ya está totalmente pagada -> no cuenta
+                        if c.monto_pagado is not None and c.monto_pagado >= c.monto_cuota:
+                            continue
+
+                        # 2) Si hubo pago parcial en EL MES de su vencimiento -> anula mora para esa cuota
+                        pago_en_mes_venc = any(
+                            p.fecha_pago and p.monto_pagado and p.monto_pagado > 0
+                            and p.fecha_pago.year == c.fecha_vencimiento.year
+                            and p.fecha_pago.month == c.fecha_vencimiento.month
+                            for p in (c.pagos or [])
+                        )
+                        if pago_en_mes_venc:
+                            continue
+
+                        # Si llega aquí, la cuota vencida e impaga sí genera mora
+                        cuotas_a_contar.append(c)
+
+                    # Mora = 1% sobre monto_capital de cada cuota vencida e impaga (no acumulativa por mes)
+                    tasa = Decimal("0.01")
+                    monto_mora = sum((Decimal(c.monto_capital) * tasa for c in cuotas_a_contar), Decimal("0.00"))
+                    monto_mora = monto_mora.quantize(Decimal("0.00"))
+
+                    # Días de atraso informativo para la cuota que se está pagando ahora
+                    dias_atraso = max((fecha_pago_efectivo - fecha_venc).days, 0)
+                        
             # 4. Calcular saldo pendiente
             monto_ya_pagado = cuota.monto_pagado if cuota.monto_pagado else Decimal('0.00')
             saldo_pendiente = cuota.monto_cuota + monto_mora - monto_ya_pagado
@@ -169,7 +219,8 @@ class PagoService:
                     'fecha_pago': nuevo_pago.fecha_pago.isoformat(),
                     'medio_pago': nuevo_pago.medio_pago.value,
                     'comprobante_referencia': nuevo_pago.comprobante_referencia,
-                    'dias_atraso': dias_atraso
+                    'dias_atraso': dias_atraso,
+                    'saldo_pendiente': float(saldo_final)   # ⭐ AGREGADO AQUÍ
                 },
                 'cuota': {
                     'cuota_id': cuota.cuota_id,

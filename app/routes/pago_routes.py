@@ -33,7 +33,10 @@ def registrar_pago():
         datos = request.get_json()
         
         if not datos:
-            return jsonify({'error': 'No se proporcionó JSON o JSON vacío'}), 400
+            return jsonify({
+                'success': False,
+                'error': 'Datos incompletos'
+            }), 400
         
         # Validar campos requeridos
         prestamo_id = datos.get('prestamo_id')

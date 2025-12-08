@@ -20,49 +20,52 @@ class MoraService:
     
     @staticmethod
     def calcular_mora_cuota(cuota: Cuota, fecha_pago_actual: date) -> Tuple[Decimal, int]:
-        """
-        Calcula la mora de una cuota según RF4.
-        
-        Reglas:
-        - Mora es 1% mensual sobre el monto de CAPITAL de la cuota
-        - No es acumulativa
-        - Si hay pago parcial en el mes de vencimiento, se anula la mora
-        - Mora se aplica apenas pase la fecha de vencimiento
-        
-        Args:
-            cuota: Objeto Cuota
-            fecha_pago_actual: Fecha del pago que se está realizando
-            
-        Returns:
-            Tuple[monto_mora, dias_mora]: Monto de mora y días de atraso
-        """
         try:
-            # Si no hay fecha de vencimiento, no hay mora |Esto está pa checar, ta raro
             if not cuota.fecha_vencimiento:
-                return Decimal('0.00'), 0
-            
-            # Si se paga antes o en la fecha de vencimiento, no hay mora
-            if fecha_pago_actual <= cuota.fecha_vencimiento:
-                return Decimal('0.00'), 0
-            
-            # Si ya se pagó algo en el mes de vencimiento, no hay mora
-            if cuota.fecha_pago and MoraService._es_mismo_mes(cuota.fecha_pago, cuota.fecha_vencimiento):
-                return Decimal('0.00'), 0
-            
-            # Calcular días de atraso
-            dias_atraso = (fecha_pago_actual - cuota.fecha_vencimiento).days
-          
-            # Calcular mora: 1% sobre el monto de la cuota (no acumulativa)
-            monto_mora = cuota.monto_capital * MoraService.TASA_MORA_MENSUAL
-            
-            logger.info(f"Mora calculada para cuota {cuota.cuota_id}: {monto_mora} ({dias_atraso} días de atraso)")
+                return Decimal("0.00"), 0
+
+            # ---- FIX: Forzar carga de pagos ----
+            try:
+                _ = cuota.pagos
+            except:
+                cuota.pagos = []
+            # ------------------------------------
+
+            fecha_venc = cuota.fecha_vencimiento
+            monto_capital = Decimal(cuota.monto_capital)
+
+            # 1) Si paga antes o en fecha → NO mora
+            if fecha_pago_actual <= fecha_venc:
+                return Decimal("0.00"), 0
+
+            # 2) Pago parcial dentro del mes del vencimiento → anula mora
+            for p in (cuota.pagos or []):
+                if (
+                    p.fecha_pago
+                    and p.monto_pagado is not None
+                    and p.monto_pagado > 0
+                    and p.fecha_pago.year == fecha_venc.year
+                    and p.fecha_pago.month == fecha_venc.month
+                ):
+                    return Decimal("0.00"), 0
+
+            # 3) Calcular días de atraso
+            dias_atraso = (fecha_pago_actual - fecha_venc).days
+
+            # 4) Determinar meses vencidos
+            meses_vencidos = dias_atraso // 30
+            if meses_vencidos < 1:
+                meses_vencidos = 1
+
+            # 5) Mora
+            monto_mora = (monto_capital * Decimal("0.01") * meses_vencidos).quantize(Decimal("0.00"))
 
             return monto_mora, dias_atraso
-            
+
         except Exception as exc:
             logger.error(f"Error en calcular_mora_cuota: {exc}", exc_info=True)
-            return Decimal('0.00'), 0
-    
+            return Decimal("0.00"), 0
+
     @staticmethod
     def _es_mismo_mes(fecha1: date, fecha2: date) -> bool:
         """Verifica si dos fechas están en el mismo mes y año"""
