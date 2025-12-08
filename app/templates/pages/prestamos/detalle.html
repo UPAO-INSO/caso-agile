@@ -296,6 +296,12 @@ badge %} {% block content %}
     </a>
 
     <a
+      href="{{ url_for('prestamos_view.pagar_prestamo', prestamo_id=prestamo.prestamo_id) }}"
+      class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+    >
+      <i class="fa-solid fa-user mr-2"></i> Registrar Pago
+
+    <a
       href="{{ url_for('clientes_view.ver_cliente_view', cliente_id=prestamo.cliente_id) }}"
       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
     >
