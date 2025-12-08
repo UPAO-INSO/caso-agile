@@ -1,7 +1,3 @@
-"""
-Servicio de Pagos
-Maneja la lógica de negocio relacionada con pagos de cuotas
-"""
 import logging
 from typing import Tuple, Optional, Dict, Any, List
 from datetime import date
@@ -15,7 +11,7 @@ from app.crud.pago_crud import (
     listar_pagos_por_cuota,
     listar_pagos_por_prestamo,
     obtener_pagos_pendientes_por_prestamo,
-    eliminar_pago
+    actualizar_pago
 )
 from app.services.mora_service import MoraService
 
@@ -23,254 +19,231 @@ logger = logging.getLogger(__name__)
 
 
 class PagoService:
-    """Servicio para manejar la lógica de negocios de pagos"""
-    
+    """Servicio para manejar la lógica de negocios de pagos con mora"""
+
     @staticmethod
     def validar_prestamo_vigente(prestamo_id: int) -> Tuple[bool, Optional[str]]:
-        """
-        Valida que un préstamo esté vigente.
-        
-        Args:
-            prestamo_id: ID del préstamo
-            
-        Returns:
-            Tuple[es_vigente, error]: Boolean y mensaje de error si aplica
-        """
+        """Valida que un préstamo esté vigente"""
         prestamo = Prestamo.query.get(prestamo_id)
-        
+
         if not prestamo:
             return False, f"Préstamo con ID {prestamo_id} no encontrado"
-        
+
         if prestamo.estado != EstadoPrestamoEnum.VIGENTE:
             return False, f"El préstamo no está vigente. Estado actual: {prestamo.estado.value}"
-        
+
         return True, None
-    
+
     @staticmethod
-    def validar_cuota_pertenece_prestamo(cuota_id: int, prestamo_id: int) -> Tuple[bool, Optional[str]]:
+    def obtener_cuotas_pendientes_ordenadas(prestamo_id: int) -> List[Cuota]:
         """
-        Valida que una cuota pertenezca a un préstamo específico.
+        Obtiene las cuotas pendientes ordenadas por número.
         
         Args:
-            cuota_id: ID de la cuota
             prestamo_id: ID del préstamo
             
         Returns:
-            Tuple[pertenece, error]: Boolean y mensaje de error si aplica
+            Lista de cuotas pendientes ordenadas
         """
-        cuota = Cuota.query.get(cuota_id)
+        cuotas = Cuota.query.filter_by(prestamo_id=prestamo_id).all()
         
-        if not cuota:
-            return False, f"Cuota con ID {cuota_id} no encontrada"
+        # Filtrar solo las cuotas con saldo pendiente
+        cuotas_pendientes = [c for c in cuotas if c.saldo_pendiente > 0]
         
-        if cuota.prestamo_id != prestamo_id:
-            return False, f"La cuota {cuota_id} no pertenece al préstamo {prestamo_id}"
-        
-        return True, None
-    
-    @staticmethod
-    def validar_monto_pago(monto_pagado: Decimal, monto_cuota: Decimal) -> Tuple[bool, Optional[str]]:
-        """
-        Valida que el monto del pago sea válido.
-        
-        Args:
-            monto_pagado: Monto a pagar
-            monto_cuota: Monto de la cuota
-            
-        Returns:
-            Tuple[valido, error]: Boolean y mensaje de error si aplica
-        """
-        if monto_pagado <= 0:
-            return False, "El monto del pago debe ser mayor a cero"
-        
-        if monto_pagado > monto_cuota: #Esto posiblemente se debería cambiar para hacer que te de vuelto.
-            return False, f"El monto del pago ({monto_pagado}) no puede exceder el monto de la cuota ({monto_cuota})"
-        
-        return True, None
-    
+        # Ordenar por número de cuota (para pagar en orden)
+        return sorted(cuotas_pendientes, key=lambda c: c.numero_cuota)
+
     @staticmethod
     def registrar_pago_cuota(
         prestamo_id: int,
         cuota_id: int,
         monto_pagado: Decimal,
-        medio_pago: str,
         fecha_pago: Optional[date] = None,
         comprobante_referencia: Optional[str] = None,
         observaciones: Optional[str] = None
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
         """
-        Registra un pago de una cuota de un préstamo aplicando RF1 y RF4.
+        Registra un pago de una cuota con priorización automática.
         
-        Validaciones:
-        1. El préstamo debe estar vigente
-        2. La cuota debe pertenecer al préstamo
-        3. El monto debe ser válido
-        4. Calcular mora si aplica
-        5. Calcular saldo pendiente
+        PRIORIZACIÓN DE PAGO:
+        1. Mora de cuotas anteriores vencidas
+        2. Saldo pendiente de cuotas anteriores
+        3. Mora de la cuota actual (si vencida)
+        4. Saldo pendiente de la cuota actual
+        
+        Args:
+            prestamo_id: ID del préstamo
+            cuota_id: ID de la cuota (para registro)
+            monto_pagado: Monto a pagar
+            fecha_pago: Fecha del pago
+            comprobante_referencia: Referencia del comprobante
+            observaciones: Observaciones adicionales
+            
+        Returns:
+            Tuple[respuesta_dict, error, status_code]
         """
         try:
-            # 1. Validar préstamo vigente
+            # Validaciones básicas
             es_vigente, error = PagoService.validar_prestamo_vigente(prestamo_id)
             if not es_vigente:
                 return None, error, 400
-            
-            # 2. Validar cuota pertenece al préstamo
-            pertenece, error = PagoService.validar_cuota_pertenece_prestamo(cuota_id, prestamo_id)
-            if not pertenece:
-                return None, error, 400
-            
-            # Obtener la cuota
-            cuota = Cuota.query.get(cuota_id)
-            
-            # 3. Determinar si debe aplicarse mora
-            fecha_pago_efectivo = fecha_pago or date.today()
-            fecha_venc = cuota.fecha_vencimiento
 
-            # 3.a) Si paga antes o en la fecha de vencimiento -> NO hay mora
-            if fecha_pago_efectivo <= fecha_venc:
-                monto_mora = Decimal("0.00")
-                dias_atraso = 0
-            else:
-                # Verificar si en la CUOTA ACTUAL hubo pago dentro del mes de su vencimiento.
-                pago_en_mismo_mes_cuota_actual = any(
-                    p.fecha_pago and p.monto_pagado and p.monto_pagado > 0
-                    and p.fecha_pago.year == fecha_venc.year
-                    and p.fecha_pago.month == fecha_venc.month
-                    for p in (cuota.pagos or [])
+            if monto_pagado <= 0:
+                return None, "El monto del pago debe ser mayor a cero", 400
+
+            fecha_pago = fecha_pago or date.today()
+
+            # Actualizar moras de todas las cuotas
+            MoraService.actualizar_mora_prestamo(prestamo_id)
+
+            # Obtener cuotas pendientes ordenadas
+            cuotas_pendientes = PagoService.obtener_cuotas_pendientes_ordenadas(prestamo_id)
+            
+            if not cuotas_pendientes:
+                return None, "No hay cuotas pendientes para este préstamo", 400
+
+            # Aplicar el pago con priorización
+            monto_restante = monto_pagado
+            pagos_registrados = []
+            detalles_pago = []
+            monto_mora_total = Decimal('0.00')
+
+            for cuota in cuotas_pendientes:
+                if monto_restante <= 0:
+                    break
+
+                # Prioridad 1 y 2: Mora y saldo de cuotas anteriores
+                monto_restante, mora_pagada = PagoService._aplicar_pago_a_cuota(
+                    cuota,
+                    monto_restante,
+                    fecha_pago,
+                    detalles_pago
                 )
-                if pago_en_mismo_mes_cuota_actual:
-                    # Pago parcial en el mes de vencimiento anula mora para esta cuota
-                    monto_mora = Decimal("0.00")
-                    dias_atraso = 0
-                else:
-                    # Buscar todas las cuotas del mismo préstamo vencidas ANTES de la fecha de pago
-                    cuotas_vencidas = Cuota.query.filter(
-                        Cuota.prestamo_id == prestamo_id,
-                        Cuota.fecha_vencimiento < fecha_pago_efectivo
-                    ).all()
+                monto_mora_total += mora_pagada
 
-                    cuotas_a_contar = []
-                    for c in cuotas_vencidas:
-                        # 1) Si la cuota ya está totalmente pagada -> no cuenta
-                        if c.monto_pagado is not None and c.monto_pagado >= c.monto_cuota:
-                            continue
-
-                        # 2) Si hubo pago parcial en EL MES de su vencimiento -> anula mora para esa cuota
-                        pago_en_mes_venc = any(
-                            p.fecha_pago and p.monto_pagado and p.monto_pagado > 0
-                            and p.fecha_pago.year == c.fecha_vencimiento.year
-                            and p.fecha_pago.month == c.fecha_vencimiento.month
-                            for p in (c.pagos or [])
-                        )
-                        if pago_en_mes_venc:
-                            continue
-
-                        # Si llega aquí, la cuota vencida e impaga sí genera mora
-                        cuotas_a_contar.append(c)
-
-                    # Mora = 1% sobre monto_capital de cada cuota vencida e impaga (no acumulativa por mes)
-                    tasa = Decimal("0.01")
-                    monto_mora = sum((Decimal(c.monto_capital) * tasa for c in cuotas_a_contar), Decimal("0.00"))
-                    monto_mora = monto_mora.quantize(Decimal("0.00"))
-
-                    # Días de atraso informativo para la cuota que se está pagando ahora
-                    dias_atraso = max((fecha_pago_efectivo - fecha_venc).days, 0)
-                        
-            # 4. Calcular saldo pendiente
-            monto_ya_pagado = cuota.monto_pagado if cuota.monto_pagado else Decimal('0.00')
-            saldo_pendiente = cuota.monto_cuota + monto_mora - monto_ya_pagado
-            
-            # 5. Validar monto del pago
-            valido, error = PagoService.validar_monto_pago(monto_pagado, saldo_pendiente)
-            if not valido:
-                return None, error, 400
-            
-            # 6. Validar medio de pago
-            try:
-                medio_pago_enum = MedioPagoEnum[medio_pago]
-            except KeyError:
-                return None, f"Medio de pago inválido: {medio_pago}", 400
-            
-            # 7. Registrar el pago
+            # Registrar el pago principal (con medio_pago por defecto TRANSFERENCIA)
             nuevo_pago, error_pago = registrar_pago(
-                cuota_id,
-                monto_pagado,
-                monto_mora,
-                medio_pago_enum,
-                fecha_pago_efectivo,
-                comprobante_referencia,
-                observaciones
+                cuota_id=cuota_id,
+                monto_pagado=monto_pagado,
+                fecha_pago=fecha_pago,
+                comprobante_referencia=comprobante_referencia,
+                observaciones=observaciones,
+                medio_pago=MedioPagoEnum.TRANSFERENCIA,  # Por defecto
+                monto_mora=monto_mora_total
             )
-            
+
             if error_pago:
                 return None, error_pago, 500
-            
-            # 8. Recalcular saldo pendiente después del pago
-            saldo_final = saldo_pendiente - monto_pagado
-            
-            # 9. Preparar respuesta
+
+            # Preparar respuesta
             respuesta = {
                 'success': True,
-                'message': f'Pago registrado exitosamente para la cuota {cuota.numero_cuota}',
-                'pago': {
-                    'pago_id': nuevo_pago.pago_id,
-                    'monto_pagado': float(nuevo_pago.monto_pagado),
-                    'monto_mora': float(nuevo_pago.monto_mora),
-                    'fecha_pago': nuevo_pago.fecha_pago.isoformat(),
-                    'medio_pago': nuevo_pago.medio_pago.value,
-                    'comprobante_referencia': nuevo_pago.comprobante_referencia,
-                    'dias_atraso': dias_atraso,
-                    'saldo_pendiente': float(saldo_final)   # ⭐ AGREGADO AQUÍ
-                },
-                'cuota': {
-                    'cuota_id': cuota.cuota_id,
-                    'numero_cuota': cuota.numero_cuota,
-                    'monto_cuota': float(cuota.monto_cuota),
-                    'monto_total_a_pagar': float(cuota.monto_cuota + monto_mora),
-                    'monto_ya_pagado': float(cuota.monto_pagado),
-                    'saldo_pendiente': float(saldo_final),
-                    'fecha_vencimiento': cuota.fecha_vencimiento.isoformat(),
-                    'estado': 'PAGADA' if saldo_final <= 0 else 'PAGO_PARCIAL'
-                }
+                'message': f'Pago de S/. {monto_pagado} registrado exitosamente',
+                'pago_id': nuevo_pago.pago_id,
+                'monto_pagado': float(monto_pagado),
+                'monto_mora_pagado': float(monto_mora_total),
+                'fecha_pago': fecha_pago.isoformat(),
+                'detalles_aplicacion': detalles_pago,
+                'comprobante_referencia': comprobante_referencia
             }
-            
+
+            logger.info(
+                f"Pago registrado: Préstamo={prestamo_id}, "
+                f"Monto={monto_pagado}, Mora={monto_mora_total}, Detalles={len(detalles_pago)} movimientos"
+            )
+
             return respuesta, None, 201
-            
+
         except Exception as exc:
             db.session.rollback()
             logger.error(f"Error en registrar_pago_cuota: {exc}", exc_info=True)
             return None, f'Error al registrar el pago: {str(exc)}', 500
-    
+
+    @staticmethod
+    def _aplicar_pago_a_cuota(
+        cuota: Cuota,
+        monto_disponible: Decimal,
+        fecha_pago: date,
+        detalles: List[Dict[str, Any]]
+    ) -> Tuple[Decimal, Decimal]:
+        """
+        Aplica un pago a una cuota siguiendo la priorización.
+        
+        Returns:
+            Tuple[monto_restante, monto_mora_pagado]
+        """
+        monto_restante = monto_disponible
+        monto_mora_pagado = Decimal('0.00')
+
+        # Paso 1: Cubrir mora
+        if cuota.mora_acumulada > 0 and monto_restante > 0:
+            pago_mora = min(monto_restante, cuota.mora_acumulada)
+            cuota.mora_acumulada -= pago_mora
+            monto_restante -= pago_mora
+            monto_mora_pagado = pago_mora
+            
+            detalles.append({
+                'cuota_numero': cuota.numero_cuota,
+                'concepto': 'Mora',
+                'monto': float(pago_mora),
+                'mora_restante': float(cuota.mora_acumulada)
+            })
+
+        # Paso 2: Cubrir saldo pendiente
+        if cuota.saldo_pendiente > 0 and monto_restante > 0:
+            pago_saldo = min(monto_restante, cuota.saldo_pendiente)
+            cuota.saldo_pendiente -= pago_saldo
+            cuota.monto_pagado = (cuota.monto_pagado or 0) + pago_saldo
+            monto_restante -= pago_saldo
+            
+            detalles.append({
+                'cuota_numero': cuota.numero_cuota,
+                'concepto': 'Saldo Pendiente',
+                'monto': float(pago_saldo),
+                'saldo_restante': float(cuota.saldo_pendiente)
+            })
+
+        # Marcar como pagada si no hay saldo
+        if cuota.saldo_pendiente <= 0 and cuota.mora_acumulada <= 0:
+            cuota.fecha_pago = fecha_pago
+            detalles.append({
+                'cuota_numero': cuota.numero_cuota,
+                'concepto': 'Estado',
+                'monto': 0,
+                'estado': 'PAGADA'
+            })
+
+        db.session.commit()
+        return monto_restante, monto_mora_pagado
+
     @staticmethod
     def obtener_resumen_pagos_prestamo(prestamo_id: int) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
-        """Obtiene un resumen de los pagos de un préstamo."""
+        """
+        Obtiene un resumen completo de pagos incluyendo mora.
+        """
         try:
-            # Validar que el préstamo existe
             prestamo = Prestamo.query.get(prestamo_id)
             if not prestamo:
                 return None, f"Préstamo con ID {prestamo_id} no encontrado", 404
-            
-            # Obtener todas las cuotas
+
+            # Actualizar moras
+            MoraService.actualizar_mora_prestamo(prestamo_id)
+
             cuotas = Cuota.query.filter_by(prestamo_id=prestamo_id).all()
-            
             if not cuotas:
                 return None, "No hay cuotas para este préstamo", 404
-            
-            # Calcular estadísticas
+
             total_cuotas = len(cuotas)
-            cuotas_pagadas = len([c for c in cuotas if c.monto_pagado and c.monto_pagado >= c.monto_cuota])
+            cuotas_pagadas = len([c for c in cuotas if c.saldo_pendiente <= 0])
             cuotas_pendientes = total_cuotas - cuotas_pagadas
-            
+
             monto_total = sum(Decimal(c.monto_cuota) for c in cuotas)
             monto_pagado = sum(Decimal(c.monto_pagado) if c.monto_pagado else 0 for c in cuotas)
-            monto_pendiente = monto_total - monto_pagado
-            
-            # Obtener pagos registrados
+            monto_pendiente = sum(c.saldo_pendiente for c in cuotas)
+            mora_total = sum(c.mora_acumulada for c in cuotas)
+
             pagos = listar_pagos_por_prestamo(prestamo_id)
-            
-            # Calcular total de moras
-            total_mora = sum(Decimal(p.monto_mora) for p in pagos)
-            
+
             respuesta = {
                 'success': True,
                 'prestamo_id': prestamo_id,
@@ -281,8 +254,11 @@ class PagoService:
                     'monto_total': float(monto_total),
                     'monto_pagado': float(monto_pagado),
                     'monto_pendiente': float(monto_pendiente),
-                    'total_mora': float(total_mora),
-                    'porcentaje_pagado': round((float(monto_pagado) / float(monto_total) * 100), 2) if monto_total > 0 else 0
+                    'mora_total': float(mora_total),
+                    'total_a_pagar': float(monto_pendiente + mora_total),
+                    'porcentaje_pagado': round(
+                        (float(monto_pagado) / float(monto_total) * 100), 2
+                    ) if monto_total > 0 else 0
                 },
                 'pagos': [p.to_dict() for p in pagos],
                 'cuotas_pendientes': [
@@ -291,17 +267,20 @@ class PagoService:
                         'numero_cuota': c.numero_cuota,
                         'fecha_vencimiento': c.fecha_vencimiento.isoformat(),
                         'monto_cuota': float(c.monto_cuota),
-                        'monto_pagado': float(c.monto_pagado) if c.monto_pagado else 0.00,
-                        'saldo_pendiente': float(c.monto_cuota - (c.monto_pagado if c.monto_pagado else 0)),
-                        'estado': 'PAGADA' if c.monto_pagado and c.monto_pagado >= c.monto_cuota else 'PENDIENTE'
+                        'monto_pagado': float(c.monto_pagado) if c.monto_pagado else 0,
+                        'saldo_pendiente': float(c.saldo_pendiente),
+                        'mora_acumulada': float(c.mora_acumulada),
+                        'total_a_pagar': float(c.saldo_pendiente + c.mora_acumulada),
+                        'estado': 'PAGADA' if c.saldo_pendiente <= 0 else 'PENDIENTE',
+                        'dias_atraso': MoraService.calcular_dias_atraso(c.fecha_vencimiento)
                     }
                     for c in sorted(cuotas, key=lambda x: x.numero_cuota)
-                    if not c.monto_pagado or c.monto_pagado < c.monto_cuota
+                    if c.saldo_pendiente > 0 or c.mora_acumulada > 0
                 ]
             }
-            
+
             return respuesta, None, 200
-            
+
         except Exception as exc:
             logger.error(f"Error en obtener_resumen_pagos_prestamo: {exc}", exc_info=True)
-            return None, f'Error al obtener resumen de pagos: {str(exc)}', 500
+            return None, f'Error: {str(exc)}', 500

@@ -1,191 +1,165 @@
-"""
-CRUD Operations para Pagos
-Maneja todas las operaciones de base de datos relacionadas con pagos
-"""
-from app.common.extensions import db
-from app.models import Pago, MedioPagoEnum
+import logging
+from typing import Tuple, Optional, List, Dict, Any
 from datetime import date
 from decimal import Decimal
-from app.models import Cuota
 
-def registrar_pago(cuota_id, monto_pagado, monto_mora, medio_pago, fecha_pago=None, 
-                  comprobante_referencia=None, observaciones=None):
+from app.common.extensions import db
+from app.models import Pago, Cuota, MedioPagoEnum
+
+logger = logging.getLogger(__name__)
+
+
+def registrar_pago(
+    cuota_id: int,
+    monto_pagado: Decimal,
+    fecha_pago: Optional[date] = None,
+    comprobante_referencia: Optional[str] = None,
+    observaciones: Optional[str] = None,
+    medio_pago: MedioPagoEnum = MedioPagoEnum.TRANSFERENCIA,
+    monto_mora: Decimal = Decimal('0.00')
+) -> Tuple[Optional[Pago], Optional[str]]:
     """
-    Registra un pago de una cuota.
-    
-    Args:
-        cuota_id: ID de la cuota a pagar
-        monto_pagado: Monto del pago
-        monto_mora: Monto de mora calculado
-        medio_pago: Medio de pago utilizado (enum)
-        fecha_pago: Fecha del pago (por defecto hoy)
-        comprobante_referencia: Referencia del comprobante (opcional)
-        observaciones: Observaciones del pago (opcional)
-    
-    Returns:
-        Tuple[Pago, error]: Objeto Pago creado y mensaje de error si aplica
-    """
-    try:
-        # Validar que la cuota exista
-        from app.models import Cuota
-        cuota = Cuota.query.get(cuota_id)
-        if not cuota:
-            return None, f"Cuota con ID {cuota_id} no encontrada"
-        
-        # Crear el pago
-        nuevo_pago = Pago(
-            cuota_id=cuota_id,
-            monto_pagado=monto_pagado,
-            monto_mora=monto_mora,
-            fecha_pago=fecha_pago or date.today(),
-            medio_pago=medio_pago,
-            comprobante_referencia=comprobante_referencia,
-            observaciones=observaciones
-        )
-        
-        db.session.add(nuevo_pago)
-        
-        # Actualizar la cuota con la información del pago
-        # Si es el primer pago de la cuota
-        if cuota.monto_pagado is None or cuota.monto_pagado == 0:
-            cuota.monto_pagado = monto_pagado
-            cuota.fecha_pago = fecha_pago or date.today()
-        else:
-            # Si ya hay pagos previos, acumular
-            cuota.monto_pagado += monto_pagado
-        
-        db.session.commit()
-        return nuevo_pago, None
-        
-    except Exception as e:
-        db.session.rollback()
-        return None, f"Error al registrar pago: {str(e)}"
-
-
-def obtener_pago_por_id(pago_id):
-    """Obtiene un pago por su ID"""
-    return Pago.query.get(pago_id)
-
-
-def listar_pagos_por_cuota(cuota_id):
-    """
-    Obtiene todos los pagos de una cuota ordenados por fecha.
+    Registra un nuevo pago en la base de datos.
     
     Args:
         cuota_id: ID de la cuota
+        monto_pagado: Monto pagado
+        fecha_pago: Fecha del pago
+        comprobante_referencia: Referencia del comprobante
+        observaciones: Observaciones
+        medio_pago: Medio de pago (enum)
+        monto_mora: Monto de mora pagado
         
     Returns:
-        Lista de pagos
+        Tuple[Pago creado, mensaje de error si aplica]
     """
-    return db.session.execute(
-        db.select(Pago)
-        .where(Pago.cuota_id == cuota_id)
-        .order_by(Pago.fecha_pago.asc())
-    ).scalars().all()
+    try:
+        cuota = Cuota.query.get(cuota_id)
+        if not cuota:
+            return None, f"Cuota {cuota_id} no encontrada"
 
+        fecha_pago = fecha_pago or date.today()
 
-def listar_pagos_por_prestamo(prestamo_id):
-    """
-    Obtiene todos los pagos de un préstamo a través de sus cuotas.
-    
-    Args:
-        prestamo_id: ID del préstamo
-        
-    Returns:
-        Lista de pagos ordenados por fecha
-    """
-    from app.models import Cuota
-    
-    return db.session.execute(
-        db.select(Pago)
-        .join(Cuota)
-        .where(Cuota.prestamo_id == prestamo_id)
-        .order_by(Pago.fecha_pago.asc())
-    ).scalars().all()
+        # Asegurar que medio_pago es un enum
+        if isinstance(medio_pago, str):
+            medio_pago = MedioPagoEnum[medio_pago]
 
-
-def obtener_pagos_pendientes_por_prestamo(prestamo_id):
-    """
-    Obtiene todas las cuotas pendientes de pago de un préstamo.
-    
-    Args:
-        prestamo_id: ID del préstamo
-        
-    Returns:
-        Lista de cuotas sin pagar completamente
-    """
-    from app.models import Cuota
-    
-    return db.session.execute(
-        db.select(Cuota)
-        .where(
-            Cuota.prestamo_id == prestamo_id,
-            (Cuota.monto_pagado == None) | (Cuota.monto_pagado < Cuota.monto_cuota)
+        pago = Pago(
+            cuota_id=cuota_id,
+            monto_pagado=monto_pagado,
+            fecha_pago=fecha_pago,
+            comprobante_referencia=comprobante_referencia,
+            observaciones=observaciones,
+            medio_pago=medio_pago,
+            monto_mora=monto_mora
         )
-        .order_by(Cuota.numero_cuota.asc())
-    ).scalars().all()
 
-def actualizar_pago(pago_id, monto_pagado=None, fecha_pago=None, comprobante_referencia=None, observaciones=None):
-    """
-    Actualiza los detalles de un pago.
-    
-    Args:
-        pago_id: ID del pago
-        monto_pagado: Nuevo monto (opcional)
-        fecha_pago: Nueva fecha (opcional)
-        comprobante_referencia: Nueva referencia (opcional)
-        observaciones: Nuevas observaciones (opcional)
-        
-    Returns:
-        Tuple[Pago, error]: Pago actualizado y mensaje de error si aplica
-    """
-    try:
-        pago = Pago.query.get(pago_id)
-        if not pago:
-            return None, f"Pago con ID {pago_id} no encontrado"
-        
-        if monto_pagado is not None:
-            pago.monto_pagado = monto_pagado
-        if fecha_pago is not None:
-            pago.fecha_pago = fecha_pago
-        if comprobante_referencia is not None:
-            pago.comprobante_referencia = comprobante_referencia
-        if observaciones is not None:
-            pago.observaciones = observaciones
-        
+        db.session.add(pago)
         db.session.commit()
+
+        logger.info(f"Pago registrado: ID={pago.pago_id}, Cuota={cuota_id}, Monto={monto_pagado}, Mora={monto_mora}")
+
         return pago, None
-        
-    except Exception as e:
+
+    except Exception as exc:
         db.session.rollback()
-        return None, f"Error al actualizar pago: {str(e)}"
+        logger.error(f"Error al registrar pago: {exc}")
+        return None, str(exc)
 
 
+def obtener_pago_por_id(pago_id: int) -> Optional[Pago]:
+    """Obtiene un pago por su ID"""
+    try:
+        return Pago.query.get(pago_id)
+    except Exception as exc:
+        logger.error(f"Error al obtener pago {pago_id}: {exc}")
+        return None
 
-def eliminar_pago(pago_id):
-    """
-    Elimina un pago y restaura el estado de la cuota.
-    
-    Args:
-        pago_id: ID del pago
-        
-    Returns:
-        Tuple[success, error]: Boolean indicando éxito y mensaje de error si aplica
-    """
+
+def listar_pagos_por_cuota(cuota_id: int) -> List[Pago]:
+    """Lista todos los pagos de una cuota"""
+    try:
+        return Pago.query.filter_by(cuota_id=cuota_id).all()
+    except Exception as exc:
+        logger.error(f"Error al listar pagos de cuota {cuota_id}: {exc}")
+        return []
+
+
+def listar_pagos_por_prestamo(prestamo_id: int) -> List[Pago]:
+    """Lista todos los pagos de un préstamo"""
+    try:
+        cuotas = Cuota.query.filter_by(prestamo_id=prestamo_id).all()
+        cuota_ids = [c.cuota_id for c in cuotas]
+        return Pago.query.filter(Pago.cuota_id.in_(cuota_ids)).all()
+    except Exception as exc:
+        logger.error(f"Error al listar pagos de préstamo {prestamo_id}: {exc}")
+        return []
+
+
+def obtener_pagos_pendientes_por_prestamo(prestamo_id: int) -> List[Pago]:
+    """Obtiene pagos pendientes de un préstamo"""
+    try:
+        cuotas = Cuota.query.filter_by(prestamo_id=prestamo_id).all()
+        cuota_ids = [c.cuota_id for c in cuotas]
+        return Pago.query.filter(
+            Pago.cuota_id.in_(cuota_ids),
+            Pago.estado == 'PENDIENTE'
+        ).all()
+    except Exception as exc:
+        logger.error(f"Error al obtener pagos pendientes: {exc}")
+        return []
+
+
+def actualizar_pago(
+    pago_id: int,
+    **campos
+) -> Tuple[Optional[Pago], Optional[str]]:
+    # ...existing code...
     try:
         pago = Pago.query.get(pago_id)
         if not pago:
-            return False, f"Pago con ID {pago_id} no encontrado"
+            return None, f"Pago {pago_id} no encontrado"
+
+        for campo, valor in campos.items():
+            if hasattr(pago, campo):
+                setattr(pago, campo, valor)
+
+        db.session.commit()
+        logger.info(f"Pago {pago_id} actualizado")
+        return pago, None
+
+    except Exception as exc:
+        db.session.rollback()
+        logger.error(f"Error al actualizar pago {pago_id}: {exc}")
+        return None, str(exc)
+
+def devolver_pago(pago_id: int) -> Tuple[bool, Optional[str]]:
+    """Devuelve/anula un pago registrado"""
+    try:
+        pago = Pago.query.get(pago_id)
+        if not pago:
+            return False, f"Pago {pago_id} no encontrado"
+
+        cuota = Cuota.query.get(pago.cuota_id)
+        if not cuota:
+            return False, f"Cuota {pago.cuota_id} no encontrada"
+
+        # Restaurar saldo pendiente
+        cuota.saldo_pendiente += pago.monto_pagado
         
-        # Restaurar la cuota
-        cuota = pago.cuota
-        cuota.monto_pagado = None
-        cuota.fecha_pago = None
+        # Reducir monto pagado
+        cuota.monto_pagado = (cuota.monto_pagado or 0) - pago.monto_pagado
         
+        # Restaurar mora
+        cuota.mora_acumulada = (cuota.mora_acumulada or 0) + pago.monto_mora
+
         db.session.delete(pago)
         db.session.commit()
+
+        logger.info(f"Pago {pago_id} devuelto/anulado")
         return True, None
-        
-    except Exception as e:
+
+    except Exception as exc:
         db.session.rollback()
-        return False, f"Error al eliminar pago: {str(e)}"
+        logger.error(f"Error al devolver pago {pago_id}: {exc}")
+        return False, str(exc)
