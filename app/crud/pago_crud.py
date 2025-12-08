@@ -3,17 +3,21 @@ CRUD Operations para Pagos
 Maneja todas las operaciones de base de datos relacionadas con pagos
 """
 from app.common.extensions import db
-from app.models import Pago, EstadoPagoEnum
+from app.models import Pago, MedioPagoEnum
 from datetime import date
+from decimal import Decimal
+from app.models import Cuota
 
-
-def registrar_pago(cuota_id, monto_pagado, fecha_pago=None, comprobante_referencia=None, observaciones=None):
+def registrar_pago(cuota_id, monto_pagado, monto_mora, medio_pago, fecha_pago=None, 
+                  comprobante_referencia=None, observaciones=None):
     """
     Registra un pago de una cuota.
     
     Args:
         cuota_id: ID de la cuota a pagar
         monto_pagado: Monto del pago
+        monto_mora: Monto de mora calculado
+        medio_pago: Medio de pago utilizado (enum)
         fecha_pago: Fecha del pago (por defecto hoy)
         comprobante_referencia: Referencia del comprobante (opcional)
         observaciones: Observaciones del pago (opcional)
@@ -32,8 +36,9 @@ def registrar_pago(cuota_id, monto_pagado, fecha_pago=None, comprobante_referenc
         nuevo_pago = Pago(
             cuota_id=cuota_id,
             monto_pagado=monto_pagado,
+            monto_mora=monto_mora,
             fecha_pago=fecha_pago or date.today(),
-            estado=EstadoPagoEnum.REALIZADO,
+            medio_pago=medio_pago,
             comprobante_referencia=comprobante_referencia,
             observaciones=observaciones
         )
@@ -41,8 +46,13 @@ def registrar_pago(cuota_id, monto_pagado, fecha_pago=None, comprobante_referenc
         db.session.add(nuevo_pago)
         
         # Actualizar la cuota con la información del pago
-        cuota.monto_pagado = monto_pagado
-        cuota.fecha_pago = fecha_pago or date.today()
+        # Si es el primer pago de la cuota
+        if cuota.monto_pagado is None or cuota.monto_pagado == 0:
+            cuota.monto_pagado = monto_pagado
+            cuota.fecha_pago = fecha_pago or date.today()
+        else:
+            # Si ya hay pagos previos, acumular
+            cuota.monto_pagado += monto_pagado
         
         db.session.commit()
         return nuevo_pago, None
@@ -102,7 +112,7 @@ def obtener_pagos_pendientes_por_prestamo(prestamo_id):
         prestamo_id: ID del préstamo
         
     Returns:
-        Lista de cuotas sin pagar
+        Lista de cuotas sin pagar completamente
     """
     from app.models import Cuota
     
@@ -110,11 +120,10 @@ def obtener_pagos_pendientes_por_prestamo(prestamo_id):
         db.select(Cuota)
         .where(
             Cuota.prestamo_id == prestamo_id,
-            (Cuota.monto_pagado == None) | (Cuota.monto_pagado == 0)
+            (Cuota.monto_pagado == None) | (Cuota.monto_pagado < Cuota.monto_cuota)
         )
         .order_by(Cuota.numero_cuota.asc())
     ).scalars().all()
-
 
 def actualizar_pago(pago_id, monto_pagado=None, fecha_pago=None, comprobante_referencia=None, observaciones=None):
     """
@@ -151,35 +160,6 @@ def actualizar_pago(pago_id, monto_pagado=None, fecha_pago=None, comprobante_ref
         db.session.rollback()
         return None, f"Error al actualizar pago: {str(e)}"
 
-
-def devolver_pago(pago_id):
-    """
-    Marca un pago como devuelto.
-    
-    Args:
-        pago_id: ID del pago
-        
-    Returns:
-        Tuple[Pago, error]: Pago devuelto y mensaje de error si aplica
-    """
-    try:
-        pago = Pago.query.get(pago_id)
-        if not pago:
-            return None, f"Pago con ID {pago_id} no encontrado"
-        
-        pago.estado = EstadoPagoEnum.DEVUELTO
-        
-        # Actualizar la cuota
-        cuota = pago.cuota
-        cuota.monto_pagado = None
-        cuota.fecha_pago = None
-        
-        db.session.commit()
-        return pago, None
-        
-    except Exception as e:
-        db.session.rollback()
-        return None, f"Error al devolver pago: {str(e)}"
 
 
 def eliminar_pago(pago_id):

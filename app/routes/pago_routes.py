@@ -23,28 +23,27 @@ def registrar_pago():
         "prestamo_id": int,
         "cuota_id": int,
         "monto_pagado": float,
+        "medio_pago": string ("EFECTIVO", "TARJETA_DEBITO", etc.),
         "fecha_pago": "YYYY-MM-DD" (opcional),
         "comprobante_referencia": string (opcional),
         "observaciones": string (opcional)
     }
-    
-    Returns:
-        JSON con datos del pago registrado o error
     """
     try:
         datos = request.get_json()
         
         if not datos:
-            return jsonify({'error': 'No se proporcionó JSON'}), 400
+            return jsonify({'error': 'No se proporcionó JSON o JSON vacío'}), 400
         
         # Validar campos requeridos
         prestamo_id = datos.get('prestamo_id')
         cuota_id = datos.get('cuota_id')
         monto_pagado_raw = datos.get('monto_pagado')
+        medio_pago = datos.get('medio_pago')
         
-        if not all([prestamo_id, cuota_id, monto_pagado_raw]):
+        if not all([prestamo_id, cuota_id, monto_pagado_raw, medio_pago]):
             return jsonify({
-                'error': 'Faltan campos requeridos: prestamo_id, cuota_id, monto_pagado'
+                'error': 'Faltan campos requeridos: prestamo_id, cuota_id, monto_pagado, medio_pago'
             }), 400
         
         # Convertir tipos
@@ -55,6 +54,14 @@ def registrar_pago():
         except (ValueError, TypeError):
             return jsonify({
                 'error': 'Tipos de datos inválidos para prestamo_id, cuota_id o monto_pagado'
+            }), 400
+        
+        # Validar medio de pago
+        medios_validos = ['EFECTIVO', 'TARJETA_DEBITO', 'TARJETA_CREDITO', 
+                         'TRANSFERENCIA', 'BILLETERA_ELECTRONICA', 'PAGO_AUTOMATICO']
+        if medio_pago not in medios_validos:
+            return jsonify({
+                'error': f'Medio de pago inválido. Valores permitidos: {", ".join(medios_validos)}'
             }), 400
         
         # Procesar fecha (opcional)
@@ -74,6 +81,7 @@ def registrar_pago():
             prestamo_id,
             cuota_id,
             monto_pagado,
+            medio_pago,
             fecha_pago,
             comprobante_referencia,
             observaciones
@@ -91,12 +99,7 @@ def registrar_pago():
 
 @pagos_bp.route('/resumen/<int:prestamo_id>', methods=['GET'])
 def obtener_resumen_pagos(prestamo_id):
-    """
-    Obtiene un resumen de los pagos de un préstamo.
-    
-    Returns:
-        JSON con resumen de pagos, cuotas pagadas y pendientes
-    """
+    """Obtiene un resumen de los pagos de un préstamo."""
     try:
         respuesta, error, status_code = PagoService.obtener_resumen_pagos_prestamo(prestamo_id)
         
