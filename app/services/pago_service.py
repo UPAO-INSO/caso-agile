@@ -187,7 +187,13 @@ class PagoService:
         # Paso 1: Cubrir mora
         if cuota.mora_acumulada > 0 and monto_restante > 0:
             pago_mora = min(monto_restante, cuota.mora_acumulada)
+            
+            # mora_acumulada: se reduce (es la mora pendiente de pago)
             cuota.mora_acumulada -= pago_mora
+            
+            # mora_generada: NO se modifica (es el registro histórico)
+            # cuota.mora_generada permanece igual
+            
             monto_restante -= pago_mora
             monto_mora_pagado = pago_mora
             
@@ -195,7 +201,8 @@ class PagoService:
                 'cuota_numero': cuota.numero_cuota,
                 'concepto': 'Mora',
                 'monto': float(pago_mora),
-                'mora_restante': float(cuota.mora_acumulada)
+                'mora_restante': float(cuota.mora_acumulada),
+                'mora_historica': float(cuota.mora_generada)
             })
 
         # Paso 2: Cubrir saldo pendiente

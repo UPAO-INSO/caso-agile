@@ -17,9 +17,10 @@ class Cuota(db.Model):
     fecha_pago = db.Column(db.Date, nullable=True)
     monto_pagado = db.Column(db.Numeric(12, 2), nullable=True, default=0)
     
-    # Nuevos campos para mora
-    mora_acumulada = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # Mora total
-    saldo_pendiente = db.Column(db.Numeric(12, 2), nullable=False)  # Lo que falta pagar
+    # Campos de mora
+    mora_generada = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # Mora histórica total generada
+    mora_acumulada = db.Column(db.Numeric(12, 2), nullable=False, default=0)  # Mora pendiente de pago
+    saldo_pendiente = db.Column(db.Numeric(12, 2), nullable=False)  # Saldo de la cuota pendiente
     
     prestamo_id = db.Column(db.Integer, db.ForeignKey('prestamos.prestamo_id'), nullable=False)
 
@@ -46,6 +47,7 @@ class Cuota(db.Model):
             'monto_interes': float(self.monto_interes),
             'saldo_capital': float(self.saldo_capital),
             'saldo_pendiente': float(self.saldo_pendiente),
+            'mora_generada': float(self.mora_generada),
             'mora_acumulada': float(self.mora_acumulada),
             'fecha_pago': self.fecha_pago.isoformat() if self.fecha_pago else None,
             'monto_pagado': float(self.monto_pagado) if self.monto_pagado else 0

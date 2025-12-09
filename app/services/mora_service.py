@@ -104,31 +104,45 @@ class MoraService:
                 db.session.commit()
                 return Decimal('0.00'), "Cuota no está vencida"
 
-            # Si está vencida, calcular mora
-            # Si hay pago parcial, mora se aplica al saldo pendiente
-            # Si no hay pago, mora se aplica al monto completo
+            # 1. Si la cuota está PAGADA (saldo_pendiente <= 0):
+            #    → NO se recalcula la mora
+            #    → Se MANTIENE el valor histórico de mora_acumulada
+            #    → Esto permite ver en reportes cuánta mora se generó originalmente
+            # 2. Si la cuota tiene SALDO PENDIENTE (saldo_pendiente > 0):
+            #    → SÍ se recalcula la mora sobre el saldo actual
+            #    → La mora se actualiza cada mes mientras exista deuda
             if cuota.saldo_pendiente and cuota.saldo_pendiente > 0:
-                mora = MoraService.calcular_mora_cuota(
+                # Hay saldo pendiente: calcular y actualizar mora
+                mora_nueva = MoraService.calcular_mora_cuota(
                     cuota.saldo_pendiente,
                     cuota.fecha_vencimiento,
                     meses_atraso
                 )
-            else:
-                mora = MoraService.calcular_mora_cuota(
-                    cuota.monto_cuota,
-                    cuota.fecha_vencimiento,
-                    meses_atraso
+                
+                # Actualizar mora_generada (acumulativa histórica)
+                cuota.mora_generada = mora_nueva
+                
+                # Actualizar mora_acumulada (pendiente de pago)
+                cuota.mora_acumulada = mora_nueva
+                
+                db.session.commit()
+                
+                logger.info(
+                    f"Mora actualizada para cuota {cuota_id}: "
+                    f"Mora Generada={mora_nueva}, Mora Pendiente={cuota.mora_acumulada}, Saldo={cuota.saldo_pendiente}"
                 )
-
-            cuota.mora_acumulada = mora
-            db.session.commit()
-
-            logger.info(
-                f"Mora actualizada para cuota {cuota_id}: "
-                f"Mora={mora}, Saldo Pendiente={cuota.saldo_pendiente}"
-            )
-
-            return mora, f"Mora calculada: {mora}"
+                
+                return mora_nueva, f"Mora calculada: {mora_nueva}"
+            else:
+                # Cuota pagada: mora_generada mantiene valor histórico
+                # mora_acumulada debería estar en 0 (toda la mora fue pagada)
+                mora_historica = cuota.mora_generada or Decimal('0.00')
+                
+                logger.info(
+                    f"Cuota {cuota_id} pagada. Mora histórica: {mora_historica}, Mora pendiente: {cuota.mora_acumulada}"
+                )
+                
+                return mora_historica, f"Mora histórica: {mora_historica}"
 
         except Exception as exc:
             logger.error(f"Error al actualizar mora de cuota {cuota_id}: {exc}")

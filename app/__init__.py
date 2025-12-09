@@ -81,12 +81,8 @@ def create_app(config_name=None):
     
     return app
 
-
+# → Importa todos los modelos de SQLAlchemy para Alembic
 def _register_models(app):
-    """
-    Importa todos los modelos de SQLAlchemy para que Alembic los detecte.
-    Esto es necesario para las migraciones automáticas.
-    """
     # Importar todos los modelos desde el paquete centralizado
     from app.models import (
         Cliente, 
@@ -97,11 +93,9 @@ def _register_models(app):
     )
     app.logger.info('Modelos registrados correctamente')
 
-
+# → Registrar blueprints principales
 def _register_blueprints(app):
-    """
-    Registra blueprints principales de la aplicación.
-    """
+    # → Importar blueprints desde app/routes/__init__.py
     from app.routes import (
         main_bp,
         api_v1_bp,
@@ -111,7 +105,8 @@ def _register_blueprints(app):
         prestamos_bp,
         cuotas_bp,
         declaraciones_bp,
-        pagos_bp
+        pagos_bp,
+        caja_bp
     )
     
     # Registrar blueprint principal
@@ -130,6 +125,7 @@ def _register_blueprints(app):
     app.register_blueprint(cuotas_bp)
     app.register_blueprint(declaraciones_bp)
     app.register_blueprint(pagos_bp)
+    app.register_blueprint(caja_bp)
     
     app.logger.info('Blueprints registrados correctamente')
 

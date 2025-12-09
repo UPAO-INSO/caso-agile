@@ -20,12 +20,13 @@ prestamos_bp = Blueprint('prestamos', __name__, url_prefix='/prestamos')
 cuotas_bp = Blueprint('cuotas', __name__, url_prefix='/cuotas')
 declaraciones_bp = Blueprint('declaraciones', __name__, url_prefix='/declaraciones')
 pagos_bp = Blueprint('pagos', __name__, url_prefix='/pagos')
+caja_bp = Blueprint('caja', __name__, url_prefix='/caja')
 
 # Importar rutas para registrar con los blueprints
 from app.routes import main_routes
 from app.routes import api_cliente, api_prestamo
 from app.routes import cliente_views, prestamo_views
-from app.routes import cliente_routes, prestamo_routes, cuota_routes, declaracion_routes, pago_routes
+from app.routes import cliente_routes, prestamo_routes, cuota_routes, declaracion_routes, pago_routes, caja_routes
 
 __all__ = [
     'main_bp',
@@ -36,5 +37,6 @@ __all__ = [
     'prestamos_bp',
     'cuotas_bp',
     'declaraciones_bp',
-    'pagos_bp'
+    'pagos_bp',
+    'caja_bp'
 ]

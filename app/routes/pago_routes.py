@@ -2,7 +2,7 @@
 Rutas API para Pagos
 Endpoints para registrar y gestionar pagos de cuotas
 """
-from flask import request, jsonify
+from flask import request, jsonify, send_file
 from datetime import date
 from decimal import Decimal
 import logging
