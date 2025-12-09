@@ -180,6 +180,15 @@ class PagoService:
             if not cuotas_pendientes:
                 return None, "No hay cuotas pendientes para este préstamo", 400
 
+        # → Verificar que si hay mora pendiente, el monto debe cubrirla completamente
+            primera_cuota_con_mora = next((c for c in cuotas_pendientes if c.mora_acumulada > 0), None)
+            if primera_cuota_con_mora and primera_cuota_con_mora.mora_acumulada > 0:
+                if monto_pagado < primera_cuota_con_mora.mora_acumulada:
+                    return None, (
+                        f"La cuota {primera_cuota_con_mora.numero_cuota} tiene mora de S/ {primera_cuota_con_mora.mora_acumulada:.2f}. "
+                        f"Debe pagar la mora completa antes de abonar a la cuota. Monto mínimo: S/ {primera_cuota_con_mora.mora_acumulada:.2f}"
+                    ), 400
+
             # Aplicar el pago con priorización
             monto_restante = monto_pagado
             detalles_pago = []
@@ -202,6 +211,8 @@ class PagoService:
             nuevo_pago, error_pago = registrar_pago(
                 cuota_id=cuota_id,
                 monto_pagado=monto_pagado,
+                monto_contable=monto_contable,
+                ajuste_redondeo=ajuste_redondeo,
                 fecha_pago=fecha_pago,
                 comprobante_referencia=comprobante_referencia,
                 observaciones=observaciones,

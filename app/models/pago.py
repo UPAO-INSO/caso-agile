@@ -32,11 +32,8 @@ class Pago(db.Model):
     pago_id = db.Column(db.Integer, primary_key=True)
     cuota_id = db.Column(db.Integer, db.ForeignKey('cuotas.cuota_id'), nullable=False)
     
-    # MÓDULO 2: Campos para el sistema de pago y conciliación contable
-    metodo_pago = db.Column(db.Enum(MetodoPagoEnum), default=MetodoPagoEnum.EFECTIVO, nullable=False)
-    
     # monto_contable: El monto que debía pagarse (según la cuota)
-    monto_contable = db.Column(db.Numeric(12, 2), nullable=False, comment='Deuda contable de la cuota')
+    monto_contable = db.Column(db.Numeric(12, 2), nullable=True, comment='Deuda contable de la cuota')
     
     # monto_pagado: El monto realmente recibido (redondeado si es efectivo)
     monto_pagado = db.Column(db.Numeric(12, 2), nullable=False, comment='Monto recibido en caja')
@@ -50,7 +47,7 @@ class Pago(db.Model):
         comment='Pérdida/Ganancia por redondeo (Ley N° 29571)'
     )
     
-    monto_mora = db.Column(db.Numeric(12, 2), default=0.00, nullable=False)  # NUEVO
+    monto_mora = db.Column(db.Numeric(12, 2), default=0.00, nullable=False)
     fecha_pago = db.Column(db.Date, nullable=False)
     medio_pago = db.Column(SQLAlchemyEnum(MedioPagoEnum), nullable=False)
     comprobante_referencia = db.Column(db.String(100), nullable=True)
@@ -61,7 +58,6 @@ class Pago(db.Model):
 
     __table_args__ = (
         db.CheckConstraint('monto_pagado > 0', name='chk_monto_pagado_positivo'),
-        db.UniqueConstraint('cuota_id', 'fecha_pago', name='uq_cuota_fecha_pago'),
     )
 
     def __repr__(self):

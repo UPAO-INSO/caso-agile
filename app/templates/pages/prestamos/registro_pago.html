@@ -93,13 +93,13 @@
                                 {% for cuota in cuotas %}
                                     {% if cuota.saldo_pendiente > 0.01 %}
                                         {% if not ns.found %}
-                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ cuota.saldo_pendiente }}" selected>
-                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}) - Saldo: S/ {{ "{:,.2f}".format(cuota.saldo_pendiente) }}
+                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ cuota.saldo_pendiente }}" data-mora="{{ cuota.mora_acumulada }}" selected>
+                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}) - Saldo: S/ {{ "{:,.2f}".format(cuota.saldo_pendiente) }}{% if cuota.mora_acumulada > 0 %} + Mora: S/ {{ "{:,.2f}".format(cuota.mora_acumulada) }}{% endif %}
                                             </option>
                                             {% set ns.found = true %}
                                         {% else %}
-                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ cuota.saldo_pendiente }}">
-                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}) - Saldo: S/ {{ "{:,.2f}".format(cuota.saldo_pendiente) }}
+                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ cuota.saldo_pendiente }}" data-mora="{{ cuota.mora_acumulada }}">
+                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}) - Saldo: S/ {{ "{:,.2f}".format(cuota.saldo_pendiente) }}{% if cuota.mora_acumulada > 0 %} + Mora: S/ {{ "{:,.2f}".format(cuota.mora_acumulada) }}{% endif %}
                                             </option>
                                         {% endif %}
                                     {% endif %}
@@ -110,10 +110,31 @@
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-medium text-gray-700">Monto a Pagar S/</label>
                             <div class="relative">
-                                <input id="input_monto" name="monto_pagado" type="number" step="0.01" class="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" required />
+                                <input id="input_monto" name="monto_pagado" type="number" step="0.10" class="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" required />
                             </div>
                         </div>
                     </div>
+
+                    <!-- Alerta de Mora (si existe) -->
+                    {% set primera_cuota_pendiente = cuotas|selectattr('saldo_pendiente', 'gt', 0)|first %}
+                    {% if primera_cuota_pendiente and primera_cuota_pendiente.mora_acumulada > 0 %}
+                    <div class="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-exclamation-triangle text-red-600 text-xl mt-0.5"></i>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-red-800 mb-1">Mora Pendiente</h4>
+                                <p class="text-sm text-red-700 mb-2">
+                                    La cuota {{ primera_cuota_pendiente.numero_cuota }} tiene mora acumulada de 
+                                    <span class="font-bold">S/ {{ "{:,.2f}".format(primera_cuota_pendiente.mora_acumulada) }}</span>
+                                </p>
+                                <p class="text-xs text-red-600">
+                                    <i class="fa-solid fa-info-circle mr-1"></i>
+                                    La mora se cobrará automáticamente al procesar el pago (1% mensual)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
 
                     <div class="flex flex-col gap-2">
                         <label class="text-sm font-medium text-gray-700">Método de Pago</label>
@@ -137,7 +158,7 @@
 
                     <div class="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="flex items-center justify-between"><p class="text-sm font-medium text-blue-700">Monto Ingresado</p><p class="text-2xl font-bold text-blue-800" id="display_monto">S/ 0.00</p></div>
-                        <div class="flex items-center justify-between border-t sm:border-t-0 sm:border-l border-blue-200 pt-4 sm:pt-0 sm:pl-4"><p class="text-sm font-medium text-blue-700">Saldo Restante Cuota</p><p class="text-2xl font-bold text-blue-800" id="display_saldo">S/ 0.00</p></div>
+                        <div class="flex items-center justify-between border-t sm:border-t-0 sm:border-l border-blue-200 pt-4 sm:pt-0 sm:pl-4"><p class="text-sm font-medium text-blue-700">Saldo Restante (Cuota + Mora)</p><p class="text-2xl font-bold text-blue-800" id="display_saldo">S/ 0.00</p></div>
                     </div>
                 </div>
             </div>
@@ -168,8 +189,10 @@
                 const selectedOption = selectCuota.options[selectCuota.selectedIndex];
                 if (!selectedOption || selectedOption.disabled) return;
                 const saldoPendiente = parseFloat(selectedOption.getAttribute('data-saldo')) || 0;
-                inputMonto.value = saldoPendiente.toFixed(2);
-                inputMonto.max = saldoPendiente.toFixed(2);
+                const moraAcumulada = parseFloat(selectedOption.getAttribute('data-mora')) || 0;
+                const totalAPagar = saldoPendiente + moraAcumulada;
+                inputMonto.value = totalAPagar.toFixed(2);
+                inputMonto.max = totalAPagar.toFixed(2);
                 inputMonto.min = "0.10";
                 validarYActualizarCalculos();
             }
