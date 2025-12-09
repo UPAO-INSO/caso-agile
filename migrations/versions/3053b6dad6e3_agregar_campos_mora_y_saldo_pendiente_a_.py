@@ -1,7 +1,7 @@
 """agregar campos mora y saldo pendiente a cuotas
 
 Revision ID: 3053b6dad6e3
-Revises: add_pago_table
+Revises: b755956d3943
 Create Date: 2025-12-08 13:11:08.891946
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '3053b6dad6e3'
-down_revision = 'add_pago_table'
+down_revision = 'b755956d3943'
 branch_labels = None
 depends_on = None
 

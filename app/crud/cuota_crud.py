@@ -64,14 +64,14 @@ def obtener_resumen_cuotas(prestamo_id): # → Obtener un resumen del estado de 
     cuotas = listar_cuotas_por_prestamo(prestamo_id)
     
     total_cuotas = len(cuotas)
-    cuotas_pagadas = sum(1 for c in cuotas if c.monto_pagado and c.monto_pagado > 0)
+    cuotas_pagadas = sum(1 for c in cuotas if c.saldo_pendiente == 0)
     cuotas_pendientes = total_cuotas - cuotas_pagadas
     
     total_pagado = sum(c.monto_pagado for c in cuotas if c.monto_pagado)
-    total_pendiente = sum(c.monto_cuota for c in cuotas if not c.monto_pagado or c.monto_pagado == 0)
+    total_pendiente = sum(c.saldo_pendiente for c in cuotas)  # Usar saldo_pendiente directamente
     
-    cuotas_vencidas = [c for c in cuotas if c.fecha_vencimiento < date.today() and (not c.monto_pagado or c.monto_pagado == 0)]
-    total_vencido = sum(c.monto_cuota for c in cuotas_vencidas)
+    cuotas_vencidas = [c for c in cuotas if c.fecha_vencimiento < date.today() and c.saldo_pendiente > 0]
+    total_vencido = sum(c.saldo_pendiente for c in cuotas_vencidas)  # Usar saldo_pendiente
     
     total_pagar = sum(c.monto_cuota for c in cuotas)
     

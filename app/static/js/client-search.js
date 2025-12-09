@@ -713,7 +713,7 @@ async function crearNuevoPrestamo(event) {
       f_otorgamiento: fechaLocal,
     };
 
-    const response = await fetch("/api/v1/prestamos/register", {
+    const response = await fetch("/api/v1/prestamos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -724,7 +724,14 @@ async function crearNuevoPrestamo(event) {
     if (response.ok) {
       const data = await response.json();
       console.log("Response data:", data);
-      showAlert("EXITO: Prestamo creado exitosamente", "success");
+
+      // Verificar que realmente fue exitoso
+      if (!data.success || !data.prestamo) {
+        throw new Error(data.message || "Respuesta del servidor incompleta");
+      }
+
+      // Mostrar mensaje de éxito inmediato
+      showAlert("Préstamo registrado exitosamente", "success");
 
       // Resetear formulario
       document.getElementById("loan-form").reset();
@@ -761,32 +768,50 @@ async function crearNuevoPrestamo(event) {
         );
       }, 500);
     } else {
-      const error = await response.json();
+      // Manejar errores HTTP
+      let error;
+      try {
+        error = await response.json();
+      } catch (e) {
+        // Si no se puede parsear el JSON, crear un objeto de error genérico
+        error = { mensaje: `Error HTTP ${response.status}: ${response.statusText}` };
+      }
 
-      // Mensajes detallados segun el tipo de error
+      console.error("Error del servidor:", error);
+
+      // Mensajes detallados según el tipo de error
       if (error.estado) {
-        // Error de prestamo activo
+        // Error de préstamo activo
         alert(
-          `${error.error}\n\n` +
+          `${error.error || "ERROR"}\n\n` +
             `${error.mensaje}\n\n` +
-            `Prestamo ID: ${error.prestamo_id}\n` +
+            `Préstamo ID: ${error.prestamo_id}\n` +
             `Monto: S/ ${error.monto?.toFixed(2) || "N/A"}\n` +
             `Estado: ${error.estado}\n\n` +
             `${error.detalle || ""}`
+        );
+      } else if (error.errors) {
+        // Errores de validación de Pydantic
+        const erroresList = error.errors.map(e => 
+          `- ${e.loc.join('.')}: ${e.msg}`
+        ).join('\n');
+        showAlert(
+          `Errores de validación:\n\n${erroresList}`,
+          "error"
         );
       } else {
         // Otros errores
         showAlert(
           `ERROR: ${
-            error.error || error.mensaje || "Error al crear el prestamo"
+            error.error || error.mensaje || error.message || "Error al crear el préstamo"
           }`,
           "error"
         );
       }
     }
   } catch (error) {
-    console.error("Error:", error);
-    showAlert("ERROR: Error al crear el prestamo: " + error.message, "error");
+    console.error("Error en la petición:", error);
+    showAlert("❌ Error al crear el préstamo: " + error.message, "error");
   } finally {
     saveButton.innerHTML = originalText;
     saveButton.disabled = false;

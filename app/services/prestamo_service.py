@@ -173,6 +173,7 @@ class PrestamoService:
                 monto_capital=item['monto_capital'],
                 monto_interes=item['monto_interes'],
                 saldo_capital=item['saldo_capital'],
+                saldo_pendiente=item['monto_cuota'],  # Inicialmente, el saldo pendiente es el monto total de la cuota
                 es_cuota_ajuste=item.get('es_cuota_ajuste', False)  # Nuevo campo
             )
             cuotas_a_crear.append(cuota)
@@ -186,7 +187,7 @@ class PrestamoService:
         monto_total: Decimal,
         interes_tea: Decimal,
         plazo: int,
-        f_otorgamiento: date
+        f_otorgamiento: Optional[date] = None
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
         """
         Registra un préstamo completo con todas sus dependencias.
@@ -205,7 +206,7 @@ class PrestamoService:
             monto_total: Monto del préstamo
             interes_tea: Tasa de interés anual
             plazo: Plazo en meses
-            f_otorgamiento: Fecha de otorgamiento
+            f_otorgamiento: Fecha de otorgamiento (opcional, usa fecha actual si no se especifica)
             
         Returns:
             Tuple[respuesta_dict, error, status_code]: Diccionario con datos del préstamo,
@@ -213,6 +214,10 @@ class PrestamoService:
                                                        código HTTP de respuesta
         """
         try:
+            # Usar fecha actual si no se proporciona
+            if f_otorgamiento is None:
+                f_otorgamiento = date.today()
+            
             # 1. Obtener o crear cliente
             cliente, error = PrestamoService.obtener_o_crear_cliente(dni, correo_electronico)
             if error:

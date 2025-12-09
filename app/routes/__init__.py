@@ -24,7 +24,7 @@ caja_bp = Blueprint('caja', __name__, url_prefix='/caja')
 
 # Importar rutas para registrar con los blueprints
 from app.routes import main_routes
-from app.routes import api_cliente, api_prestamo
+from app.routes import api_cliente, api_prestamo, financial_routes
 from app.routes import cliente_views, prestamo_views
 from app.routes import cliente_routes, prestamo_routes, cuota_routes, declaracion_routes, pago_routes, caja_routes
 

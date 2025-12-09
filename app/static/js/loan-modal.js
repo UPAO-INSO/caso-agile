@@ -1,4 +1,4 @@
-function saveLoanChanges() {
+async function saveLoanChanges() {
   console.log("saveLoanChanges called");
 
   // Verificar que hay un cliente seleccionado
@@ -57,35 +57,33 @@ function saveLoanChanges() {
 
   console.log("Enviando datos del préstamo:", loanData);
 
-  // Mostrar modal de confirmación
-  showLoanSuccessModal(loanData);
-
-  // TODO: Implementar guardado en la base de datos
-  /*
-  fetch('/api/v1/prestamos', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(loanData)
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Error al guardar el préstamo');
-    }
-    return response.json();
-  })
-  .then(data => {
-    showLoanSuccessModal({
-      ...loanData,
-      id: data.id
+  // Guardar préstamo en la base de datos
+  try {
+    const response = await fetch('/api/v1/prestamos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(loanData)
     });
-  })
-  .catch(error => {
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.mensaje || error.error || 'Error al guardar el préstamo');
+    }
+
+    const data = await response.json();
+    
+    // Actualizar ID del préstamo en loanData
+    loanData.id = data.prestamo?.prestamo_id || data.id;
+    
+    // Mostrar modal de confirmación solo si todo salió bien
+    showLoanSuccessModal(loanData);
+    
+  } catch (error) {
     console.error('Error:', error);
     showAlert('Error al guardar el préstamo: ' + error.message, 'error');
-  });
-  */
+  }
 }
 
 /**
@@ -190,7 +188,7 @@ document.addEventListener("keydown", function (e) {
 async function verCronogramaPagos() {
   const monto = document.getElementById("monto")?.value;
   const cuotas = document.getElementById("cuotas")?.value;
-  const interes_tea = document.getElementById("interes_tea")?.value;
+  const interes_tea = document.getElementById("interes_tea")?.value || "10";
 
   if (!monto || !cuotas) {
     alert("Por favor ingrese el monto y numero de cuotas primero");
@@ -207,81 +205,86 @@ async function verCronogramaPagos() {
     return;
   }
 
-  // Calcular cronograma (metodo frances - cuota fija)
-  const montoTotal = parseFloat(monto);
-  const numCuotas = parseInt(cuotas);
-  const tasaAnual = 0.2; // 20% TEA
-  const tasaMensual = Math.pow(1 + tasaAnual, 1 / 12) - 1;
-
-  // Calcular cuota fija
-  const cuotaFija =
-    (montoTotal * (tasaMensual * Math.pow(1 + tasaMensual, numCuotas))) /
-    (Math.pow(1 + tasaMensual, numCuotas) - 1);
-
-  let saldo = montoTotal;
-  const cronograma = [];
-  const fechaBase = new Date();
-
-  for (let i = 1; i <= numCuotas; i++) {
-    const interes = saldo * tasaMensual;
-    const capital = cuotaFija - interes;
-    saldo -= capital;
-
-    const fechaVencimiento = new Date(fechaBase);
-    fechaVencimiento.setMonth(fechaBase.getMonth() + i);
-
-    cronograma.push({
-      numero_cuota: i,
-      fecha_vencimiento: fechaVencimiento.toLocaleDateString("es-PE"),
-      monto_cuota: cuotaFija,
-      monto_capital: capital,
-      monto_interes: interes,
-      saldo_capital: Math.max(0, saldo),
+  try {
+    // Llamar al backend para calcular el cronograma con las fórmulas correctas
+    const response = await fetch("/api/v1/financial/simular-cronograma", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        monto: parseFloat(monto),
+        plazo: parseInt(cuotas),
+        tea: parseFloat(interes_tea),
+      }),
     });
-  }
 
-  // Llenar modal con datos
-  document.getElementById(
-    "cronograma-monto"
-  ).textContent = `S/ ${montoTotal.toFixed(2)}`;
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Error al calcular cronograma");
+    }
 
-  document.getElementById(
-    "cronograma-cuotas"
-  ).textContent = `${numCuotas} meses`;
+    const data = await response.json();
+    const cronograma = data.cronograma;
 
-  document.getElementById("cronograma-tea").textContent = `${interes_tea}% TEA`;
+    // Llenar modal con datos
+    document.getElementById("cronograma-monto").textContent = `S/ ${parseFloat(
+      monto
+    ).toFixed(2)}`;
 
-  const tbody = document.getElementById("cronograma-table-body");
-  tbody.innerHTML = "";
+    document.getElementById(
+      "cronograma-cuotas"
+    ).textContent = `${cuotas} meses`;
 
-  cronograma.forEach((cuota) => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-gray-50";
-    tr.innerHTML = `
-      <td class="px-4 py-3 text-gray-900 font-medium">${cuota.numero_cuota}</td>
+    document.getElementById(
+      "cronograma-tea"
+    ).textContent = `${interes_tea}% TEA`;
+
+    const tbody = document.getElementById("cronograma-table-body");
+    tbody.innerHTML = "";
+
+    cronograma.forEach((cuota) => {
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-gray-50";
+      tr.innerHTML = `
+      <td class="px-4 py-3 text-gray-900 font-medium">${
+        cuota.numero_cuota
+      }</td>
       <td class="px-4 py-3 text-gray-600">${cuota.fecha_vencimiento}</td>
-      <td class="px-4 py-3 text-right font-semibold text-gray-900">S/ ${cuota.monto_cuota.toFixed(
-        2
-      )}</td>
-      <td class="px-4 py-3 text-right text-gray-600">S/ ${cuota.monto_capital.toFixed(
-        2
-      )}</td>
-      <td class="px-4 py-3 text-right text-gray-600">S/ ${cuota.monto_interes.toFixed(
-        2
-      )}</td>
-      <td class="px-4 py-3 text-right text-blue-600 font-medium">S/ ${cuota.saldo_capital.toFixed(
-        2
-      )}</td>
+      <td class="px-4 py-3 text-right font-semibold text-gray-900">S/ ${parseFloat(
+        cuota.monto_cuota
+      ).toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-gray-600">S/ ${parseFloat(
+        cuota.monto_capital
+      ).toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-gray-600">S/ ${parseFloat(
+        cuota.monto_interes
+      ).toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-blue-600 font-medium">S/ ${parseFloat(
+        cuota.saldo_capital
+      ).toFixed(2)}</td>
     `;
-    tbody.appendChild(tr);
-  });
+      tbody.appendChild(tr);
+    });
 
-  // Mostrar modal
-  const modal = document.getElementById("modalCronograma");
-  modal.style.display = "flex";
-  setTimeout(() => {
-    modal.classList.remove("hidden");
-  }, 10);
+    // Mostrar resumen total si viene del backend
+    if (data.resumen) {
+      console.log("Resumen del cronograma:", data.resumen);
+    }
+
+    // Mostrar modal
+    const modal = document.getElementById("modalCronograma");
+    modal.style.display = "flex";
+    setTimeout(() => {
+      modal.classList.remove("hidden");
+    }, 10);
+  } catch (error) {
+    console.error("Error al obtener cronograma:", error);
+    alert(
+      "Error al calcular el cronograma. Por favor intente nuevamente.\n" +
+        error.message
+    );
+  }
 }
 
 /**

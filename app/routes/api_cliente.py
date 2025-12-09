@@ -137,6 +137,7 @@ def buscar_cliente_por_dni_api(dni):
 
 
 @api_v1_bp.route('/clientes/verificar-prestamo/<int:cliente_id>', methods=['GET'])
+@api_v1_bp.route('/clientes/verificar_prestamo/<int:cliente_id>', methods=['GET'])
 def verificar_prestamo_activo_api(cliente_id):
     """Verifica si un cliente tiene préstamo activo"""
     prestamo = prestamo_activo_cliente(cliente_id, EstadoPrestamoEnum.VIGENTE)
@@ -148,6 +149,7 @@ def verificar_prestamo_activo_api(cliente_id):
 
 
 @api_v1_bp.route('/clientes/consultar-dni/<string:dni>', methods=['GET'])
+@api_v1_bp.route('/clientes/consultar_dni/<string:dni>', methods=['GET'])
 def consultar_dni_reniec_api(dni):
     """
     Consulta datos de un DNI en RENIEC
@@ -166,6 +168,7 @@ def consultar_dni_reniec_api(dni):
 
 
 @api_v1_bp.route('/clientes/validar-pep/<string:dni>', methods=['GET'])
+@api_v1_bp.route('/clientes/test/pep/<string:dni>', methods=['GET'])
 def validar_pep_api(dni):
     """Valida si un DNI está en el dataset PEP"""
     es_pep = validar_pep_en_dataset(dni)

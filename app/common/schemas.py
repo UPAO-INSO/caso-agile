@@ -5,6 +5,7 @@ Usando Pydantic para validación de datos
 from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 from typing import Optional
+from datetime import date
 
 
 class PrestamoCreateDTO(BaseModel):
@@ -13,7 +14,9 @@ class PrestamoCreateDTO(BaseModel):
     correo_electronico: str = Field(..., description="Email del cliente")
     monto: Decimal = Field(..., gt=0, description="Monto del préstamo")
     interes_tea: Decimal = Field(..., ge=0, le=100, description="Tasa de interés anual")
-    plazo: int = Field(..., gt=0, description="Plazo en meses")
+    plazo: int = Field(..., gt=0, le=60, description="Plazo en meses (máximo 60)")
+    f_otorgamiento: Optional[date] = Field(default=None, description="Fecha de otorgamiento (opcional, se usa hoy si no se especifica)")
+    dia_pago: Optional[int] = Field(default=None, ge=1, le=31, description="Día preferido de pago (1-31)")
     
     @field_validator('dni')
     @classmethod
@@ -37,7 +40,9 @@ class PrestamoCreateDTO(BaseModel):
                 "dni": "12345678",
                 "correo_electronico": "cliente@example.com",
                 "monto": 10000.00,
-                "interes_tea": 15.5,
-                "plazo": 12
+                "interes_tea": 10.0,
+                "plazo": 12,
+                "f_otorgamiento": "2025-12-09",
+                "dia_pago": 15
             }
         }

@@ -90,15 +90,15 @@ class FinancialService:
         """
         Genera el cronograma completo de pagos usando Sistema Francés con ajuste en última cuota.
         
-        MÓDULO 1: Sistema de Céntimos para Exactitud Contable
-        - Trabaja internamente con céntimos (enteros) para evitar errores de punto flotante
-        - Las primeras N-1 cuotas tienen el mismo monto (cuota regular calculada con sistema francés)
-        - La última cuota absorbe cualquier residuo (cuota de ajuste)
-        - Solo usa Redondeo Estándar (Matemático) a 2 decimales
+        CARACTERÍSTICAS:
+        - Sistema Francés: Cuota fija mensual (capital + interés)
+        - Fechas: Cada 30 días exactos desde el otorgamiento
+        - TEA correcta: 10% TEA sobre S/12000 = S/13200 total al año
+        - Última cuota ajusta residuos para cuadre exacto
         
         Args:
             monto_total: Monto del préstamo (Decimal)
-            interes_tea: TEA en porcentaje (Decimal)
+            interes_tea: TEA en porcentaje (Decimal) - ej: 10.00 para 10%
             plazo: Número de cuotas/meses (int)
             f_otorgamiento: Fecha de otorgamiento del préstamo (date)
             
@@ -111,14 +111,22 @@ class FinancialService:
             # Convertir a Decimal para precisión
             P = Decimal(str(monto_total))
             N = int(plazo)
-            tea = Decimal(str(interes_tea))
+            tea_porcentaje = Decimal(str(interes_tea))
             
-            # Calcular TEM (Tasa Efectiva Mensual)
-            tem = FinancialService.tea_to_tem(tea)
+            # Calcular TEM (Tasa Efectiva Mensual) correctamente
+            # TEM = (1 + TEA)^(1/12) - 1
+            tea_decimal = tea_porcentaje / Decimal('100')
+            tem = ((Decimal('1') + tea_decimal) ** (Decimal('1') / Decimal('12'))) - Decimal('1')
             
             # Calcular cuota regular usando sistema francés
-            # Esta será la cuota fija para las primeras N-1 cuotas
-            cuota_regular = FinancialService.calcular_cuota_fija(P, tea, N)
+            # Cuota = P * [TEM * (1 + TEM)^N] / [(1 + TEM)^N - 1]
+            if tem == Decimal('0'):
+                cuota_regular = (P / N).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            else:
+                factor = (Decimal('1') + tem) ** N
+                cuota_regular = (P * tem * factor / (factor - Decimal('1'))).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
             
             if cuota_regular == Decimal('0'):
                 logger.error("Cuota calculada es 0")
@@ -126,9 +134,11 @@ class FinancialService:
             
             # Variables para el cálculo iterativo
             saldo = P
+            total_pagado = Decimal('0')
             
             # Generar cada cuota
             for i in range(1, N + 1):
+                # Fecha: Cada 30 días exactos
                 fecha_vencimiento = f_otorgamiento + timedelta(days=30 * i)
                 
                 # Calcular interés sobre saldo pendiente
@@ -138,16 +148,19 @@ class FinancialService:
                 es_cuota_ajuste = (i == N)
                 
                 if es_cuota_ajuste:
-                    # ÚLTIMA CUOTA (Cuota de Ajuste):
-                    # Absorbe todo el saldo restante para garantizar que la suma cuadre exactamente
+                    # ÚLTIMA CUOTA: Absorbe todo el saldo restante
                     capital = saldo
                     monto_cuota = capital + interes
                     nuevo_saldo = Decimal('0.00')
                 else:
-                    # CUOTAS REGULARES (N-1 primeras):
-                    # Usan la cuota fija calculada por sistema francés
+                    # CUOTAS REGULARES: Cuota fija
                     monto_cuota = cuota_regular
                     capital = cuota_regular - interes
+                    
+                    # Protección: capital no puede ser negativo
+                    if capital < Decimal('0'):
+                        capital = Decimal('0.01')
+                    
                     nuevo_saldo = saldo - capital
                 
                 # Agregar al cronograma
@@ -158,23 +171,40 @@ class FinancialService:
                     'monto_capital': capital,
                     'monto_interes': interes,
                     'saldo_capital': nuevo_saldo,
-                    'es_cuota_ajuste': es_cuota_ajuste
+                    'es_cuota_ajuste': es_cuota_ajuste,
+                    'dias': 30  # Siempre 30 días entre cuotas
                 })
                 
-                # Actualizar saldo para siguiente iteración
+                # Actualizar acumuladores
+                total_pagado += monto_cuota
                 saldo = nuevo_saldo
             
-            # Validar que el cronograma suma exactamente el monto prestado + intereses
+            # Validaciones finales
             total_capital = sum(c['monto_capital'] for c in cronograma)
             total_interes = sum(c['monto_interes'] for c in cronograma)
             total_cuotas = sum(c['monto_cuota'] for c in cronograma)
             
-            logger.debug(
-                f"Cronograma generado: {N} cuotas, TEA={tea}%, TEM={tem*100:.4f}%\n"
+            # Verificar que el capital pagado coincide con el préstamo
+            diferencia_capital = abs(total_capital - P)
+            if diferencia_capital > Decimal('0.02'):  # Tolerancia de 2 céntimos
+                logger.warning(
+                    f"Diferencia en capital: Esperado S/ {P}, Calculado S/ {total_capital}, "
+                    f"Diferencia: S/ {diferencia_capital}"
+                )
+            
+            # Calcular el total esperado con TEA (solo para referencia informativa)
+            # Nota: El total real depende del sistema francés y puede variar ligeramente
+            total_esperado_simple = P * (Decimal('1') + tea_decimal)
+            porcentaje_interes_real = ((total_cuotas / P) - Decimal('1')) * Decimal('100')
+            
+            logger.info(
+                f"Cronograma generado: {N} cuotas de 30 días\n"
+                f"TEA Nominal: {tea_porcentaje}% | TEM Efectiva: {(tem * 100).quantize(Decimal('0.0001'))}%\n"
                 f"Cuota Regular: S/ {cuota_regular}\n"
-                f"Total Capital: S/ {total_capital} (Original: S/ {P})\n"
-                f"Total Intereses: S/ {total_interes}\n"
-                f"Total a Pagar: S/ {total_cuotas}"
+                f"Capital Prestado: S/ {P}\n"
+                f"Total Intereses: S/ {total_interes} ({porcentaje_interes_real.quantize(Decimal('0.01'))}% efectivo)\n"
+                f"Total a Pagar: S/ {total_cuotas}\n"
+                f"Nota: TEA {tea_porcentaje}% aplicada mensualmente genera {porcentaje_interes_real.quantize(Decimal('0.01'))}% de interés total"
             )
             
             return cronograma

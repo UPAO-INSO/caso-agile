@@ -91,16 +91,15 @@
                             <select id="select_cuota" name="numero_cuota" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
                                 {% set ns = namespace(found=false) %}
                                 {% for cuota in cuotas %}
-                                    {% set saldo = cuota.monto_cuota - (cuota.monto_pagado or 0) %}
-                                    {% if saldo > 0.001 %}
+                                    {% if cuota.saldo_pendiente > 0.01 %}
                                         {% if not ns.found %}
-                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ saldo }}" selected>
-                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m') }}) - Saldo: S/ {{ "{:,.2f}".format(saldo) }}
+                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ cuota.saldo_pendiente }}" selected>
+                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}) - Saldo: S/ {{ "{:,.2f}".format(cuota.saldo_pendiente) }}
                                             </option>
                                             {% set ns.found = true %}
                                         {% else %}
-                                            <option value="{{ cuota.numero_cuota }}" disabled class="bg-gray-100 text-gray-400">
-                                                Cuota {{ cuota.numero_cuota }} (Pendiente anterior)
+                                            <option value="{{ cuota.numero_cuota }}" data-saldo="{{ cuota.saldo_pendiente }}">
+                                                Cuota {{ cuota.numero_cuota }} (Vence: {{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}) - Saldo: S/ {{ "{:,.2f}".format(cuota.saldo_pendiente) }}
                                             </option>
                                         {% endif %}
                                     {% endif %}
