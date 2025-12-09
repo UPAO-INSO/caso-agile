@@ -32,7 +32,6 @@ def upgrade():
     with op.batch_alter_table('pagos', schema=None) as batch_op:
         batch_op.add_column(sa.Column('monto_mora', sa.Numeric(precision=12, scale=2), nullable=False, server_default='0'))
         batch_op.add_column(sa.Column('medio_pago', sa.Enum('EFECTIVO', 'TARJETA_DEBITO', 'TARJETA_CREDITO', 'TRANSFERENCIA', 'BILLETERA_ELECTRONICA', 'PAGO_AUTOMATICO', name='mediopagoenum'), nullable=False, server_default='EFECTIVO'))
-        batch_op.drop_constraint('uq_cuota_fecha_pago', type_='unique')
         batch_op.drop_column('fecha_registro')
         batch_op.drop_column('estado')
 
@@ -49,7 +48,6 @@ def downgrade():
     with op.batch_alter_table('pagos', schema=None) as batch_op:
         batch_op.add_column(sa.Column('estado', postgresql.ENUM('PENDIENTE', 'REALIZADO', 'DEVUELTO', name='estadopagoenum'), autoincrement=False, nullable=False))
         batch_op.add_column(sa.Column('fecha_registro', postgresql.TIMESTAMP(), server_default=sa.text('now()'), autoincrement=False, nullable=False))
-        batch_op.create_unique_constraint('uq_cuota_fecha_pago', ['cuota_id', 'fecha_pago'], postgresql_nulls_not_distinct=False)
         batch_op.drop_column('medio_pago')
         batch_op.drop_column('monto_mora')
 

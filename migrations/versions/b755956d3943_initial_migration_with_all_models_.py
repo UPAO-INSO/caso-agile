@@ -94,8 +94,7 @@ def upgrade():
     sa.CheckConstraint('monto_contable > 0', name='chk_monto_contable_positivo'),
     sa.CheckConstraint('monto_pagado > 0', name='chk_monto_pagado_positivo'),
     sa.ForeignKeyConstraint(['cuota_id'], ['cuotas.cuota_id'], ),
-    sa.PrimaryKeyConstraint('pago_id'),
-    sa.UniqueConstraint('cuota_id', 'fecha_pago', name='uq_cuota_fecha_pago')
+    sa.PrimaryKeyConstraint('pago_id')
     )
     # ### end Alembic commands ###
 

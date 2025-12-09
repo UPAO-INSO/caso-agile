@@ -384,11 +384,11 @@ def add_security_headers(response):
     # Content Security Policy (ajustar según necesidades)
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; "
-        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://kit.fontawesome.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://ka-f.fontawesome.com; "
         "img-src 'self' data: https:; "
-        "font-src 'self' data:; "
-        "connect-src 'self';"
+        "font-src 'self' data: https://ka-f.fontawesome.com; "
+        "connect-src 'self' https://ka-f.fontawesome.com;"
     )
     
     # Referrer Policy
