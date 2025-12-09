@@ -76,7 +76,7 @@ COPY --chown=appuser:appuser . .
 # Copiar los archivos CSS compilados desde node-builder
 COPY --from=node-builder /app/app/static/css/style.css /app/app/static/css/style.css
 
-# Copiar script de entrypoint y darle permisos
+# Copiar script de entrypoint como root antes de cambiar usuario
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
@@ -94,5 +94,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/', timeout=5)"
 
 # Comando de inicio
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "wsgi:application"]
+CMD ["bash", "/usr/local/bin/docker-entrypoint.sh", "gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "wsgi:application"]
