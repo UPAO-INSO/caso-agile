@@ -13,10 +13,10 @@ def registrar_pago(
     cuota_id: int,
     monto_pagado: Decimal,
     fecha_pago: Optional[date] = None,
-    comprobante_referencia: Optional[str] = None,
-    observaciones: Optional[str] = None,
     medio_pago: MedioPagoEnum = MedioPagoEnum.TRANSFERENCIA,
-    monto_mora: Decimal = Decimal('0.00')
+    monto_mora: Decimal = Decimal('0.00'),
+    comprobante_referencia: Optional[str] = None,
+    observaciones: Optional[str] = None
 ) -> Tuple[Optional[Pago], Optional[str]]:
     """
     Registra un nuevo pago en la base de datos.
@@ -25,10 +25,10 @@ def registrar_pago(
         cuota_id: ID de la cuota
         monto_pagado: Monto pagado
         fecha_pago: Fecha del pago
-        comprobante_referencia: Referencia del comprobante
-        observaciones: Observaciones
         medio_pago: Medio de pago (enum)
         monto_mora: Monto de mora pagado
+        comprobante_referencia: Referencia del comprobante (generado internamente)
+        observaciones: Observaciones (uso interno)
         
     Returns:
         Tuple[Pago creado, mensaje de error si aplica]

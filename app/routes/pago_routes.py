@@ -24,9 +24,7 @@ def registrar_pago():
         "cuota_id": int,
         "monto_pagado": float,
         "medio_pago": string ("EFECTIVO", "TARJETA_DEBITO", etc.),
-        "fecha_pago": "YYYY-MM-DD" (opcional),
-        "comprobante_referencia": string (opcional),
-        "observaciones": string (opcional)
+        "fecha_pago": "YYYY-MM-DD" (opcional)
     }
     """
     try:
@@ -75,19 +73,13 @@ def registrar_pago():
             except (ValueError, TypeError):
                 return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
         
-        # Procesar comprobante y observaciones (opcionales)
-        comprobante_referencia = datos.get('comprobante_referencia')
-        observaciones = datos.get('observaciones')
-        
-        # Registrar el pago
+        # Registrar el pago (sin comprobante ni observaciones del frontend)
         respuesta, error, status_code = PagoService.registrar_pago_cuota(
             prestamo_id,
             cuota_id,
             monto_pagado,
             medio_pago,
-            fecha_pago,
-            comprobante_referencia,
-            observaciones
+            fecha_pago
         )
         
         if error:

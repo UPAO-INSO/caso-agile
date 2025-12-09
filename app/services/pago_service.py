@@ -59,9 +59,7 @@ class PagoService:
         cuota_id: int,
         monto_pagado: Decimal,
         medio_pago: str, 
-        fecha_pago: Optional[date] = None,
-        comprobante_referencia: Optional[str] = None,
-        observaciones: Optional[str] = None
+        fecha_pago: Optional[date] = None
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
         """
         Registra un pago de una cuota con priorización automática.
@@ -76,9 +74,8 @@ class PagoService:
             prestamo_id: ID del préstamo
             cuota_id: ID de la cuota (para registro)
             monto_pagado: Monto a pagar
-            fecha_pago: Fecha del pago
-            comprobante_referencia: Referencia del comprobante
-            observaciones: Observaciones adicionales
+            medio_pago: Medio de pago utilizado
+            fecha_pago: Fecha del pago (opcional, default hoy)
             
         Returns:
             Tuple[respuesta_dict, error, status_code]
@@ -134,9 +131,7 @@ class PagoService:
                 cuota_id=cuota_id,
                 monto_pagado=monto_pagado,
                 fecha_pago=fecha_pago,
-                comprobante_referencia=comprobante_referencia,
-                observaciones=observaciones,
-                medio_pago=MedioPagoEnum.TRANSFERENCIA,  # Por defecto
+                medio_pago=medio_pago_enum,
                 monto_mora=monto_mora_total
             )
 
@@ -151,9 +146,8 @@ class PagoService:
                 'monto_pagado': float(monto_pagado),
                 'monto_mora_pagado': float(monto_mora_total),
                 'fecha_pago': fecha_pago.isoformat(),
-                'medio_pago': medio_pago_enum,
-                'detalles_aplicacion': detalles_pago,
-                'comprobante_referencia': comprobante_referencia
+                'medio_pago': medio_pago_enum.value,
+                'detalles_aplicacion': detalles_pago
             }
 
             logger.info(
