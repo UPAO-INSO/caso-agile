@@ -9,5 +9,6 @@ from .pep_service import PEPService
 from .prestamo_service import PrestamoService
 from .cliente_service import ClienteService
 from .pago_service import PagoService
+from .caja_service import CajaService
 
 __all__ = ['EmailService', 'PDFService', 'FinancialService', 'PEPService', 'PrestamoService', 'ClienteService', 'PagoService']

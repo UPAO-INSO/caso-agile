@@ -22,6 +22,57 @@ class PagoService:
     """Servicio para manejar la lógica de negocios de pagos con mora"""
 
     @staticmethod
+    def aplicar_redondeo(monto_contable: Decimal) -> Decimal:
+        """
+        Aplica la Ley N° 29571 (Ley de Redondeo a favor del consumidor).
+        
+        El redondeo SIEMPRE es hacia ABAJO para beneficiar al consumidor.
+        Se redondea al múltiplo de S/ 0.10 inmediato inferior.
+        
+        La moneda de menor denominación en Perú es de 10 céntimos:
+        - Céntimos 0.01-0.09 → se ELIMINAN (redondeo hacia abajo)
+        - Céntimos 0.00 → sin cambio
+        
+        Ejemplos:
+        - S/ 1052.63 → S/ 1052.60 (ajuste: +0.03 a favor del cliente)
+        - S/ 1052.67 → S/ 1052.60 (ajuste: +0.07 a favor del cliente)
+        - S/ 1052.60 → S/ 1052.60 (sin ajuste)
+        
+        Args:
+            monto_contable: Monto original a pagar
+            
+        Returns:
+            Monto redondeado (siempre <= monto_contable)
+        """
+        try:
+            # Convertir a céntimos (enteros) para evitar problemas de punto flotante
+            centimos = int(monto_contable * 100)
+            
+            # Obtener el residuo al dividir entre 10
+            residuo = centimos % 10
+            
+            # Redondeo hacia abajo: eliminar céntimos residuales (1-9)
+            centimos_redondeados = (centimos // 10) * 10
+            
+            # Convertir de vuelta a soles
+            monto_redondeado = Decimal(centimos_redondeados) / Decimal('100')
+            
+            # El ajuste es lo que el cliente NO paga (siempre >= 0)
+            ajuste = monto_contable - monto_redondeado
+            
+            if ajuste > 0:
+                logger.info(
+                    f"Redondeo Ley 29571 aplicado: S/ {monto_contable} → S/ {monto_redondeado} "
+                    f"(ahorro cliente: S/ {ajuste})"
+                )
+            
+            return monto_redondeado
+            
+        except Exception as e:
+            logger.error(f"Error aplicando redondeo: {e}")
+            return monto_contable
+
+    @staticmethod
     def validar_prestamo_vigente(prestamo_id: int) -> Tuple[bool, Optional[str]]:
         """Valida que un préstamo esté vigente"""
         prestamo = Prestamo.query.get(prestamo_id)
@@ -59,10 +110,12 @@ class PagoService:
         cuota_id: int,
         monto_pagado: Decimal,
         medio_pago: str, 
-        fecha_pago: Optional[date] = None
+        fecha_pago: Optional[date] = None,
+        comprobante_referencia: Optional[str] = None,
+        observaciones: Optional[str] = None
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
         """
-        Registra un pago de una cuota con priorización automática.
+        Registra un pago de una cuota con priorización automática y redondeo según Ley N° 29571.
         
         PRIORIZACIÓN DE PAGO:
         1. Mora de cuotas anteriores vencidas
@@ -70,12 +123,19 @@ class PagoService:
         3. Mora de la cuota actual (si vencida)
         4. Saldo pendiente de la cuota actual
         
+        REDONDEO (Ley N° 29571):
+        - EFECTIVO: El monto a pagar se redondea hacia ABAJO al múltiplo de S/ 0.10
+          (Ej: S/ 1052.63 → Cliente paga S/ 1052.60, ahorro de S/ 0.03)
+        - OTROS MEDIOS: Monto exacto sin redondeo
+        
         Args:
             prestamo_id: ID del préstamo
             cuota_id: ID de la cuota (para registro)
-            monto_pagado: Monto a pagar
-            medio_pago: Medio de pago utilizado
-            fecha_pago: Fecha del pago (opcional, default hoy)
+            monto_pagado: Monto total a pagar (antes de redondeo)
+            medio_pago: Medio de pago (EFECTIVO, TRANSFERENCIA, etc.)
+            fecha_pago: Fecha del pago
+            comprobante_referencia: Referencia del comprobante
+            observaciones: Observaciones adicionales
             
         Returns:
             Tuple[respuesta_dict, error, status_code]
@@ -95,8 +155,21 @@ class PagoService:
             except KeyError:
                 return None, f"Medio de pago inválido: {medio_pago}", 400
 
-
             fecha_pago = fecha_pago or date.today()
+
+            # APLICAR REDONDEO si es pago en EFECTIVO (Ley N° 29571)
+            monto_contable = monto_pagado  # Monto que debería pagarse
+            ajuste_redondeo = Decimal('0.00')
+            
+            if medio_pago_enum == MedioPagoEnum.EFECTIVO:
+                monto_pagado_efectivo = PagoService.aplicar_redondeo(monto_pagado)
+                ajuste_redondeo = monto_pagado - monto_pagado_efectivo
+                monto_pagado = monto_pagado_efectivo  # El cliente paga menos
+                
+                logger.info(
+                    f"Pago EFECTIVO - Contable: S/ {monto_contable}, "
+                    f"Cliente paga: S/ {monto_pagado}, Ahorro: S/ {ajuste_redondeo}"
+                )
 
             # Actualizar moras de todas las cuotas
             MoraService.actualizar_mora_prestamo(prestamo_id)
@@ -109,7 +182,6 @@ class PagoService:
 
             # Aplicar el pago con priorización
             monto_restante = monto_pagado
-            pagos_registrados = []
             detalles_pago = []
             monto_mora_total = Decimal('0.00')
 
@@ -131,6 +203,8 @@ class PagoService:
                 cuota_id=cuota_id,
                 monto_pagado=monto_pagado,
                 fecha_pago=fecha_pago,
+                comprobante_referencia=comprobante_referencia,
+                observaciones=observaciones,
                 medio_pago=medio_pago_enum,
                 monto_mora=monto_mora_total
             )
@@ -147,12 +221,25 @@ class PagoService:
                 'monto_mora_pagado': float(monto_mora_total),
                 'fecha_pago': fecha_pago.isoformat(),
                 'medio_pago': medio_pago_enum.value,
-                'detalles_aplicacion': detalles_pago
+                'detalles_aplicacion': detalles_pago,
+                'comprobante_referencia': comprobante_referencia
             }
+            
+            # Agregar información de redondeo si aplica
+            if ajuste_redondeo > 0:
+                respuesta['redondeo'] = {
+                    'aplicado': True,
+                    'ley': 'Ley N° 29571',
+                    'monto_contable': float(monto_contable),
+                    'monto_pagado_cliente': float(monto_pagado),
+                    'ahorro_cliente': float(ajuste_redondeo),
+                    'mensaje': f'Cliente ahorra S/ {ajuste_redondeo} por redondeo'
+                }
 
             logger.info(
                 f"Pago registrado: Préstamo={prestamo_id}, "
-                f"Monto={monto_pagado}, Mora={monto_mora_total}, Detalles={len(detalles_pago)} movimientos"
+                f"Monto={monto_pagado}, Mora={monto_mora_total}, "
+                f"Ajuste redondeo={ajuste_redondeo}, Detalles={len(detalles_pago)} movimientos"
             )
 
             return respuesta, None, 201
@@ -181,7 +268,13 @@ class PagoService:
         # Paso 1: Cubrir mora
         if cuota.mora_acumulada > 0 and monto_restante > 0:
             pago_mora = min(monto_restante, cuota.mora_acumulada)
+            
+            # mora_acumulada: se reduce (es la mora pendiente de pago)
             cuota.mora_acumulada -= pago_mora
+            
+            # mora_generada: NO se modifica (es el registro histórico)
+            # cuota.mora_generada permanece igual
+            
             monto_restante -= pago_mora
             monto_mora_pagado = pago_mora
             
@@ -189,7 +282,8 @@ class PagoService:
                 'cuota_numero': cuota.numero_cuota,
                 'concepto': 'Mora',
                 'monto': float(pago_mora),
-                'mora_restante': float(cuota.mora_acumulada)
+                'mora_restante': float(cuota.mora_acumulada),
+                'mora_historica': float(cuota.mora_generada)
             })
 
         # Paso 2: Cubrir saldo pendiente
