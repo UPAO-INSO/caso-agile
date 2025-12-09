@@ -4,7 +4,12 @@ from app.routes import main_bp
 
 @main_bp.route('/') 
 def home(): 
-    return render_template('index.html', title='Inicio') 
+    return render_template('index.html', title='Inicio')
+
+@main_bp.route('/buscar-cliente')
+def buscar_cliente():
+    """Vista para buscar cliente y otorgar préstamo"""
+    return render_template('buscar_cliente.html', title='Buscar Cliente') 
 
 @main_bp.route('/enviar_cronograma', methods=['GET', 'POST'])
 def enviar_cronograma():
