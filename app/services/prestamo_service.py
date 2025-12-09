@@ -156,6 +156,7 @@ class PrestamoService:
     def crear_cuotas_desde_cronograma(prestamo_id: int, cronograma: List[Dict[str, Any]]) -> None:
         """
         Crea las cuotas en la base de datos desde un cronograma.
+        MÓDULO 1: Incluye soporte para cuota de ajuste (es_cuota_ajuste).
         
         Args:
             prestamo_id: ID del préstamo
@@ -171,7 +172,8 @@ class PrestamoService:
                 monto_cuota=item['monto_cuota'],
                 monto_capital=item['monto_capital'],
                 monto_interes=item['monto_interes'],
-                saldo_capital=item['saldo_capital']
+                saldo_capital=item['saldo_capital'],
+                es_cuota_ajuste=item.get('es_cuota_ajuste', False)  # Nuevo campo
             )
             cuotas_a_crear.append(cuota)
         
@@ -270,8 +272,16 @@ class PrestamoService:
             # 7. Crear cuotas en BD
             PrestamoService.crear_cuotas_desde_cronograma(modelo_prestamo.prestamo_id, cronograma)
             
-            # 8. Enviar correo electrónico
-            EmailService.enviar_confirmacion_prestamo(cliente, modelo_prestamo, cronograma)
+            # 8. Enviar correo electrónico con cronograma completo y detallado
+            try:
+                resultado_email = EmailService.enviar_cronograma_completo(cliente, modelo_prestamo, cronograma)
+                if resultado_email:
+                    logger.info(f"✅ Cronograma enviado exitosamente a {cliente.correo_electronico}")
+                else:
+                    logger.warning(f"⚠️ Cronograma NO se envió a {cliente.correo_electronico}")
+            except Exception as email_exc:
+                # No fallar el registro del préstamo si el email falla
+                logger.error(f"Error al enviar cronograma: {email_exc}", exc_info=True)
             
             # 9. Preparar respuesta
             respuesta = {

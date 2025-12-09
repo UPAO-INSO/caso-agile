@@ -1,6 +1,7 @@
 """
 Rutas API para Pagos
 Endpoints para registrar y gestionar pagos de cuotas
+MÓDULO 2: Soporte para métodos de pago y redondeo legal
 """
 from flask import request, jsonify
 from datetime import date
@@ -9,6 +10,7 @@ import logging
 
 from app.routes import pagos_bp
 from app.services.pago_service import PagoService
+from app.models import MetodoPagoEnum
 
 logger = logging.getLogger(__name__)
 
@@ -16,20 +18,24 @@ logger = logging.getLogger(__name__)
 @pagos_bp.route('/registrar', methods=['POST'])
 def registrar_pago():
     """
-    Registra un pago para una cuota de un préstamo.
+    MÓDULO 2: Registra un pago para una cuota con soporte de método de pago.
     
     Body esperado:
     {
         "prestamo_id": int,
         "cuota_id": int,
-        "monto_pagado": float,
+        "metodo_pago": string (EFECTIVO, TARJETA, TRANSFERENCIA) - opcional, default EFECTIVO,
         "fecha_pago": "YYYY-MM-DD" (opcional),
         "comprobante_referencia": string (opcional),
         "observaciones": string (opcional)
     }
     
+    Lógica de Pago:
+    - EFECTIVO: Aplica Ley N° 29571 (redondeo a favor del consumidor al múltiplo de S/ 0.05)
+    - TARJETA/TRANSFERENCIA: Monto exacto sin redondeo
+    
     Returns:
-        JSON con datos del pago registrado o error
+        JSON con datos del pago registrado, incluyendo información de conciliación contable
     """
     try:
         datos = request.get_json()
@@ -40,21 +46,28 @@ def registrar_pago():
         # Validar campos requeridos
         prestamo_id = datos.get('prestamo_id')
         cuota_id = datos.get('cuota_id')
-        monto_pagado_raw = datos.get('monto_pagado')
         
-        if not all([prestamo_id, cuota_id, monto_pagado_raw]):
+        if not all([prestamo_id, cuota_id]):
             return jsonify({
-                'error': 'Faltan campos requeridos: prestamo_id, cuota_id, monto_pagado'
+                'error': 'Faltan campos requeridos: prestamo_id, cuota_id'
             }), 400
         
         # Convertir tipos
         try:
             prestamo_id = int(prestamo_id)
             cuota_id = int(cuota_id)
-            monto_pagado = Decimal(str(monto_pagado_raw))
         except (ValueError, TypeError):
             return jsonify({
-                'error': 'Tipos de datos inválidos para prestamo_id, cuota_id o monto_pagado'
+                'error': 'Tipos de datos inválidos para prestamo_id o cuota_id'
+            }), 400
+        
+        # Procesar método de pago (opcional, default EFECTIVO)
+        metodo_pago_str = datos.get('metodo_pago', 'EFECTIVO').upper()
+        try:
+            metodo_pago = MetodoPagoEnum[metodo_pago_str]
+        except KeyError:
+            return jsonify({
+                'error': f'Método de pago inválido. Valores permitidos: EFECTIVO, TARJETA, TRANSFERENCIA'
             }), 400
         
         # Procesar fecha (opcional)
@@ -69,11 +82,11 @@ def registrar_pago():
         comprobante_referencia = datos.get('comprobante_referencia')
         observaciones = datos.get('observaciones')
         
-        # Registrar el pago
+        # Registrar el pago con el nuevo sistema
         respuesta, error, status_code = PagoService.registrar_pago_cuota(
             prestamo_id,
             cuota_id,
-            monto_pagado,
+            metodo_pago,
             fecha_pago,
             comprobante_referencia,
             observaciones
