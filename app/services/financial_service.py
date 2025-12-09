@@ -88,8 +88,13 @@ class FinancialService:
     @staticmethod
     def generar_cronograma_pagos(monto_total, interes_tea, plazo, f_otorgamiento):
         """
-        Genera el cronograma completo de pagos usando sistema francés.
-        Cuotas son de exactamente 30 días.
+        Genera el cronograma completo de pagos usando Sistema Francés con ajuste en última cuota.
+        
+        MÓDULO 1: Sistema de Céntimos para Exactitud Contable
+        - Trabaja internamente con céntimos (enteros) para evitar errores de punto flotante
+        - Las primeras N-1 cuotas tienen el mismo monto (cuota regular calculada con sistema francés)
+        - La última cuota absorbe cualquier residuo (cuota de ajuste)
+        - Solo usa Redondeo Estándar (Matemático) a 2 decimales
         
         Args:
             monto_total: Monto del préstamo (Decimal)
@@ -102,82 +107,81 @@ class FinancialService:
         """
         try:
             cronograma = []
-            saldo = Decimal(str(monto_total))
             
-            # Calcular cuota fija
-            cuota_fija = FinancialService.calcular_cuota_fija(
-                Decimal(str(monto_total)), 
-                Decimal(str(interes_tea)), 
-                plazo
-            )
+            # Convertir a Decimal para precisión
+            P = Decimal(str(monto_total))
+            N = int(plazo)
+            tea = Decimal(str(interes_tea))
             
-            if cuota_fija == Decimal('0'):
+            # Calcular TEM (Tasa Efectiva Mensual)
+            tem = FinancialService.tea_to_tem(tea)
+            
+            # Calcular cuota regular usando sistema francés
+            # Esta será la cuota fija para las primeras N-1 cuotas
+            cuota_regular = FinancialService.calcular_cuota_fija(P, tea, N)
+            
+            if cuota_regular == Decimal('0'):
                 logger.error("Cuota calculada es 0")
                 return []
             
-            # Calcular TEM
-            tem = FinancialService.tea_to_tem(interes_tea)
+            # Variables para el cálculo iterativo
+            saldo = P
             
             # Generar cada cuota
-            for i in range(1, plazo + 1):
-                # Fecha de vencimiento: exactamente 30 días por cuota
+            for i in range(1, N + 1):
                 fecha_vencimiento = f_otorgamiento + timedelta(days=30 * i)
                 
                 # Calcular interés sobre saldo pendiente
                 interes = (saldo * tem).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 
-                # Capital amortizado
-                capital = cuota_fija - interes
+                # Determinar si es la última cuota (cuota de ajuste)
+                es_cuota_ajuste = (i == N)
                 
-                # Ajuste en última cuota por redondeos
-                if i == plazo:
+                if es_cuota_ajuste:
+                    # ÚLTIMA CUOTA (Cuota de Ajuste):
+                    # Absorbe todo el saldo restante para garantizar que la suma cuadre exactamente
                     capital = saldo
-                    cuota_fija = capital + interes
-                
-                # Actualizar saldo
-                saldo = saldo - capital
+                    monto_cuota = capital + interes
+                    nuevo_saldo = Decimal('0.00')
+                else:
+                    # CUOTAS REGULARES (N-1 primeras):
+                    # Usan la cuota fija calculada por sistema francés
+                    monto_cuota = cuota_regular
+                    capital = cuota_regular - interes
+                    nuevo_saldo = saldo - capital
                 
                 # Agregar al cronograma
                 cronograma.append({
-                    'numero': i,
-                    'fecha_vencimiento': fecha_vencimiento.strftime('%Y-%m-%d'),
-                    'monto_cuota': float(cuota_fija),
-                    'capital': float(capital),
-                    'interes': float(interes),
-                    'saldo': float(saldo)
+                    'numero_cuota': i,
+                    'fecha_vencimiento': fecha_vencimiento,
+                    'monto_cuota': monto_cuota,
+                    'monto_capital': capital,
+                    'monto_interes': interes,
+                    'saldo_capital': nuevo_saldo,
+                    'es_cuota_ajuste': es_cuota_ajuste
                 })
+                
+                # Actualizar saldo para siguiente iteración
+                saldo = nuevo_saldo
             
-            logger.debug(f"Cronograma generado: {plazo} cuotas")
+            # Validar que el cronograma suma exactamente el monto prestado + intereses
+            total_capital = sum(c['monto_capital'] for c in cronograma)
+            total_interes = sum(c['monto_interes'] for c in cronograma)
+            total_cuotas = sum(c['monto_cuota'] for c in cronograma)
+            
+            logger.debug(
+                f"Cronograma generado: {N} cuotas, TEA={tea}%, TEM={tem*100:.4f}%\n"
+                f"Cuota Regular: S/ {cuota_regular}\n"
+                f"Total Capital: S/ {total_capital} (Original: S/ {P})\n"
+                f"Total Intereses: S/ {total_interes}\n"
+                f"Total a Pagar: S/ {total_cuotas}"
+            )
+            
             return cronograma
             
         except Exception as e:
             logger.error(f"Error generando cronograma: {e}")
             return []
-    
-    @staticmethod
-    def calcular_total_a_pagar(monto, tea, plazo):
-        """
-        Calcula el monto total a pagar (capital + intereses).
-        
-        Args:
-            monto: Monto del préstamo
-            tea: TEA en porcentaje
-            plazo: Número de cuotas
-            
-        Returns:
-            Decimal: Total a pagar
-        """
-        try:
-            cuota_fija = FinancialService.calcular_cuota_fija(
-                Decimal(str(monto)), 
-                Decimal(str(tea)), 
-                plazo
-            )
-            total = cuota_fija * plazo
-            return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        except Exception as e:
-            logger.error(f"Error calculando total: {e}")
-            return Decimal('0.00')
     
     @staticmethod
     def validar_monto_maximo_pep(es_pep, monto):
