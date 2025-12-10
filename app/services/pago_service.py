@@ -82,7 +82,8 @@ class PagoService:
     @staticmethod
     def registrar_pago_cuota(prestamo_id: int, cuota_id: int, monto_pagado: Decimal,
         medio_pago: str, fecha_pago: Optional[date] = None, comprobante_referencia: Optional[str] = None,
-        observaciones: Optional[str] = None) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
+        observaciones: Optional[str] = None, hora_pago=None, monto_dado: Optional[Decimal] = None,
+        vuelto: Decimal = Decimal('0.00')) -> Tuple[Optional[Dict[str, Any]], Optional[str], int]:
         """ 
         Registra un pago de una cuota con priorización automática y redondeo según Ley N° 29571.
         
