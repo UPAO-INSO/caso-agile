@@ -1,16 +1,15 @@
 """
 Rutas API para Pagos
 Endpoints para registrar y gestionar pagos de cuotas
-MÓDULO 2: Soporte para métodos de pago y redondeo legal
 """
 from flask import request, jsonify, send_file
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 import logging
 
 from app.routes import pagos_bp
 from app.services.pago_service import PagoService
-from app.models import MetodoPagoEnum
+from app.models import MedioPagoEnum
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +17,14 @@ logger = logging.getLogger(__name__)
 @pagos_bp.route('/registrar', methods=['POST'])
 def registrar_pago():
     """
-    MÓDULO 2: Registra un pago para una cuota con soporte de método de pago.
+    Registra un pago para una cuota con soporte de medio de pago.
     
     Body esperado:
     {
         "prestamo_id": int,
         "numero_cuota": int,
         "monto_pagado": float (monto que desea pagar),
-        "metodo_pago": string (EFECTIVO, TARJETA, TRANSFERENCIA) - opcional, default EFECTIVO,
-        "medio_pago": string ("EFECTIVO", "TARJETA_DEBITO", etc.),
+        "medio_pago": string ("EFECTIVO", "TARJETA_DEBITO", "TARJETA_CREDITO", "TRANSFERENCIA", "YAPE", "PLIN"),
         "fecha_pago": "YYYY-MM-DD" (opcional),
         "hora_pago": "HH:MM" (opcional),
         "monto_dado": float (billetes entregados - solo EFECTIVO),
@@ -76,26 +74,9 @@ def registrar_pago():
         
         cuota_id = cuota.cuota_id
         
-        # Procesar método de pago (opcional, default EFECTIVO)
-        metodo_pago_str = datos.get('metodo_pago', 'EFECTIVO').upper()
-        try:
-            metodo_pago = MetodoPagoEnum[metodo_pago_str]
-        except KeyError:
-            return jsonify({
-                'error': f'Método de pago inválido. Valores permitidos: EFECTIVO, TARJETA, TRANSFERENCIA'
-            }), 400
-        
         # Validar medio de pago
         medios_validos = ['EFECTIVO', 'TARJETA_DEBITO', 'TARJETA_CREDITO', 
-                         'TRANSFERENCIA', 'BILLETERA_ELECTRONICA', 'PAGO_AUTOMATICO']
-        if medio_pago not in medios_validos:
-            return jsonify({
-                'error': f'Medio de pago inválido. Valores permitidos: {", ".join(medios_validos)}'
-            }), 400
-        
-        # Validar medio de pago
-        medios_validos = ['EFECTIVO', 'TARJETA_DEBITO', 'TARJETA_CREDITO', 
-                         'TRANSFERENCIA', 'BILLETERA_ELECTRONICA', 'PAGO_AUTOMATICO']
+                         'TRANSFERENCIA', 'YAPE', 'PLIN']
         if medio_pago not in medios_validos:
             return jsonify({
                 'error': f'Medio de pago inválido. Valores permitidos: {", ".join(medios_validos)}'
@@ -120,7 +101,55 @@ def registrar_pago():
             except (ValueError, TypeError, IndexError):
                 return jsonify({'error': 'Formato de hora inválido. Use HH:MM'}), 400
         
-        # Procesar monto_dado y calcular vuelto (solo para EFECTIVO)
+        # PAGOS DIGITALES: Redirigir a Flow API
+        medios_digitales = ['TRANSFERENCIA', 'TARJETA_DEBITO', 'TARJETA_CREDITO', 'YAPE', 'PLIN']
+        
+        if medio_pago in medios_digitales:
+            from app.services.flow_service import FlowService
+            from app.models import Prestamo
+            
+            # Obtener datos del préstamo y cliente
+            prestamo = Prestamo.query.get(prestamo_id)
+            if not prestamo:
+                return jsonify({'error': 'Préstamo no encontrado'}), 404
+            
+            cliente_email = prestamo.cliente.correo_electronico or f'cliente{prestamo.cliente.cliente_id}@prestamos.com'
+            
+            # Generar commerce_order único
+            commerce_order = f'PAGO-{prestamo_id}-{numero_cuota}-{int(datetime.now().timestamp())}'
+            
+            # Construir URLs de callback
+            base_url = request.url_root.rstrip('/')
+            url_confirmation = f'{base_url}/flow/webhook/confirmation'
+            url_return = f'{base_url}/flow/return'
+            
+            # Crear orden de pago en Flow
+            flow_response, error_flow, status_flow = FlowService.crear_orden_pago(
+                commerce_order=commerce_order,
+                subject=f'Pago Cuota #{numero_cuota} - Préstamo #{prestamo_id}',
+                amount=monto_pagado,
+                email=cliente_email,
+                medio_pago=medio_pago,
+                prestamo_id=prestamo_id,
+                cuota_numero=numero_cuota,
+                url_confirmation=url_confirmation,
+                url_return=url_return
+            )
+            
+            if error_flow:
+                return jsonify({'error': f'Error al crear pago Flow: {error_flow}'}), status_flow
+            
+            # Retornar URL de pago para redirigir al cliente
+            return jsonify({
+                'success': True,
+                'requiere_redireccion': True,
+                'payment_url': flow_response['payment_url'],
+                'flow_order': flow_response['flow_order'],
+                'token': flow_response['token'],
+                'message': 'Redirigir al cliente a la URL de pago'
+            }), 200
+        
+        # PAGO EN EFECTIVO: Procesar directamente
         monto_dado = None
         vuelto = Decimal('0.00')
         if medio_pago == 'EFECTIVO':

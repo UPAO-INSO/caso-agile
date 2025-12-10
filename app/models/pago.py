@@ -5,23 +5,18 @@ import enum
 
 
 class MedioPagoEnum(enum.Enum):
+    """
+    Medio de pago utilizado para realizar un pago.
+    - EFECTIVO: Redondeo aplicado, genera ajuste de redondeo
+    - TARJETA_DEBITO, TARJETA_CREDITO: Monto exacto sin redondeo
+    - TRANSFERENCIA, YAPE, PLIN: Monto exacto sin redondeo, registro automático en caja
+    """
     EFECTIVO = "EFECTIVO"
     TARJETA_DEBITO = "TARJETA_DEBITO"
     TARJETA_CREDITO = "TARJETA_CREDITO"
     TRANSFERENCIA = "TRANSFERENCIA"
-    BILLETERA_ELECTRONICA = "BILLETERA_ELECTRONICA"
-    PAGO_AUTOMATICO = "PAGO_AUTOMATICO"
-
-class MetodoPagoEnum(enum.Enum):
-    """
-    MÓDULO 2: Enum para métodos de pago
-    - EFECTIVO: REDONDEO aplicado
-    - TARJETA: Monto exacto sin redondeo
-    - TRANSFERENCIA: Monto exacto sin redondeo
-    """
-    EFECTIVO = 'EFECTIVO'
-    TARJETA = 'TARJETA'
-    TRANSFERENCIA = 'TRANSFERENCIA'
+    YAPE = "YAPE"
+    PLIN = "PLIN"
 
 
 class Pago(db.Model):
@@ -50,8 +45,7 @@ class Pago(db.Model):
     hora_pago = db.Column(db.Time, nullable=True, comment='Hora en que se realizó el pago')
     monto_dado = db.Column(db.Numeric(12, 2), nullable=True, comment='Monto entregado por el cliente (billetes)')
     vuelto = db.Column(db.Numeric(12, 2), default=0.00, nullable=False, comment='Vuelto entregado al cliente')
-    metodo_pago = db.Column(SQLAlchemyEnum(MetodoPagoEnum), nullable=False, comment='Método de pago: EFECTIVO, TARJETA, TRANSFERENCIA')
-    medio_pago = db.Column(SQLAlchemyEnum(MedioPagoEnum), nullable=False)
+    medio_pago = db.Column(SQLAlchemyEnum(MedioPagoEnum), nullable=False, comment='Medio de pago: EFECTIVO, TARJETA_DEBITO, TARJETA_CREDITO, TRANSFERENCIA, YAPE, PLIN')
     comprobante_referencia = db.Column(db.String(100), nullable=True)
     observaciones = db.Column(db.Text, nullable=True)
 

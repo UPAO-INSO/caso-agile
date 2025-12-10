@@ -111,6 +111,9 @@ def _register_blueprints(app):
         caja_bp
     )
     
+    # Importar Flow blueprint
+    from app.routes.flow_routes import flow_bp
+    
     # Registrar blueprint de autenticación primero
     app.register_blueprint(auth_bp)
     
@@ -131,6 +134,9 @@ def _register_blueprints(app):
     app.register_blueprint(declaraciones_bp)
     app.register_blueprint(pagos_bp)
     app.register_blueprint(caja_bp)
+    
+    # Registrar Flow API
+    app.register_blueprint(flow_bp)
     
     app.logger.info('Blueprints registrados correctamente')
 

@@ -46,8 +46,15 @@ echo "PostgreSQL está listo!"
 # Ejecutar migraciones de Alembic
 echo "Ejecutando migraciones de base de datos..."
 
-# Verificar si hay revisión actual
+# Intentar obtener revisión actual
 current_revision=$(flask db current 2>&1 || echo "")
+
+if [[ "$current_revision" == *"Can't locate revision"* ]]; then
+    echo "⚠ Detectada inconsistencia en migraciones, limpiando..."
+    # Marcar la base de datos con la revisión inicial
+    flask db stamp head
+    current_revision=$(flask db current 2>&1 || echo "")
+fi
 
 if [[ "$current_revision" == *"(head)"* ]]; then
     echo "✓ Base de datos ya está actualizada"

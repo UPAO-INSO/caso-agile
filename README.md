@@ -102,22 +102,75 @@ instance/                   # ⚠️ Configuración sensible (no versionada)
 
 ---
 
-## Requisitos
+## 📋 Requisitos
 
 - [Python 3.10+](https://www.python.org/downloads/)
+- [PostgreSQL 13+](https://www.postgresql.org/download/)
+- [Docker & Docker Compose](https://www.docker.com/get-started/) (opcional, recomendado)
 - [Node.js (v18+)](https://nodejs.org/)
 - [npm](https://www.npmjs.com/) (instalado junto con Node)
 - [Git](https://git-scm.com/)
 
 ---
 
-## Crear migraciones
+## 🗄️ Base de Datos y Migraciones
 
-- Inicializar migraciones: `flask db init`
-- Crear migracion: `flask db migrate -m "nombre_migracion"`
-- Actualizar DB: `flask db upgrade`
+### Para Nuevos Desarrolladores
 
-## Instalación del proyecto
+#### Opción 1: Docker (Recomendado)
+
+```bash
+# Las migraciones se aplican automáticamente
+docker-compose up --build
+```
+
+#### Opción 2: PostgreSQL Local
+
+```bash
+# 1. Crear base de datos
+psql -U postgres
+CREATE DATABASE nombre_bd;
+\q
+
+# 2. Configurar .env con DATABASE_URL
+# 3. Aplicar migraciones
+flask db upgrade
+```
+
+### Trabajar con Migraciones
+
+```bash
+# Ver estado actual
+flask db current
+
+# Crear nueva migración (después de modificar modelos)
+flask db migrate -m "descripción del cambio"
+
+# Aplicar migraciones pendientes
+flask db upgrade
+
+# Revertir última migración
+flask db downgrade -1
+
+# Ver historial completo
+flask db history
+```
+
+### Reset de Base de Datos (Solo Desarrollo)
+
+```bash
+# Windows PowerShell
+.\reset_db.ps1
+
+# Linux/Mac
+./reset_db.sh
+```
+
+📖 **Guía completa**: Ver [migrations/README.md](migrations/README.md)
+
+---
+
+## 🚀 Instalación del proyecto
 
 1. **Clonar el repositorio**
    ```bash

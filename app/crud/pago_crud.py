@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 from app.common.extensions import db
-from app.models import Pago, Cuota, MedioPagoEnum, MetodoPagoEnum
+from app.models import Pago, Cuota, MedioPagoEnum
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +54,6 @@ def registrar_pago(
         if isinstance(medio_pago, str):
             medio_pago = MedioPagoEnum[medio_pago]
 
-        # Determinar metodo_pago basado en medio_pago
-        if medio_pago == MedioPagoEnum.EFECTIVO:
-            metodo_pago = MetodoPagoEnum.EFECTIVO
-        elif medio_pago in [MedioPagoEnum.TARJETA_DEBITO, MedioPagoEnum.TARJETA_CREDITO]:
-            metodo_pago = MetodoPagoEnum.TARJETA
-        else:  # TRANSFERENCIA, BILLETERA_ELECTRONICA, PAGO_AUTOMATICO
-            metodo_pago = MetodoPagoEnum.TRANSFERENCIA
-
         pago = Pago(
             cuota_id=cuota_id,
             monto_pagado=monto_pagado,
@@ -73,7 +65,6 @@ def registrar_pago(
             vuelto=vuelto,
             comprobante_referencia=comprobante_referencia,
             observaciones=observaciones,
-            metodo_pago=metodo_pago,
             medio_pago=medio_pago,
             monto_mora=monto_mora
         )

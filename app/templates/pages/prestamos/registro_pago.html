@@ -187,7 +187,7 @@
                             <div class="relative"><input checked class="sr-only payment-method-radio" id="cash" name="metodo_pago" type="radio" value="EFECTIVO"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="cash"><i class="fa-solid fa-money-bill-1 text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Efectivo</span></label></div>
                             <div class="relative"><input class="sr-only payment-method-radio" id="card" name="metodo_pago" type="radio" value="TARJETA_CREDITO"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="card"><i class="fa-solid fa-credit-card text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Tarjeta</span></label></div>
                             <div class="relative"><input class="sr-only payment-method-radio" id="transfer" name="metodo_pago" type="radio" value="TRANSFERENCIA"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="transfer"><i class="fa-solid fa-building-columns text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Transf.</span></label></div>
-                            <div class="relative"><input class="sr-only payment-method-radio" id="wallet" name="metodo_pago" type="radio" value="BILLETERA_ELECTRONICA"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="wallet"><i class="fa-solid fa-qrcode text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Yape/Plin</span></label></div>
+                            <div class="relative"><input class="sr-only payment-method-radio" id="wallet" name="metodo_pago" type="radio" value="YAPE"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="wallet"><i class="fa-solid fa-qrcode text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Yape/Plin</span></label></div>
                         </div>
                     </div>
 
@@ -553,8 +553,14 @@
                             const result = await response.json();
                             
                             if (response.ok && result.success) {
-                                // Redirigir a página de éxito o detalle del préstamo
-                                window.location.href = '/prestamos/{{ prestamo.prestamo_id }}?pago_exitoso=1';
+                                // Verificar si requiere redirección a Flow (pagos digitales)
+                                if (result.requiere_redireccion && result.payment_url) {
+                                    // Redirigir al usuario a la pasarela de pago Flow
+                                    window.location.href = result.payment_url;
+                                } else {
+                                    // Pago en efectivo procesado directamente
+                                    window.location.href = '/prestamos/{{ prestamo.prestamo_id }}?pago_exitoso=1';
+                                }
                             } else {
                                 alert('Error al registrar pago: ' + (result.error || 'Error desconocido'));
                                 btnSubmit.disabled = false;
