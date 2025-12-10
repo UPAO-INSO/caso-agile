@@ -199,6 +199,17 @@ class PagoService:
             if error_pago:
                 return None, error_pago, 500
 
+            try:
+                prestamo = Prestamo.query.get(prestamo_id)
+                # Enviar voucher de pago por email deberia
+                from app.services.email_service import EmailService
+                cliente = prestamo.cliente if prestamo else None
+                cuota = Cuota.query.get(cuota_id)
+                if cliente and prestamo and cuota and nuevo_pago:
+                    EmailService.enviar_voucher_pago(cliente, prestamo, cuota, nuevo_pago)
+            except Exception as email_exc:
+                logger.error(f"Error al enviar voucher de pago: {email_exc}", exc_info=True)
+
             # Preparar respuesta
             # monto_pagado_registrado: lo que queda en caja (tras redondeo), monto_contable: lo aplicado a la deuda
             respuesta = {

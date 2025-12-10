@@ -6,6 +6,7 @@ Centraliza la lógica de creación de documentos PDF.
 
 import logging
 from io import BytesIO
+from num2words import num2words
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from datetime import datetime, timedelta
@@ -211,54 +212,53 @@ class PDFService:
             # === DETALLE FINANCIERO ===
             y_pos -= 35
             p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y_pos, "DETALLE FINANCIERO")
+            p.drawString(50, y_pos, "DETALLE DE LA CUOTA")
             p.line(50, y_pos - 5, width - 50, y_pos - 5)
             
-            # Recuadro con fondo gris
+            # Recuadro gris (Fondo)
             p.setFillColorRGB(0.95, 0.95, 0.95)
-            p.rect(50, y_pos - 110, width - 100, 100, fill=True, stroke=False)
+            p.rect(50, y_pos - 130, width - 100, 120, fill=True, stroke=False) # Aumenté altura
             p.setFillColorRGB(0, 0, 0)
             
             y_pos -= 25
             p.setFont("Helvetica", 10)
             
-            # Capital
+            # 1. Capital
             p.drawString(60, y_pos, "Amortización Capital:")
             p.drawRightString(width - 60, y_pos, f"S/ {float(cuota.monto_capital):.2f}")
             
-            # Interés
+            # 2. Interés
             y_pos -= 20
-            p.drawString(60, y_pos, "Intereses:")
+            p.drawString(60, y_pos, "Interés Compensatorio:")
             p.drawRightString(width - 60, y_pos, f"S/ {float(cuota.monto_interes):.2f}")
             
-            # Mora/Otros (siempre 0 por ahora)
+            # 3. Mora / Penalidad (CORRECCIÓN: No lo dejes hardcoded en 0)
+            # Asumiendo que el objeto pago o cuota tiene el dato real
+            mora_monto = getattr(pago, 'monto_mora', 0.00) 
             y_pos -= 20
-            p.drawString(60, y_pos, "Mora/Otros:")
-            p.drawRightString(width - 60, y_pos, "S/ 0.00")
+            p.drawString(60, y_pos, "Interés Moratorio / Penalidad:")
+            p.drawRightString(width - 60, y_pos, f"S/ {float(mora_monto):.2f}")
             
-            # Línea separadora
+            # Línea de suma
             y_pos -= 10
+            p.setDash(1, 2) # Línea punteada para separar subtotales
             p.line(60, y_pos, width - 60, y_pos)
+            p.setDash([]) # Reset línea sólida
             
-            # TOTAL
+            # 4. TOTAL NUMÉRICO
             y_pos -= 20
             p.setFont("Helvetica-Bold", 12)
             p.drawString(60, y_pos, "TOTAL PAGADO:")
-            p.setFillColorRGB(0.2, 0.4, 0.7)
+            p.setFillColorRGB(0.2, 0.4, 0.7) # Azul corporativo
             p.drawRightString(width - 60, y_pos, f"S/ {float(pago.monto_pagado):.2f}")
             p.setFillColorRGB(0, 0, 0)
-            
-            # === MÉTODO DE PAGO ===
-            y_pos -= 35
-            p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y_pos, "MÉTODO DE PAGO")
-            p.line(50, y_pos - 5, width - 50, y_pos - 5)
-            
-            y_pos -= 25
-            p.setFont("Helvetica-Bold", 12)
-            p.setFillColorRGB(0.2, 0.5, 0.8)
-            p.drawString(50, y_pos, pago.metodo_pago.value)
-            p.setFillColorRGB(0, 0, 0)
+
+            # 5. IMPORTE EN LETRAS (Elemento CRÍTICO en Perú)
+            # Esto da formalidad y evita fraudes por adulteración de números
+            y_pos -= 20
+            p.setFont("Helvetica-Oblique", 9)
+            monto_letras = num2words(float(pago.monto_pagado), lang='es').upper()
+            p.drawCentredString(width / 2, y_pos, f"SON: {monto_letras} CON {int(pago.monto_pagado * 100) % 100}/100 SOLES")
             
             # === CONCILIACIÓN CONTABLE (Solo si hay ajuste) ===
             if float(pago.ajuste_redondeo) != 0:
@@ -328,9 +328,12 @@ class PDFService:
                     p.drawString(60, y_pos, texto)
             
             # === PIE DE PÁGINA ===
-            p.setFont("Helvetica-Oblique", 8)
-            p.drawCentredString(width / 2, 50, "Este documento es un comprobante de pago. Consérvelo para su control.")
-            p.drawCentredString(width / 2, 35, "Gracias por confiar en Financiera Demo S.A.")
+            p.setFont("Helvetica", 7)
+            disclaimer = "Este documento es una CONSTANCIA DE PAGO INTERNA y no reemplaza a la Boleta de Venta o Factura Electrónica."
+            if hasattr(pago, 'es_fiscal') and pago.es_fiscal:
+                 disclaimer = "Representación Impresa de la Boleta de Venta Electrónica."
+            
+            p.drawCentredString(width / 2, 50, disclaimer)
             
             # Finalizar
             p.showPage()
