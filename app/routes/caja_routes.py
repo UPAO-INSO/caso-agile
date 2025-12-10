@@ -3,6 +3,7 @@
 import logging
 from datetime import date, datetime
 from flask import jsonify, request, render_template
+from app.common.auth_decorators import login_required
 from app.routes import caja_bp
 from app.services.caja_service import CajaService
 
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 # → Vista principal de cuadre de caja
 @caja_bp.route('/', methods=['GET'])
 @caja_bp.route('/cuadre', methods=['GET'])
+@login_required
 def cuadre_caja():
     """Vista principal del cuadre de caja"""
     return render_template('pages/caja/cuadre.html', 
@@ -19,6 +21,7 @@ def cuadre_caja():
 
 # → Obtiene el resumen de caja por fecha
 @caja_bp.route('/resumen/diario', methods=['GET'])
+@login_required
 def obtener_resumen_diario():
     """
     Query params:
@@ -67,6 +70,7 @@ def obtener_resumen_diario():
 
 
 @caja_bp.route('/resumen/periodo', methods=['GET'])
+@login_required
 def obtener_resumen_periodo():
     """
     Query params:
@@ -124,6 +128,7 @@ def obtener_resumen_periodo():
 
 # → Obtiene el detalle de pagos por fecha
 @caja_bp.route('/detalle/diario', methods=['GET'])
+@login_required
 def obtener_detalle_diario():
     """
     Query params:
@@ -171,6 +176,7 @@ def obtener_detalle_diario():
 
 # → Obtiene estadísticas generales de caja - últimos 30 días
 @caja_bp.route('/estadisticas', methods=['GET'])
+@login_required
 def obtener_estadisticas():
     """
     Response:
@@ -193,6 +199,7 @@ def obtener_estadisticas():
 
 # → DEBUG: Obtiene TODOS los pagos para verificar fechas
 @caja_bp.route('/debug/todos-pagos', methods=['GET'])
+@login_required
 def debug_todos_pagos():
     """Endpoint de debug para ver todos los pagos registrados"""
     try:

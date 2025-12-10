@@ -89,7 +89,8 @@ def _register_models(app):
         Prestamo, 
         Cuota, 
         DeclaracionJurada,
-        Pago
+        Pago,
+        Usuario
     )
     app.logger.info('Modelos registrados correctamente')
 
@@ -98,6 +99,7 @@ def _register_blueprints(app):
     # → Importar blueprints desde app/routes/__init__.py
     from app.routes import (
         main_bp,
+        auth_bp,
         api_v1_bp,
         clientes_view_bp,
         prestamos_view_bp,
@@ -108,6 +110,9 @@ def _register_blueprints(app):
         pagos_bp,
         caja_bp
     )
+    
+    # Registrar blueprint de autenticación primero
+    app.register_blueprint(auth_bp)
     
     # Registrar blueprint principal
     app.register_blueprint(main_bp)

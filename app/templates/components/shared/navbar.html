@@ -15,7 +15,8 @@
         </a>
       </div>
 
-      <!-- Menú de Navegación -->
+      <!-- Menú de Navegación (Solo si está autenticado) -->
+      {% if session.get('usuario_id') %}
       <div class="hidden md:flex items-center space-x-1">
         <a
           href="{{ url_for('prestamos_view.index_view') }}"
@@ -127,8 +128,34 @@
           </span>
         </a>
       </div>
+      {% endif %}
 
-      <!-- Botón de menú móvil -->
+      <!-- Usuario y Logout -->
+      {% if session.get('usuario_id') %}
+      <div class="hidden md:flex items-center space-x-4">
+        <div class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blue-500 bg-opacity-30 text-white">
+          <i class="fa-solid fa-user-circle"></i>
+          <span class="text-sm font-medium">{{ session.get('nombre_completo', 'Usuario') }}</span>
+        </div>
+        <a
+          href="{{ url_for('auth.logout') }}"
+          class="nav-item px-4 py-2 rounded-lg text-white hover:bg-red-500 transition-colors"
+        >
+          <span class="flex items-center">
+            <i class="fa-solid fa-sign-out-alt mr-2"></i> Salir
+          </span>
+        </a>
+      </div>
+      {% else %}
+      <div class="hidden md:flex items-center space-x-3">
+        <a
+          href="{{ url_for('auth.login') }}"
+          class="nav-item px-4 py-2 rounded-lg text-white hover:bg-blue-500 transition-colors"
+        >
+          <i class="fa-solid fa-sign-in-alt mr-1"></i> Iniciar Sesión
+        </a>
+      </div>
+      {% endif %}
       <div class="md:hidden">
         <button
           type="button"

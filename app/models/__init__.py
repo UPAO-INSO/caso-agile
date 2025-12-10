@@ -4,6 +4,7 @@ from app.models.prestamo import Prestamo, EstadoPrestamoEnum
 from app.models.cuota import Cuota
 from app.models.declaracion import DeclaracionJurada, TipoDeclaracionEnum
 from app.models.pago import Pago, MedioPagoEnum, MetodoPagoEnum
+from app.models.usuario import Usuario
 
 __all__ = [
     'Cliente',
@@ -14,5 +15,6 @@ __all__ = [
     'TipoDeclaracionEnum',
     'Pago',
     'MedioPagoEnum',
-    'MetodoPagoEnum'
+    'MetodoPagoEnum',
+    'Usuario'
 ]

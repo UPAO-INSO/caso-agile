@@ -7,6 +7,9 @@ from flask import Blueprint
 # Blueprint principal
 main_bp = Blueprint('main', __name__)
 
+# Blueprint de autenticación
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
 # Blueprints de API REST
 api_v1_bp = Blueprint('api_v1', __name__, url_prefix='/api/v1')
 
@@ -23,13 +26,14 @@ pagos_bp = Blueprint('pagos', __name__, url_prefix='/pagos')
 caja_bp = Blueprint('caja', __name__, url_prefix='/caja')
 
 # Importar rutas para registrar con los blueprints
-from app.routes import main_routes
+from app.routes import main_routes, auth_routes
 from app.routes import api_cliente, api_prestamo, financial_routes
 from app.routes import cliente_views, prestamo_views
 from app.routes import cliente_routes, prestamo_routes, cuota_routes, declaracion_routes, pago_routes, caja_routes
 
 __all__ = [
     'main_bp',
+    'auth_bp',
     'api_v1_bp',
     'clientes_view_bp',
     'prestamos_view_bp',

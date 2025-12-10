@@ -1,17 +1,23 @@
-from flask import render_template, redirect, url_for, request, flash
+from flask import render_template, redirect, url_for, request, flash, session
 from app.services.email_service import EmailService
 from app.routes import main_bp
+from app.common.auth_decorators import login_required
 
 @main_bp.route('/') 
-def home(): 
+def home():
+    # Si no está autenticado, redirige a login
+    if 'usuario_id' not in session:
+        return redirect(url_for('auth.login'))
     return render_template('index.html', title='Inicio')
 
 @main_bp.route('/buscar-cliente')
+@login_required
 def buscar_cliente():
     """Vista para buscar cliente y otorgar préstamo"""
     return render_template('buscar_cliente.html', title='Buscar Cliente') 
 
 @main_bp.route('/enviar_cronograma', methods=['GET', 'POST'])
+@login_required
 def enviar_cronograma():
     if request.method != 'POST':
         return redirect(url_for('main.home'))

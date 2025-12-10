@@ -11,12 +11,14 @@ from app.crud import (
     obtener_cliente_por_id
 )
 from app.common.error_handler import ErrorHandler
+from app.common.auth_decorators import login_required
 
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
 
 
 @clientes_view_bp.route('/clientes')
+@login_required
 def listar_clientes_view():
     """Vista: Lista todos los clientes en una página HTML"""
     try:
@@ -29,6 +31,7 @@ def listar_clientes_view():
 
 
 @clientes_view_bp.route('/clientes/<int:cliente_id>')
+@login_required
 def ver_cliente_view(cliente_id):
     """Vista: Muestra el detalle de un cliente"""
     try:

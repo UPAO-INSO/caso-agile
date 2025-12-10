@@ -16,18 +16,21 @@ from app.crud import (
     obtener_resumen_cuotas
 )
 from app.common.error_handler import ErrorHandler
+from app.common.auth_decorators import login_required
 
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
 
 
 @prestamos_view_bp.route('/')
+@login_required
 def index_view():
     """Vista principal - Landing page"""
     return render_template('index.html')
 
 
 @prestamos_view_bp.route('/prestamos')
+@login_required
 def listar_prestamos_view():
     """Vista: Lista todos los préstamos"""
     try:
@@ -41,6 +44,7 @@ def listar_prestamos_view():
 
 
 @prestamos_view_bp.route('/clientes/<int:cliente_id>/prestamos')
+@login_required
 def ver_prestamos_cliente_view(cliente_id):
     """Vista: Muestra los préstamos de un cliente"""
     try:
