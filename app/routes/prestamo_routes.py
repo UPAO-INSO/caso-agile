@@ -294,3 +294,35 @@ def obtener_prestamos_cliente_json(cliente_id):
         prestamos_data.append(prestamo_dict)
     
     return jsonify(prestamos_data), 200
+
+@prestamos_bp.route('/api/calcular-redondeo', methods=['POST'])
+def calcular_redondeo():
+    """Endpoint para calcular el redondeo de un monto en efectivo"""
+    try:
+        data = request.get_json()
+        monto = Decimal(str(data.get('monto', 0)))
+        medio_pago = data.get('medio_pago', 'EFECTIVO')
+        
+        if medio_pago != 'EFECTIVO':
+            return jsonify({
+                'monto_original': float(monto),
+                'monto_redondeado': float(monto),
+                'ajuste': 0.0,
+                'aplica_redondeo': False
+            }), 200
+        
+        from app.services.pago_service import PagoService
+        monto_redondeado = PagoService.aplicar_redondeo(monto)
+        ajuste = monto_redondeado - monto
+        
+        return jsonify({
+            'monto_original': float(monto),
+            'monto_redondeado': float(monto_redondeado),
+            'ajuste': float(ajuste),
+            'aplica_redondeo': True,
+            'mensaje': f'{"Ahorro" if ajuste < 0 else "Ajuste"} de S/ {abs(ajuste):.2f}'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error calculando redondeo: {e}")
+        return jsonify({'error': str(e)}), 500

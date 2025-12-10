@@ -159,6 +159,15 @@ def pagar_prestamo(prestamo_id):
                 cuotas = listar_cuotas_por_prestamo(prestamo_id)
                 resumen = obtener_resumen_cuotas(prestamo_id)
                 
+                # Preparar datos del pago para mostrar
+                datos_pago = {
+                    'monto': respuesta.get('monto_pagado', monto_pagado),
+                    'cuota': numero_cuota,
+                    'fecha': fecha_pago,
+                    'metodo': metodo_pago,
+                    'redondeo': respuesta.get('redondeo')  # Información del redondeo si aplica
+                }
+                
                 return render_template(
                     'pages/prestamos/registro_pago.html',
                     prestamo=prestamo,
@@ -166,12 +175,7 @@ def pagar_prestamo(prestamo_id):
                     resumen=resumen,
                     hoy=datetime.now().date(),
                     success=True,
-                    datos_pago={
-                        'monto': monto_pagado,
-                        'cuota': numero_cuota,
-                        'fecha': fecha_pago,
-                        'metodo': metodo_pago
-                    }
+                    datos_pago=datos_pago
                 )
             except ValueError as ve:
                 flash(f'Datos inválidos: {str(ve)}', 'error')

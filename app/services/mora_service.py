@@ -53,7 +53,7 @@ class MoraService:
         """
         Calcula la mora de una cuota.
         
-        La mora es 1% del monto por cada mes de atraso.
+        La mora es 1% FIJO del monto, sin importar cuántos meses hayan pasado.
         Solo se aplica si está vencida.
         
         Args:
@@ -62,17 +62,18 @@ class MoraService:
             numero_meses_atraso: Meses de atraso (se calcula si no se proporciona)
             
         Returns:
-            Monto de mora a aplicar
+            Monto de mora a aplicar (1% fijo)
         """
         if numero_meses_atraso is None:
             numero_meses_atraso = MoraService.calcular_meses_atraso(fecha_vencimiento)
         
-        # Solo aplica mora si hay atraso
+        # Solo aplica mora si hay atraso (al menos 1 mes)
         if numero_meses_atraso <= 0:
             return Decimal('0.00')
         
-        # Mora = monto * 1% * número de meses
-        mora = monto_a_aplicar * MoraService.TASA_MORA_MENSUAL * numero_meses_atraso
+        # IMPORTANTE: Mora = monto * 1% FIJO (NO se multiplica por número de meses)
+        # Por más que pasen meses, siempre es 1% del monto
+        mora = monto_a_aplicar * MoraService.TASA_MORA_MENSUAL
         return mora.quantize(Decimal('0.01'))
 
     @staticmethod

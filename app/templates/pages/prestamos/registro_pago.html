@@ -35,7 +35,30 @@
             </div>
             
             <h2 class="text-3xl font-bold text-gray-900 mb-2">¡Pago Registrado!</h2>
-            <p class="text-gray-500 mb-8">El pago de <span class="font-bold text-gray-800">S/ {{ "{:,.2f}".format(datos_pago.monto|float) }}</span> ha sido procesado correctamente.</p>
+            <p class="text-gray-500 mb-4">El pago de <span class="font-bold text-gray-800">S/ {{ "{:,.2f}".format(datos_pago.monto|float) }}</span> ha sido procesado correctamente.</p>
+            
+            {% if datos_pago.redondeo and datos_pago.metodo == 'EFECTIVO' %}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+                <p class="text-xs font-semibold text-blue-800 mb-2">
+                    <i class="fa-solid fa-info-circle mr-1"></i> Redondeo aplicado (Ley N° 29571)
+                </p>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                        <p class="text-gray-600">Deuda real:</p>
+                        <p class="font-bold text-gray-900">S/ {{ "{:,.2f}".format(datos_pago.redondeo.monto_contable) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600">Cliente pagó:</p>
+                        <p class="font-bold {% if datos_pago.redondeo.ajuste_redondeo < 0 %}text-green-700{% else %}text-blue-700{% endif %}">S/ {{ "{:,.2f}".format(datos_pago.redondeo.monto_pagado_cliente) }}</p>
+                    </div>
+                </div>
+                <div class="mt-2 pt-2 border-t border-blue-200">
+                    <p class="text-xs {% if datos_pago.redondeo.ajuste_redondeo < 0 %}text-green-700{% else %}text-blue-700{% endif %}">
+                        {{ datos_pago.redondeo.mensaje }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
             
             <div class="space-y-3">
                 <button onclick="alert('Funcionalidad de PDF pendiente de implementar')" 
@@ -110,8 +133,12 @@
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-medium text-gray-700">Monto a Pagar S/</label>
                             <div class="relative">
-                                <input id="input_monto" name="monto_pagado" type="number" step="0.10" class="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" required />
+                                <input id="input_monto" name="monto_pagado" type="number" step="0.01" min="0.10" class="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" required />
                             </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <i class="fa-solid fa-info-circle mr-1"></i>
+                                <span id="redondeo_text">Para efectivo: pagos parciales en múltiplos de S/ 0.10</span>
+                            </p>
                         </div>
                     </div>
 
@@ -140,9 +167,9 @@
                         <label class="text-sm font-medium text-gray-700">Método de Pago</label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div class="relative"><input checked class="sr-only payment-method-radio" id="cash" name="metodo_pago" type="radio" value="EFECTIVO"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="cash"><i class="fa-solid fa-money-bill-1 text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Efectivo</span></label></div>
-                            <div class="relative"><input class="sr-only payment-method-radio" id="card" name="metodo_pago" type="radio" value="TARJETA"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="card"><i class="fa-solid fa-credit-card text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Tarjeta</span></label></div>
+                            <div class="relative"><input class="sr-only payment-method-radio" id="card" name="metodo_pago" type="radio" value="TARJETA_CREDITO"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="card"><i class="fa-solid fa-credit-card text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Tarjeta</span></label></div>
                             <div class="relative"><input class="sr-only payment-method-radio" id="transfer" name="metodo_pago" type="radio" value="TRANSFERENCIA"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="transfer"><i class="fa-solid fa-building-columns text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Transf.</span></label></div>
-                            <div class="relative"><input class="sr-only payment-method-radio" id="wallet" name="metodo_pago" type="radio" value="YAPE_PLIN"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="wallet"><i class="fa-solid fa-qrcode text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Yape/Plin</span></label></div>
+                            <div class="relative"><input class="sr-only payment-method-radio" id="wallet" name="metodo_pago" type="radio" value="BILLETERA_ELECTRONICA"/><label class="flex flex-col items-center justify-center p-4 text-center border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" for="wallet"><i class="fa-solid fa-qrcode text-2xl mb-1 text-gray-500 icon-container"></i><span class="text-sm font-medium text-gray-600">Yape/Plin</span></label></div>
                         </div>
                     </div>
 
@@ -156,9 +183,32 @@
                         </div>
                     </div>
 
-                    <div class="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="flex items-center justify-between"><p class="text-sm font-medium text-blue-700">Monto Ingresado</p><p class="text-2xl font-bold text-blue-800" id="display_monto">S/ 0.00</p></div>
-                        <div class="flex items-center justify-between border-t sm:border-t-0 sm:border-l border-blue-200 pt-4 sm:pt-0 sm:pl-4"><p class="text-sm font-medium text-blue-700">Saldo Restante (Cuota + Mora)</p><p class="text-2xl font-bold text-blue-800" id="display_saldo">S/ 0.00</p></div>
+                    <div class="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-6">
+                        <div class="grid grid-cols-1 gap-3">
+                            <!-- Monto Original (Deuda de la cuota) -->
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium text-gray-700">Monto Cuota S/</p>
+                                <p class="text-2xl font-bold text-blue-800" id="display_monto_original">S/ 0.00</p>
+                            </div>
+                            
+                            <!-- Monto Efectivo (solo para efectivo) -->
+                            <div class="flex items-center justify-between pb-3" id="monto_efectivo_container" style="display: none;">
+                                <p class="text-sm font-medium text-green-700">Monto EFECTIVO</p>
+                                <p class="text-2xl font-bold text-green-700" id="display_monto_efectivo">S/ 0.00</p>
+                            </div>
+                            
+                            <!-- Condonación/Ajuste (solo si hay diferencia) -->
+                            <div class="flex items-center justify-between pb-3 border-b border-blue-200" id="ajuste_container" style="display: none;">
+                                <p class="text-sm font-medium" id="ajuste_label">Condonación</p>
+                                <p class="text-lg font-bold" id="display_ajuste">S/ 0.00</p>
+                            </div>
+                            
+                            <!-- Saldo Restante -->
+                            <div class="flex items-center justify-between pt-3 border-t border-blue-300">
+                                <p class="text-sm font-semibold text-blue-800">Saldo Restante</p>
+                                <p class="text-2xl font-bold text-red-600" id="display_saldo">S/ 0.00</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -174,52 +224,194 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // JS Variables
             const selectCuota = document.getElementById('select_cuota');
             const inputMonto = document.getElementById('input_monto');
-            const displayMonto = document.getElementById('display_monto');
+            const displayMontoOriginal = document.getElementById('display_monto_original');
+            const displayMontoEfectivo = document.getElementById('display_monto_efectivo');
+            const displayAjuste = document.getElementById('display_ajuste');
             const displaySaldo = document.getElementById('display_saldo');
+            const montoEfectivoContainer = document.getElementById('monto_efectivo_container');
+            const ajusteContainer = document.getElementById('ajuste_container');
+            const ajusteLabel = document.getElementById('ajuste_label');
+            const redondeoText = document.getElementById('redondeo_text');
             const paymentRadios = document.querySelectorAll('.payment-method-radio');
             const cardContainer = document.getElementById('card-form-container');
             const cardInputs = cardContainer ? cardContainer.querySelectorAll('input') : [];
             const btnSubmitText = document.getElementById('btn-text');
             const btnSubmitIcon = document.getElementById('btn-icon');
 
+            let currentPaymentMethod = 'EFECTIVO';
+            let redondeoData = null;
+            let montoTotalCuota = 0; // Monto total de la cuota (saldo + mora)
+
             function actualizarInputConCuota() {
                 const selectedOption = selectCuota.options[selectCuota.selectedIndex];
                 if (!selectedOption || selectedOption.disabled) return;
+                
                 const saldoPendiente = parseFloat(selectedOption.getAttribute('data-saldo')) || 0;
                 const moraAcumulada = parseFloat(selectedOption.getAttribute('data-mora')) || 0;
                 const totalAPagar = saldoPendiente + moraAcumulada;
+                
+                montoTotalCuota = totalAPagar; // Guardar el monto total
                 inputMonto.value = totalAPagar.toFixed(2);
-                inputMonto.max = totalAPagar.toFixed(2);
-                inputMonto.min = "0.10";
-                validarYActualizarCalculos();
+                inputMonto.max = totalAPagar.toFixed(2); // Límite máximo = monto de la cuota
+                inputMonto.min = '0.10';
+                actualizarDisplays();
             }
 
-            function validarYActualizarCalculos() {
-                let montoIngresado = parseFloat(inputMonto.value) || 0;
-                const maximoPermitido = parseFloat(inputMonto.max) || 0;
+            // Validar entrada manual: solo múltiplos de 0.10 para EFECTIVO en pagos parciales
+            function validarInputManual(event) {
+                if (currentPaymentMethod !== 'EFECTIVO') {
+                    actualizarDisplays();
+                    return;
+                }
+                
+                let valor = parseFloat(inputMonto.value) || 0;
+                
+                // No permitir valores mayores al cronograma
+                if (valor > montoTotalCuota) {
+                    valor = montoTotalCuota;
+                    inputMonto.value = valor.toFixed(2);
+                    actualizarDisplays();
+                    return;
+                }
+                
+                // Si es el monto EXACTO del cronograma, permitirlo sin redondear
+                // El backend aplicará el redondeo legal y mostrará MONTO EFECTIVO
+                if (Math.abs(valor - montoTotalCuota) < 0.001) {
+                    // Es pago completo, no redondear el input
+                    // El backend calculará el Monto EFECTIVO redondeado
+                    actualizarDisplays();
+                    return;
+                }
+                
+                // Para PAGOS PARCIALES: redondear a múltiplos de 0.10
+                const centavos = Math.round(valor * 100) % 10;
+                if (centavos !== 0) {
+                    // Redondear al múltiplo de 0.10 más cercano
+                    let valorRedondeado = Math.round(valor * 10) / 10;
+                    
+                    // Si el redondeo excede el cronograma, redondear hacia abajo
+                    if (valorRedondeado > montoTotalCuota) {
+                        valorRedondeado = Math.floor(valor * 10) / 10;
+                    }
+                    
+                    valor = valorRedondeado;
+                    inputMonto.value = valor.toFixed(2);
+                }
+                
+                actualizarDisplays();
+            }
 
-                if (montoIngresado > maximoPermitido) { montoIngresado = maximoPermitido; inputMonto.value = maximoPermitido.toFixed(2); }
-                if (montoIngresado < 0) { montoIngresado = 0; inputMonto.value = 0; }
+            async function calcularRedondeo(monto, medioPago) {
+                try {
+                    const response = await fetch('/prestamos/api/calcular-redondeo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            monto: monto,
+                            medio_pago: medioPago
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Error calculando redondeo:', error);
+                    return null;
+                }
+            }
 
-                let saldoRestante = maximoPermitido - montoIngresado;
-                if (saldoRestante < 0) saldoRestante = 0;
+            async function actualizarDisplays() {
+                const montoIngresado = parseFloat(inputMonto.value) || 0;
+                const selectedOption = selectCuota.options[selectCuota.selectedIndex];
+                if (!selectedOption || selectedOption.disabled) return;
 
-                displayMonto.textContent = 'S/ ' + montoIngresado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                displaySaldo.textContent = 'S/ ' + saldoRestante.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                const saldoPendiente = parseFloat(selectedOption.getAttribute('data-saldo')) || 0;
+                const moraAcumulada = parseFloat(selectedOption.getAttribute('data-mora')) || 0;
+                const totalAPagar = saldoPendiente + moraAcumulada;
+
+                // MONTO CUOTA S/ siempre muestra el monto ingresado/redondeado actual
+                displayMontoOriginal.textContent = 'S/ ' + montoIngresado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                // Verificar si se está pagando el monto COMPLETO de la cuota
+                const esPagoCompleto = Math.abs(montoIngresado - totalAPagar) < 0.01;
+
+                // Calcular redondeo SOLO si es EFECTIVO y PAGO COMPLETO
+                if (currentPaymentMethod === 'EFECTIVO' && esPagoCompleto && montoIngresado > 0) {
+                    redondeoData = await calcularRedondeo(montoIngresado, 'EFECTIVO');
+                    
+                    if (redondeoData && redondeoData.aplica_redondeo && Math.abs(redondeoData.ajuste) > 0.001) {
+                        // Mostrar desglose de redondeo
+                        montoEfectivoContainer.style.display = 'flex';
+                        displayMontoEfectivo.textContent = 'S/ ' + redondeoData.monto_redondeado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        
+                        ajusteContainer.style.display = 'flex';
+                        const esAhorro = redondeoData.ajuste < 0;
+                        ajusteLabel.textContent = esAhorro ? 'Condonación' : 'Ajuste';
+                        ajusteLabel.className = esAhorro ? 'text-sm font-medium text-green-700' : 'text-sm font-medium text-blue-700';
+                        displayAjuste.textContent = 'S/ ' + Math.abs(redondeoData.ajuste).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        displayAjuste.className = esAhorro ? 'text-lg font-bold text-green-700' : 'text-lg font-bold text-blue-700';
+                        
+                        // Saldo con monto redondeado
+                        let saldoRestante = totalAPagar - redondeoData.monto_redondeado;
+                        if (saldoRestante < 0.01) saldoRestante = 0;
+                        displaySaldo.textContent = 'S/ ' + saldoRestante.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    } else {
+                        // Sin ajuste significativo
+                        ocultarRedondeo();
+                        let saldoRestante = totalAPagar - montoIngresado;
+                        if (saldoRestante < 0.01) saldoRestante = 0;
+                        displaySaldo.textContent = 'S/ ' + saldoRestante.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                } else {
+                    // Pago parcial o método diferente: NO mostrar redondeo
+                    ocultarRedondeo();
+                    
+                    let saldoRestante = totalAPagar - montoIngresado;
+                    if (saldoRestante < 0.01) saldoRestante = 0;
+                    displaySaldo.textContent = 'S/ ' + saldoRestante.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+            }
+
+            function ocultarRedondeo() {
+                montoEfectivoContainer.style.display = 'none';
+                ajusteContainer.style.display = 'none';
+            }
+
+            function actualizarMetodoPago(metodo) {
+                currentPaymentMethod = metodo;
+                
+                if (metodo === 'EFECTIVO') {
+                    redondeoText.textContent = 'Para efectivo: pagos parciales en múltiplos de S/ 0.10';
+                } else {
+                    redondeoText.textContent = 'Puede ingresar cualquier monto con centavos';
+                    // Restablecer al monto de la cuota cuando se cambia de método
+                    if (montoTotalCuota > 0) {
+                        inputMonto.value = montoTotalCuota.toFixed(2);
+                        actualizarDisplays();
+                    }
+                }
+                
+                actualizarDisplays();
             }
 
             if(selectCuota) {
                 selectCuota.addEventListener('change', actualizarInputConCuota);
-                inputMonto.addEventListener('input', validarYActualizarCalculos);
+                inputMonto.addEventListener('input', actualizarDisplays);
+                inputMonto.addEventListener('blur', validarInputManual); // Validar al salir del campo
+                inputMonto.addEventListener('change', validarInputManual); // Validar al cambiar
                 actualizarInputConCuota();
             }
 
-            // Lógica de Tarjeta
             paymentRadios.forEach(radio => {
                 radio.addEventListener('change', function() {
+                    actualizarMetodoPago(this.value);
+                    
                     if (this.value === 'TARJETA') {
                         cardContainer.classList.remove('hidden');
                         cardInputs.forEach(input => input.required = true);
@@ -234,7 +426,8 @@
                 });
             });
 
-            // Formato inputs
+            actualizarMetodoPago('EFECTIVO');
+
             document.getElementById('card_number')?.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').match(/.{1,4}/g)?.join(' ') || e.target.value.replace(/\D/g, ''); });
             document.getElementById('card_expiry')?.addEventListener('input', e => { let v = e.target.value.replace(/\D/g, ''); if (v.length >= 3) v = v.substring(0, 2) + '/' + v.substring(2, 4); e.target.value = v; });
         });

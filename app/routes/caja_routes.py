@@ -21,18 +21,21 @@ def obtener_resumen_diario():
         "fecha": "2025-12-08",
         "detalle_por_medio": [
             {
-                "medio_pago": "efectivo",
+                "medio_pago": "EFECTIVO",
                 "cantidad_pagos": 5,
                 "total": 5000.00,
                 "total_mora": 150.00,
-                "total_capital": 4850.00
+                "total_capital": 4850.00,
+                "ajuste_redondeo": 0.10
             }
         ],
         "resumen": {
             "cantidad_total_pagos": 10,
             "total_recaudado": 10000.00,
             "total_mora_cobrada": 300.00,
-            "total_capital_cobrado": 9700.00
+            "total_capital_cobrado": 9700.00,
+            "total_ajuste_redondeo": 0.10,
+            "nota_ajuste": "Positivo = ganancia del negocio, Negativo = condonación al cliente"
         }
     }
     """
@@ -71,8 +74,9 @@ def obtener_resumen_periodo():
         "detalle_por_dia": [
             {
                 "fecha": "2025-12-01",
-                "medios": [...],
+                "medios": [{"ajuste_redondeo": 0.05, ...}],
                 "total_dia": 5000.00,
+                "ajuste_dia": 0.05,
                 "cantidad_dia": 5
             }
         ],
@@ -81,7 +85,9 @@ def obtener_resumen_periodo():
             "total_recaudado": 50000.00,
             "total_mora_cobrada": 1500.00,
             "total_capital_cobrado": 48500.00,
-            "dias_con_movimiento": 8
+            "total_ajuste_redondeo": 0.50,
+            "dias_con_movimiento": 8,
+            "nota_ajuste": "Positivo = ganancia del negocio, Negativo = condonación al cliente"
         }
     }
     """
@@ -127,11 +133,13 @@ def obtener_detalle_diario():
             },
             "prestamo_id": 1,
             "cuota_numero": 3,
-            "medio_pago": "efectivo",
-            "monto_pagado": 1052.59,
+            "medio_pago": "EFECTIVO",
+            "monto_contable": 1052.58,
+            "monto_pagado": 1052.60,
+            "ajuste_redondeo": 0.02,
             "monto_mora": 52.59,
             "monto_capital": 1000.00,
-            "observaciones": "Pago parcial"
+            "observaciones": "Pago completo con redondeo"
         }
     ]
     """

@@ -12,12 +12,10 @@ class MedioPagoEnum(enum.Enum):
     BILLETERA_ELECTRONICA = "BILLETERA_ELECTRONICA"
     PAGO_AUTOMATICO = "PAGO_AUTOMATICO"
 
-
-
 class MetodoPagoEnum(enum.Enum):
     """
     MÓDULO 2: Enum para métodos de pago
-    - EFECTIVO: Aplica Ley N° 29571 (redondeo a favor del consumidor)
+    - EFECTIVO: REDONDEO aplicado
     - TARJETA: Monto exacto sin redondeo
     - TRANSFERENCIA: Monto exacto sin redondeo
     """
@@ -44,7 +42,7 @@ class Pago(db.Model):
         db.Numeric(12, 2), 
         default=0.00, 
         nullable=False,
-        comment='Pérdida/Ganancia por redondeo (Ley N° 29571)'
+        comment='Pérdida/Ganancia por redondeo'
     )
     
     monto_mora = db.Column(db.Numeric(12, 2), default=0.00, nullable=False)

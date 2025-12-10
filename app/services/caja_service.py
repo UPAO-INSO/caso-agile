@@ -23,7 +23,8 @@ class CajaService:
                 func.count(Pago.pago_id).label('cantidad'),
                 func.sum(Pago.monto_pagado).label('total'),
                 func.sum(Pago.monto_mora).label('total_mora'),
-                func.sum(Pago.monto_pagado - Pago.monto_mora).label('total_capital')
+                func.sum(Pago.monto_pagado - Pago.monto_mora).label('total_capital'),
+                func.sum(Pago.ajuste_redondeo).label('total_ajuste')
             ).filter(
                 func.date(Pago.fecha_pago) == fecha
             ).group_by(Pago.medio_pago).all()
@@ -33,19 +34,22 @@ class CajaService:
             total_general = Decimal('0')
             total_mora_general = Decimal('0')
             total_capital_general = Decimal('0')
+            total_ajuste_general = Decimal('0')
             cantidad_total = 0
             
-            for medio, cantidad, total, mora, capital in pagos_dia:
+            for medio, cantidad, total, mora, capital, ajuste in pagos_dia:
                 detalle_medios.append({
                     'medio_pago': medio.value,
                     'cantidad_pagos': cantidad,
                     'total': float(total or 0),
                     'total_mora': float(mora or 0),
-                    'total_capital': float(capital or 0)
+                    'total_capital': float(capital or 0),
+                    'ajuste_redondeo': float(ajuste or 0)
                 })
                 total_general += (total or Decimal('0'))
                 total_mora_general += (mora or Decimal('0'))
                 total_capital_general += (capital or Decimal('0'))
+                total_ajuste_general += (ajuste or Decimal('0'))
                 cantidad_total += cantidad
             
             return {
@@ -55,7 +59,9 @@ class CajaService:
                     'cantidad_total_pagos': cantidad_total,
                     'total_recaudado': float(total_general),
                     'total_mora_cobrada': float(total_mora_general),
-                    'total_capital_cobrado': float(total_capital_general)
+                    'total_capital_cobrado': float(total_capital_general),
+                    'total_ajuste_redondeo': float(total_ajuste_general),
+                    'nota_ajuste': 'Positivo = ganancia del negocio, Negativo = condonación al cliente'
                 }
             }
             
@@ -75,7 +81,8 @@ class CajaService:
                 Pago.medio_pago,
                 func.count(Pago.pago_id).label('cantidad'),
                 func.sum(Pago.monto_pagado).label('total'),
-                func.sum(Pago.monto_mora).label('total_mora')
+                func.sum(Pago.monto_mora).label('total_mora'),
+                func.sum(Pago.ajuste_redondeo).label('total_ajuste')
             ).filter(
                 and_(
                     func.date(Pago.fecha_pago) >= fecha_inicio,
@@ -90,9 +97,10 @@ class CajaService:
             detalle_por_dia = {}
             total_periodo = Decimal('0')
             total_mora_periodo = Decimal('0')
+            total_ajuste_periodo = Decimal('0')
             cantidad_total_periodo = 0
             
-            for fecha, medio, cantidad, total, mora in pagos_periodo:
+            for fecha, medio, cantidad, total, mora, ajuste in pagos_periodo:
                 fecha_str = fecha.isoformat()
                 
                 if fecha_str not in detalle_por_dia:
@@ -100,6 +108,7 @@ class CajaService:
                         'fecha': fecha_str,
                         'medios': [],
                         'total_dia': Decimal('0'),
+                        'ajuste_dia': Decimal('0'),
                         'cantidad_dia': 0
                     }
                 
@@ -107,19 +116,23 @@ class CajaService:
                     'medio_pago': medio.value,
                     'cantidad': cantidad,
                     'total': float(total or 0),
-                    'total_mora': float(mora or 0)
+                    'total_mora': float(mora or 0),
+                    'ajuste_redondeo': float(ajuste or 0)
                 })
                 
                 detalle_por_dia[fecha_str]['total_dia'] += (total or Decimal('0'))
+                detalle_por_dia[fecha_str]['ajuste_dia'] += (ajuste or Decimal('0'))
                 detalle_por_dia[fecha_str]['cantidad_dia'] += cantidad
                 total_periodo += (total or Decimal('0'))
                 total_mora_periodo += (mora or Decimal('0'))
+                total_ajuste_periodo += (ajuste or Decimal('0'))
                 cantidad_total_periodo += cantidad
             
             # Convertir a lista y formatear totales
             detalle_lista = []
             for dia in detalle_por_dia.values():
                 dia['total_dia'] = float(dia['total_dia'])
+                dia['ajuste_dia'] = float(dia['ajuste_dia'])
                 detalle_lista.append(dia)
             
             return {
@@ -133,7 +146,9 @@ class CajaService:
                     'total_recaudado': float(total_periodo),
                     'total_mora_cobrada': float(total_mora_periodo),
                     'total_capital_cobrado': float(total_periodo - total_mora_periodo),
-                    'dias_con_movimiento': len(detalle_por_dia)
+                    'total_ajuste_redondeo': float(total_ajuste_periodo),
+                    'dias_con_movimiento': len(detalle_por_dia),
+                    'nota_ajuste': 'Positivo = ganancia del negocio, Negativo = condonación al cliente'
                 }
             }
             
@@ -167,7 +182,9 @@ class CajaService:
                     'prestamo_id': prestamo.prestamo_id,
                     'cuota_numero': cuota.numero_cuota,
                     'medio_pago': pago.medio_pago.value,
+                    'monto_contable': float(pago.monto_contable) if pago.monto_contable else float(pago.monto_pagado),
                     'monto_pagado': float(pago.monto_pagado),
+                    'ajuste_redondeo': float(pago.ajuste_redondeo),
                     'monto_mora': float(pago.monto_mora),
                     'monto_capital': float(pago.monto_pagado - pago.monto_mora),
                     'observaciones': pago.observaciones

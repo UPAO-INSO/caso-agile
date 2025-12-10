@@ -10,7 +10,7 @@ from app.models.prestamo import Prestamo
 
 # ==================== CONFIGURACIÓN ====================
 PRESTAMO_ID = 1  # ← CAMBIA ESTE ID AL PRÉSTAMO QUE QUIERES SIMULAR
-NUM_CUOTAS_VENCIDAS = 2  # Número de cuotas que quieres que estén vencidas
+NUM_CUOTAS_VENCIDAS = 10  # Número de cuotas que quieres que estén vencidas
 DIAS_ATRASADO_POR_CUOTA = 30  # Días de atraso por cada cuota (para generar mora)
 # =======================================================
 
