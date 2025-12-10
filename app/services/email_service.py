@@ -106,7 +106,7 @@ Financiera Demo S.A.
             
             # Adjuntar PDF detallado del cronograma
             try:
-                pdf_buffer = PDFService.generar_cronograma(
+                pdf_buffer = PDFService.generar_cronograma_detallado_pdf(
                     nombre_completo,
                     prestamo,
                     [{
