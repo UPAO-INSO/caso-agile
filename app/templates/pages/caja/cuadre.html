@@ -350,8 +350,13 @@
         const montoInicial = apertura && apertura.monto ? apertura.monto : 0;
         document.getElementById('saldo_inicial').textContent = `S/ ${montoInicial.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
+        // Total Egresos
+        const totalEgresos = resumen.total_egresos || 0;
+        document.getElementById('total_egresos').textContent = 
+            `S/ ${totalEgresos.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
         // Saldo Esperado = Inicial + Ingresos - Egresos
-        const esperado = (montoInicial || 0) + (resumen.total_recaudado || 0) - (resumen.total_egresos || 0);
+        const esperado = (montoInicial || 0) + (resumen.total_recaudado || 0) - totalEgresos;
         document.getElementById('saldo_esperado').textContent = `S/ ${esperado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
         // Mostrar categorías

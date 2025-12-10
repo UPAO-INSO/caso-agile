@@ -235,6 +235,16 @@ class PagoService:
             except Exception as exc:
                 logger.error(f"Error registrando vuelto: {exc}", exc_info=True)
 
+            # Verificar si el préstamo está completamente pagado
+            cuotas_pendientes_check = PagoService.obtener_cuotas_pendientes_ordenadas(prestamo_id)
+            if not cuotas_pendientes_check:  # No hay cuotas pendientes
+                prestamo = Prestamo.query.get(prestamo_id)
+                if prestamo and prestamo.estado == EstadoPrestamoEnum.VIGENTE:
+                    prestamo.estado = EstadoPrestamoEnum.CANCELADO
+                    db.session.commit()
+                    logger.info(f"Préstamo {prestamo_id} marcado como CANCELADO - todas las cuotas pagadas")
+                    respuesta['prestamo_cancelado'] = True
+
             logger.info(
                 f"Pago registrado: Préstamo={prestamo_id}, Caja={monto_pagado_registrado}, Mora={monto_mora_total}, "
                 f"Ajuste redondeo={ajuste_redondeo}, Detalles={len(detalles_pago)} movimientos"

@@ -59,7 +59,12 @@ class CajaService:
                 total_ajuste_general += (ajuste or Decimal('0'))
                 cantidad_total += cantidad
             # Total egresos del día
-            total_egresos = db.session.query(func.sum(Egreso.monto)).filter(func.date(Egreso.fecha_registro) == fecha).scalar() or Decimal('0')
+            from datetime import datetime as dt
+            total_egresos = db.session.query(func.sum(Egreso.monto)).filter(
+                db.and_(
+                    func.date(Egreso.fecha_registro) == fecha
+                )
+            ).scalar() or Decimal('0')
 
             return {
                 'fecha': fecha.isoformat(),
