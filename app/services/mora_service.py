@@ -41,7 +41,12 @@ class MoraService:
             Número de meses de atraso
         """
         dias_atraso = MoraService.calcular_dias_atraso(fecha_vencimiento)
-        meses_atraso = dias_atraso // MoraService.DIAS_POR_MES
+
+        # Si no hay atraso, no hay meses de mora
+        if dias_atraso <= 0:
+            return 0
+
+        meses_atraso = ((dias_atraso - 1) // MoraService.DIAS_POR_MES) + 1
         return meses_atraso
 
     @staticmethod

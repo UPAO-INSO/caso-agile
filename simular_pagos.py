@@ -461,6 +461,7 @@ def menu_principal():
             print("   [5] Listar todos los préstamos")
             print("   [6] Ver detalle de préstamo")
             print("   [7] Simular cuotas vencidas (cambiar fechas)")
+            print("   [8] Atrasar una cuota específica (cambiar solo 1 cuota)")
             print("   [0] Salir")
             
             opcion = input("\n   Selecciona una opción: ").strip()
@@ -492,6 +493,9 @@ def menu_principal():
             elif opcion == '7':
                 simular_cuotas_vencidas()
             
+            elif opcion == '8':
+                atrasar_cuota_especifica()
+            
             elif opcion == '0':
                 print("\n   👋 ¡Hasta luego!\n")
                 break
@@ -500,7 +504,6 @@ def menu_principal():
                 print("\n   ❌ Opción no válida")
             
             input("\n   Presiona Enter para continuar...")
-
 
 def simular_cuotas_vencidas():
     """Simula cuotas vencidas cambiando fechas"""
@@ -543,7 +546,65 @@ def simular_cuotas_vencidas():
     except Exception as e:
         db.session.rollback()
         print(f"\n   ❌ Error: {e}")
-        
+
+
+def atrasar_cuota_especifica():
+    """Permite seleccionar una cuota específica y atrasar su fecha de vencimiento"""
+    print_header("ATRASAR FECHA DE VENCIMIENTO DE UNA CUOTA")
+    
+    prestamo_id = input_int("\n   ID del préstamo: ")
+    prestamo = Prestamo.query.get(prestamo_id)
+    if not prestamo:
+        print(f"   ❌ Préstamo #{prestamo_id} no encontrado")
+        return
+    
+    cuotas = Cuota.query.filter_by(prestamo_id=prestamo_id).order_by(Cuota.numero_cuota).all()
+    if not cuotas:
+        print("   ⚠️ No hay cuotas para este préstamo")
+        return
+    
+    print(f"\n   Cuotas del préstamo #{prestamo_id}:")
+    print(f"\n{'#':>3} | {'ID Cuota':>8} | {'Vencimiento':>12} | {'Pendiente':>10} | {'Mora':>8}")
+    print_separator()
+    for cuota in cuotas:
+        mora = cuota.mora_acumulada or Decimal('0')
+        print(
+            f"{cuota.numero_cuota:>3} | "
+            f"{cuota.cuota_id:>8} | "
+            f"{cuota.fecha_vencimiento.strftime('%d/%m/%Y'):>12} | "
+            f"S/{cuota.saldo_pendiente:>8.2f} | "
+            f"S/{mora:>6.2f}"
+        )
+    
+    cuota_id = input_int("\n   ID de la cuota a atrasar: ")
+    cuota = Cuota.query.get(cuota_id)
+    if not cuota or cuota.prestamo_id != prestamo_id:
+        print(f"   ❌ Cuota #{cuota_id} no válida para este préstamo")
+        return
+    
+    print(f"\n   Fecha actual de vencimiento de la cuota #{cuota.numero_cuota}: {cuota.fecha_vencimiento}")
+    dias = input_int("   ¿Cuántos días deseas atrasar la cuota? (Ej: 1 → se hace vencida ayer) [1]: ", 1)
+    if dias < 1:
+        print("   ❌ Debes especificar al menos 1 día para atrasar")
+        return
+    
+    nueva_fecha = cuota.fecha_vencimiento - timedelta(days=dias)
+    print(f"\n   Nueva fecha de vencimiento: {nueva_fecha} (antes: {cuota.fecha_vencimiento})")
+    
+    confirmar = input("\n   ¿Confirmar cambio? (S/N) [N]: ").strip().upper()
+    if confirmar != 'S':
+        print("   ❌ Operación cancelada")
+        return
+    
+    try:
+        cuota.fecha_vencimiento = nueva_fecha
+        db.session.commit()
+        print(f"\n   ✅ Fecha de vencimiento actualizada exitosamente")
+        print(f"   Cuota #{cuota.numero_cuota} → nueva fecha: {nueva_fecha}")
+    except Exception as e:
+        db.session.rollback()
+        print(f"\n   ❌ Error al actualizar la cuota: {e}")
+
 
 # ==================== EJECUCIÓN ====================
 
