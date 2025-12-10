@@ -5,17 +5,199 @@ Centraliza la lógica de creación de documentos PDF.
 """
 
 import logging
+from reportlab.lib.pagesizes import letter
+import qrcode
+import hashlib
+import base64
 from io import BytesIO
 from num2words import num2words
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from datetime import datetime, timedelta
+from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
 class PDFService:
     """Servicio para generación de PDFs"""
+
+    EMPRESA = {
+        "ruc": "20601234567",
+        "razon_social": "FINANCIERA CASO AGILE S.A.C.",
+        "direccion": "Av. Larco 123, Trujillo, La Libertad",
+        "telefono": "(044) 20-2020",
+        "email": "comfyprestamos@gmail.com"
+    }
+
+    @staticmethod
+    def _generar_qr_img(data):
+        """Genera imagen QR para incrustar en PDF"""
+        qr = qrcode.QRCode(box_size=10, border=1)
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+        return ImageReader(buffer)
+
+    @staticmethod
+    def _generar_hash(data):
+        """Simula el Hash de la firma digital (SHA256)"""
+        return base64.b64encode(hashlib.sha256(data.encode()).digest()).decode()[:28]
+
+    @staticmethod
+    def generar_voucher_pago(cliente, prestamo, cuota, pago):
+        """
+        Genera el PDF con formato de FACTURA o BOLETA ELECTRÓNICA.
+        """
+        try:
+            buffer = BytesIO()
+            # Usamos A4 que es el estándar para impresión de facturas
+            c = canvas.Canvas(buffer, pagesize=A4)
+            width, height = A4 # 595.27 x 841.89
+            
+            # --- 1. LÓGICA TRIBUTARIA ---
+            # Si el documento del cliente tiene 11 dígitos, es RUC -> FACTURA
+            es_factura = len(cliente.dni) == 11 
+            
+            tipo_comprobante = "FACTURA ELECTRÓNICA" if es_factura else "BOLETA DE VENTA ELECTRÓNICA"
+            codigo_tipo = "01" if es_factura else "03"
+            serie = "F001" if es_factura else "B001"
+            correlativo = f"{pago.pago_id:08d}" # Ej: 00000123
+            
+            # Cálculos (Asumiendo que el pago es precio final con IGV)
+            total = float(pago.monto_pagado)
+            subtotal = total / 1.18
+            igv = total - subtotal
+
+            # --- 2. DIBUJAR ENCABEZADO (EMPRESA) ---
+            # Logo (simulado con texto grande)
+            c.setFont("Helvetica-Bold", 18)
+            c.drawString(40, height - 50, PDFService.EMPRESA["razon_social"])
+            
+            c.setFont("Helvetica", 9)
+            c.drawString(40, height - 70, PDFService.EMPRESA["direccion"])
+            c.drawString(40, height - 82, f"Telf: {PDFService.EMPRESA['telefono']} | Email: {PDFService.EMPRESA['email']}")
+            
+            # --- 3. RECUADRO RUC (Elemento Distintivo SUNAT) ---
+            # Borde Rectangular
+            c.setLineWidth(1.5)
+            c.roundRect(350, height - 110, 200, 80, 4, stroke=1, fill=0)
+            
+            # Contenido del Recuadro
+            c.setFont("Helvetica-Bold", 14)
+            c.drawCentredString(450, height - 50, f"R.U.C. {PDFService.EMPRESA['ruc']}")
+            
+            # Franja de Tipo de Documento
+            c.setFillColorRGB(0.9, 0.9, 0.9) # Gris claro
+            c.rect(351, height - 80, 198, 20, stroke=0, fill=1)
+            c.setFillColorRGB(0, 0, 0) # Volver a negro
+            
+            c.setFont("Helvetica-Bold", 11)
+            c.drawCentredString(450, height - 74, tipo_comprobante)
+            
+            c.setFont("Helvetica", 14)
+            c.drawCentredString(450, height - 100, f"{serie} - {correlativo}")
+
+            # --- 4. DATOS DEL CLIENTE ---
+            y = height - 150
+            c.setFont("Helvetica-Bold", 9)
+            c.drawString(40, y, "FECHA DE EMISIÓN:")
+            c.drawString(40, y - 15, "SEÑOR(ES):")
+            c.drawString(40, y - 30, "RUC/DNI:")
+            c.drawString(40, y - 45, "DIRECCIÓN:")
+            c.drawString(380, y, "MONEDA:")
+            c.drawString(380, y - 15, "FORMA DE PAGO:")
+
+            c.setFont("Helvetica", 9)
+            nombre_cli = f"{cliente.nombre_completo} {cliente.apellido_paterno} {cliente.apellido_materno}"
+            c.drawString(140, y, pago.fecha_registro.strftime("%d/%m/%Y"))
+            c.drawString(140, y - 15, nombre_cli.upper())
+            c.drawString(140, y - 30, cliente.dni)
+            c.drawString(140, y - 45, (cliente.direccion or "NO REGISTRADO").upper())
+            c.drawString(470, y, "SOLES")
+            c.drawString(470, y - 15, "CONTADO")
+
+            # --- 5. TABLA DE PRODUCTOS ---
+            y_table = y - 75
+            # Encabezados de tabla
+            c.setLineWidth(0.5)
+            c.line(40, y_table, 550, y_table) # Linea superior
+            c.line(40, y_table - 15, 550, y_table - 15) # Linea inferior cabecera
+            
+            c.setFont("Helvetica-Bold", 8)
+            c.drawString(45, y_table - 10, "CANT.")
+            c.drawString(80, y_table - 10, "UNIDAD")
+            c.drawString(130, y_table - 10, "DESCRIPCIÓN")
+            c.drawRightString(480, y_table - 10, "P. UNIT")
+            c.drawRightString(540, y_table - 10, "TOTAL")
+
+            # Items (Solo uno: La cuota)
+            y_item = y_table - 30
+            c.setFont("Helvetica", 8)
+            
+            descripcion = f"PAGO DE CUOTA N° {cuota.numero_cuota} - PRESTAMO #{prestamo.prestamo_id}"
+            if pago.ajuste_redondeo != 0:
+                descripcion += " (Incluye redondeo de ley)"
+
+            c.drawString(45, y_item, "1")
+            c.drawString(80, y_item, "ZZ") # ZZ = Unidad servicio
+            c.drawString(130, y_item, descripcion)
+            c.drawRightString(480, y_item, f"{subtotal:.2f}")
+            c.drawRightString(540, y_item, f"{subtotal:.2f}")
+
+            # --- 6. TOTALES Y PIE DE PÁGINA ---
+            y_footer = y_item - 50
+            c.line(40, y_item - 10, 550, y_item - 10) # Linea fin items
+
+            # Monto en Letras
+            try:
+                letras = num2words(total, lang='es').upper()
+            except:
+                letras = "MONTO EN LETRAS"
+            c.setFont("Helvetica", 8)
+            c.drawString(40, y_footer, f"SON: {letras} CON {int(total*100)%100}/100 SOLES")
+
+            # Cuadro de Totales (Derecha Inferior)
+            c.setFont("Helvetica-Bold", 9)
+            c.drawRightString(480, y_footer, "OP. GRAVADA:")
+            c.drawRightString(480, y_footer - 15, "I.G.V. (18%):")
+            c.drawRightString(480, y_footer - 30, "IMPORTE TOTAL:")
+
+            c.setFont("Helvetica", 9)
+            c.drawRightString(540, y_footer, f"S/ {subtotal:.2f}")
+            c.drawRightString(540, y_footer - 15, f"S/ {igv:.2f}")
+            c.setFont("Helvetica-Bold", 9)
+            c.drawRightString(540, y_footer - 30, f"S/ {total:.2f}")
+
+            # --- 7. SEGURIDAD (QR y HASH) ---
+            y_security = y_footer - 80
+            
+            # Texto semilla para Hash y QR
+            texto_qr = f"{PDFService.EMPRESA['ruc']}|{codigo_tipo}|{serie}|{correlativo}|{igv:.2f}|{total:.2f}|{pago.fecha_registro.date()}|6|{cliente.dni}|"
+            
+            # Generar e insertar QR
+            qr_img = PDFService._generar_qr_img(texto_qr)
+            c.drawImage(qr_img, 40, y_security - 10, width=90, height=90)
+            
+            # Hash y Textos legales
+            c.setFont("Helvetica", 7)
+            hash_code = PDFService._generar_hash(texto_qr)
+            c.drawString(140, y_security + 60, f"Resumen (Hash): {hash_code}")
+            c.drawString(140, y_security + 50, "Representación Impresa del Comprobante Electrónico")
+            c.drawString(140, y_security + 40, "Autorizado mediante Resolución de Superintendencia N° 300-2014/SUNAT")
+            c.drawString(140, y_security + 30, "Consulte su documento en www.casoagile.com/buscar")
+
+            c.save()
+            buffer.seek(0)
+            return buffer
+            
+        except Exception as e:
+            logger.error(f"Error generando PDF: {e}")
+            raise
     
     @staticmethod
     def generar_cronograma_detallado_pdf(nombre_cliente, prestamo, cronograma):
@@ -97,252 +279,3 @@ class PDFService:
             logger.error(f"Error al generar PDF detallado: {e}")
             raise
     
-    @staticmethod
-    def generar_voucher_pago(cliente, prestamo, cuota, pago):
-        """
-        Genera un PDF con el voucher/comprobante de pago.
-        
-        MÓDULO 2: Incluye información de conciliación contable y ajuste de redondeo.
-        
-        Args:
-            cliente: Objeto Cliente
-            prestamo: Objeto Prestamo
-            cuota: Objeto Cuota
-            pago: Objeto Pago con todos los detalles del pago
-            
-        Returns:
-            BytesIO: Buffer con el contenido del PDF
-        """
-        try:
-            buffer = BytesIO()
-            p = canvas.Canvas(buffer, pagesize=letter)
-            width, height = letter
-            
-            # === ENCABEZADO ===
-            p.setFont("Helvetica-Bold", 18)
-            p.drawCentredString(width / 2, height - 50, "FINANCIERA DEMO S.A.")
-            
-            p.setFont("Helvetica", 10)
-            p.drawCentredString(width / 2, height - 70, "RUC: 20123456789")
-            p.drawCentredString(width / 2, height - 85, "Av. Financiera 123, San Isidro, Lima")
-            
-            # Línea separadora
-            p.line(50, height - 95, width - 50, height - 95)
-            
-            # === TÍTULO DEL COMPROBANTE ===
-            p.setFont("Helvetica-Bold", 14)
-            p.drawCentredString(width / 2, height - 120, "COMPROBANTE DE PAGO")
-            
-            p.setFont("Helvetica", 10)
-            fecha_hora = pago.fecha_registro.strftime("%d/%m/%Y %H:%M:%S")
-            p.drawCentredString(width / 2, height - 140, f"Fecha: {fecha_hora}")
-            
-            # === DATOS DE LA TRANSACCIÓN ===
-            y_pos = height - 170
-            p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y_pos, "DATOS DE LA TRANSACCIÓN")
-            p.line(50, y_pos - 5, width - 50, y_pos - 5)
-            
-            y_pos -= 25
-            p.setFont("Helvetica", 10)
-            
-            # Operación
-            p.drawString(50, y_pos, "Operación N°:")
-            p.setFont("Helvetica-Bold", 10)
-            p.drawString(200, y_pos, f"#{pago.pago_id:08d}")
-            
-            # Comprobante referencia
-            y_pos -= 20
-            p.setFont("Helvetica", 10)
-            p.drawString(50, y_pos, "Comprobante:")
-            p.setFont("Helvetica-Bold", 10)
-            p.drawString(200, y_pos, pago.comprobante_referencia or "N/A")
-            
-            # === DATOS DEL CLIENTE ===
-            y_pos -= 35
-            p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y_pos, "DATOS DEL CLIENTE")
-            p.line(50, y_pos - 5, width - 50, y_pos - 5)
-            
-            y_pos -= 25
-            p.setFont("Helvetica", 10)
-            
-            # Cliente
-            p.drawString(50, y_pos, "Cliente:")
-            p.setFont("Helvetica-Bold", 10)
-            nombre_completo = f"{cliente.nombre_completo} {cliente.apellido_paterno} {cliente.apellido_materno}"
-            p.drawString(200, y_pos, nombre_completo)
-            
-            # DNI
-            y_pos -= 20
-            p.setFont("Helvetica", 10)
-            p.drawString(50, y_pos, "DNI:")
-            p.setFont("Helvetica-Bold", 10)
-            p.drawString(200, y_pos, cliente.dni)
-            
-            # === DATOS DEL PRÉSTAMO Y CUOTA ===
-            y_pos -= 35
-            p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y_pos, "DATOS DEL PRÉSTAMO")
-            p.line(50, y_pos - 5, width - 50, y_pos - 5)
-            
-            y_pos -= 25
-            p.setFont("Helvetica", 10)
-            
-            # Préstamo ID
-            p.drawString(50, y_pos, "Préstamo N°:")
-            p.setFont("Helvetica-Bold", 10)
-            p.drawString(200, y_pos, f"#{prestamo.prestamo_id}")
-            
-            # Cuota
-            y_pos -= 20
-            p.setFont("Helvetica", 10)
-            p.drawString(50, y_pos, "Cuota N°:")
-            p.setFont("Helvetica-Bold", 10)
-            total_cuotas = len(prestamo.cuotas)
-            p.drawString(200, y_pos, f"{cuota.numero_cuota} de {total_cuotas}")
-            
-            # Fecha de vencimiento
-            y_pos -= 20
-            p.setFont("Helvetica", 10)
-            p.drawString(50, y_pos, "Fecha Vencimiento:")
-            p.setFont("Helvetica-Bold", 10)
-            p.drawString(200, y_pos, cuota.fecha_vencimiento.strftime("%d/%m/%Y"))
-            
-            # === DETALLE FINANCIERO ===
-            y_pos -= 35
-            p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y_pos, "DETALLE DE LA CUOTA")
-            p.line(50, y_pos - 5, width - 50, y_pos - 5)
-            
-            # Recuadro gris (Fondo)
-            p.setFillColorRGB(0.95, 0.95, 0.95)
-            p.rect(50, y_pos - 130, width - 100, 120, fill=True, stroke=False) # Aumenté altura
-            p.setFillColorRGB(0, 0, 0)
-            
-            y_pos -= 25
-            p.setFont("Helvetica", 10)
-            
-            # 1. Capital
-            p.drawString(60, y_pos, "Amortización Capital:")
-            p.drawRightString(width - 60, y_pos, f"S/ {float(cuota.monto_capital):.2f}")
-            
-            # 2. Interés
-            y_pos -= 20
-            p.drawString(60, y_pos, "Interés Compensatorio:")
-            p.drawRightString(width - 60, y_pos, f"S/ {float(cuota.monto_interes):.2f}")
-            
-            # 3. Mora / Penalidad (CORRECCIÓN: No lo dejes hardcoded en 0)
-            # Asumiendo que el objeto pago o cuota tiene el dato real
-            mora_monto = getattr(pago, 'monto_mora', 0.00) 
-            y_pos -= 20
-            p.drawString(60, y_pos, "Interés Moratorio / Penalidad:")
-            p.drawRightString(width - 60, y_pos, f"S/ {float(mora_monto):.2f}")
-            
-            # Línea de suma
-            y_pos -= 10
-            p.setDash(1, 2) # Línea punteada para separar subtotales
-            p.line(60, y_pos, width - 60, y_pos)
-            p.setDash([]) # Reset línea sólida
-            
-            # 4. TOTAL NUMÉRICO
-            y_pos -= 20
-            p.setFont("Helvetica-Bold", 12)
-            p.drawString(60, y_pos, "TOTAL PAGADO:")
-            p.setFillColorRGB(0.2, 0.4, 0.7) # Azul corporativo
-            p.drawRightString(width - 60, y_pos, f"S/ {float(pago.monto_pagado):.2f}")
-            p.setFillColorRGB(0, 0, 0)
-
-            # 5. IMPORTE EN LETRAS (Elemento CRÍTICO en Perú)
-            # Esto da formalidad y evita fraudes por adulteración de números
-            y_pos -= 20
-            p.setFont("Helvetica-Oblique", 9)
-            monto_letras = num2words(float(pago.monto_pagado), lang='es').upper()
-            p.drawCentredString(width / 2, y_pos, f"SON: {monto_letras} CON {int(pago.monto_pagado * 100) % 100}/100 SOLES")
-            
-            # === CONCILIACIÓN CONTABLE (Solo si hay ajuste) ===
-            if float(pago.ajuste_redondeo) != 0:
-                y_pos -= 35
-                p.setFont("Helvetica-Bold", 11)
-                p.drawString(50, y_pos, "CONCILIACIÓN CONTABLE")
-                p.setFillColorRGB(1, 0.75, 0)
-                p.rect(45, y_pos - 5, width - 90, 2, fill=True, stroke=False)
-                p.setFillColorRGB(0, 0, 0)
-                
-                # Recuadro amarillo
-                p.setFillColorRGB(1, 0.98, 0.8)
-                p.rect(50, y_pos - 85, width - 100, 75, fill=True, stroke=True)
-                p.setFillColorRGB(0, 0, 0)
-                
-                y_pos -= 25
-                p.setFont("Helvetica", 9)
-                
-                # Monto contable
-                p.drawString(60, y_pos, "Monto Contable (Deuda):")
-                p.drawRightString(width - 60, y_pos, f"S/ {float(pago.monto_contable):.2f}")
-                
-                # Monto recibido
-                y_pos -= 15
-                p.drawString(60, y_pos, "Monto Recibido (Caja):")
-                p.drawRightString(width - 60, y_pos, f"S/ {float(pago.monto_pagado):.2f}")
-                
-                # Ajuste redondeo
-                y_pos -= 15
-                p.setFont("Helvetica-Bold", 9)
-                p.drawString(60, y_pos, "Ajuste por Redondeo:")
-                p.drawRightString(width - 60, y_pos, f"S/ {float(pago.ajuste_redondeo):.2f}")
-                
-                # Nota legal
-                y_pos -= 20
-                p.setFont("Helvetica-Oblique", 8)
-                p.drawString(60, y_pos, "* Ley N° 29571 - Redondeo a favor del consumidor")
-            
-            # === OBSERVACIONES ===
-            if pago.observaciones:
-                y_pos -= 35
-                p.setFont("Helvetica-Bold", 11)
-                p.drawString(50, y_pos, "OBSERVACIONES")
-                p.line(50, y_pos - 5, width - 50, y_pos - 5)
-                
-                y_pos -= 25
-                p.setFont("Helvetica", 9)
-                # Manejar texto largo
-                texto = pago.observaciones
-                max_width = width - 100
-                from reportlab.pdfbase.pdfmetrics import stringWidth
-                if stringWidth(texto, "Helvetica", 9) > max_width:
-                    # Dividir en líneas
-                    palabras = texto.split()
-                    linea_actual = ""
-                    for palabra in palabras:
-                        test_linea = linea_actual + " " + palabra if linea_actual else palabra
-                        if stringWidth(test_linea, "Helvetica", 9) <= max_width:
-                            linea_actual = test_linea
-                        else:
-                            p.drawString(60, y_pos, linea_actual)
-                            y_pos -= 12
-                            linea_actual = palabra
-                    if linea_actual:
-                        p.drawString(60, y_pos, linea_actual)
-                else:
-                    p.drawString(60, y_pos, texto)
-            
-            # === PIE DE PÁGINA ===
-            p.setFont("Helvetica", 7)
-            disclaimer = "Este documento es una CONSTANCIA DE PAGO INTERNA y no reemplaza a la Boleta de Venta o Factura Electrónica."
-            if hasattr(pago, 'es_fiscal') and pago.es_fiscal:
-                 disclaimer = "Representación Impresa de la Boleta de Venta Electrónica."
-            
-            p.drawCentredString(width / 2, 50, disclaimer)
-            
-            # Finalizar
-            p.showPage()
-            p.save()
-            buffer.seek(0)
-            
-            logger.info(f"Voucher PDF generado para pago #{pago.pago_id}")
-            return buffer
-            
-        except Exception as e:
-            logger.error(f"Error al generar voucher PDF: {e}")
-            raise
