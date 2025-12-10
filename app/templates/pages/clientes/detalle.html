@@ -63,14 +63,6 @@ badge %} {% block content %}
             {{ cliente.direccion or 'No registrada' }}
           </p>
         </div>
-
-        <div>
-          <label class="text-sm font-medium text-gray-500">Estado PEP</label>
-          <div class="mt-1">
-            {% if cliente.pep %} {{ badge('warning', 'PEP') }} {% else %} {{
-            badge('success', 'Regular') }} {% endif %}
-          </div>
-        </div>
       </div>
     </div>
 
