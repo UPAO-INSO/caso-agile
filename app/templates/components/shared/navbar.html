@@ -41,7 +41,7 @@
 
         <a
           href="{{ url_for('clientes_view.listar_clientes_view') }}"
-          class="nav-item px-4 py-2 rounded-lg transition-colors {% if '/clientes' in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
+          class="nav-item px-4 py-2 rounded-lg transition-colors {% if request.path == '/clientes' %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
           <span class="flex items-center text-gray-100">
             <svg
@@ -85,9 +85,9 @@
 
         <a
           href="{{ url_for('clientes.listar_clientes_view') }}"
-          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if '/clientes' in request.path and '/prestamos' not in request.path %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
+          class="nav-item px-4 py-2 rounded-lg text-white transition-colors {% if request.path == '/buscar-cliente' %}bg-blue-800 font-semibold{% else %}hover:bg-blue-500{% endif %}"
         >
-          <span class="flex items-center">
+          <span class="flex items-center text-gray-100">
             <svg
               class="w-5 h-5 mr-2"
               fill="none"

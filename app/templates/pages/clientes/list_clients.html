@@ -26,7 +26,7 @@
     <div class="divide-y divide-gray-200">
       {% for c in clientes %}
       <a
-        href="{{ url_for('prestamos.list_prestamos_por_cliente', cliente_id=c.id) }}"
+        href="{{ url_for('prestamos_view.ver_prestamos_cliente_view', cliente_id=c.id) }}"
         class="block px-6 py-4 hover:bg-gray-50 transition-colors"
       >
         <div class="flex items-center justify-between">
