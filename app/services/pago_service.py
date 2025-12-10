@@ -1,6 +1,5 @@
-import logging
 from typing import Tuple, Optional, Dict, Any, List
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from app.common.extensions import db
 from app.models import Pago, Cuota, Prestamo, EstadoPrestamoEnum, MedioPagoEnum
@@ -14,6 +13,8 @@ from app.crud.pago_crud import (
 )
 from app.services.mora_service import MoraService
 from app.services.caja_service import CajaService
+
+import logging
 
 logger = logging.getLogger(__name__)
     
@@ -121,20 +122,34 @@ class PagoService:
             except KeyError:
                 return None, f"Medio de pago inválido: {medio_pago}", 400
 
+            # Obtener cuota
+            cuota = Cuota.query.get(cuota_id)
+            if not cuota:
+                return None, "Cuota no encontrada", 404
+
+            if cuota.prestamo_id != prestamo_id:
+                return None, "La cuota no pertenece al préstamo especificado", 400
+
             fecha_pago = fecha_pago or date.today()
 
-            # Verificar que la caja esté abierta para la fecha del pago
-            if not CajaService.esta_caja_abierta(fecha_pago):
-                return None, f'No se puede registrar el pago: la caja está cerrada para la fecha {fecha_pago.isoformat()}', 400
+            # Actualizar mora ANTES del pago para tener el valor correcto
+            MoraService.actualizar_mora_cuota(cuota_id)
+            
+            # Refrescar la cuota para obtener la mora actualizada
+            db.session.refresh(cuota)
 
             logger.info(f"Registrando pago para préstamo {prestamo_id} con fecha: {fecha_pago}")
 
-            # Interpretar monto_pagado como monto entregado por el cliente
-            monto_entregado = Decimal(str(monto_pagado))
+            # Determinar si es pago en efectivo para redondeo
+            es_efectivo = medio_pago == 'EFECTIVO'
+            monto_contable = monto_pagado
             ajuste_redondeo = Decimal('0.00')
+            
+            if es_efectivo:
+                monto_redondeado = PagoService.aplicar_redondeo(monto_pagado)
+                ajuste_redondeo = monto_redondeado - monto_contable
+                monto_pagado = monto_redondeado
 
-            # Obtener cuotas pendientes para calcular la deuda real
-            MoraService.actualizar_mora_prestamo(prestamo_id)
             cuotas_pendientes = PagoService.obtener_cuotas_pendientes_ordenadas(prestamo_id)
             if not cuotas_pendientes:
                 return None, "No hay cuotas pendientes para este préstamo", 400
@@ -142,6 +157,36 @@ class PagoService:
             # Monto total de deuda a aplicar (saldo + mora)
             total_deuda = sum((Decimal(c.saldo_pendiente or 0) + Decimal(c.mora_acumulada or 0)) for c in cuotas_pendientes)
 
+
+            # Calcular deuda de la cuota seleccionada
+            deuda_cuota = Decimal(cuota.saldo_pendiente or 0) + Decimal(cuota.mora_acumulada or 0)
+            
+            # Validar que monto_pagado no exceda la deuda de la cuota
+            if Decimal(str(monto_pagado)) > deuda_cuota:
+                return None, f"El monto a pagar (S/ {monto_pagado}) no puede ser mayor a la deuda de la cuota (S/ {deuda_cuota:.2f})", 400
+            
+            # Validar monto_dado si es efectivo
+            if medio_pago_enum == MedioPagoEnum.EFECTIVO:
+                if monto_dado is None or monto_dado <= 0:
+                    return None, "Para pagos en efectivo debe ingresar el monto dado (billetes entregados)", 400
+                
+                # Validar que monto_dado >= monto_pagado
+                if monto_dado < Decimal(str(monto_pagado)):
+                    return None, f"El monto dado (S/ {monto_dado}) debe ser mayor o igual al monto a pagar (S/ {monto_pagado})", 400
+                
+                # Validar que la diferencia no sea mayor a 200 soles
+                diferencia = monto_dado - Decimal(str(monto_pagado))
+                if diferencia > 200:
+                    return None, f"La diferencia entre monto dado y monto a pagar no puede ser mayor a S/ 200.00 (actual: S/ {diferencia:.2f})", 400
+                
+                # Calcular vuelto
+                vuelto = monto_dado - Decimal(str(monto_pagado))
+            
+            # Interpretar monto_pagado como monto entregado por el cliente
+            monto_entregado = Decimal(str(monto_pagado))
+            ajuste_redondeo = Decimal('0.00')
+            monto_contable = monto_entregado
+            
             # Si es pago en EFECTIVO: aplicar redondeo a lo que se registrará en caja
             if medio_pago_enum == MedioPagoEnum.EFECTIVO:
                 # Aplicar redondeo al monto que se registrará en caja (según Ley)
@@ -159,18 +204,12 @@ class PagoService:
                 monto_pagado_registrado = monto_entregado
                 monto_contable = min(monto_pagado_registrado, total_deuda)
 
-            # → Verificar que si hay mora pendiente, el monto debe cubrirla completamente
-            primera_cuota_con_mora = next((c for c in cuotas_pendientes if c.mora_acumulada > 0), None)
-            if primera_cuota_con_mora and primera_cuota_con_mora.mora_acumulada > 0:
-                if monto_contable < primera_cuota_con_mora.mora_acumulada:
-                    return None, (
-                        f"La cuota {primera_cuota_con_mora.numero_cuota} tiene mora de S/ {primera_cuota_con_mora.mora_acumulada:.2f}. "
-                        f"Debe pagar la mora completa antes de abonar a la cuota. Monto mínimo: S/ {primera_cuota_con_mora.mora_acumulada:.2f}"
-                    ), 400
+            #Guardar saldo antes del pago para detectar si es pago parcial
+            saldo_antes_pago = cuota.saldo_pendiente
 
-            # Aplicar el pago con priorización
-            # IMPORTANTE: Usar monto_contable (lo que se aplicará a la deuda) para distribuir a cuotas
-            # El ajuste_redondeo NO se distribuye, queda solo registrado para cuadre de caja
+
+            # Aplicar pago a la cuota seleccionada únicamente
+            # Sin restricción de mora mínima: cualquier monto se acepta
             monto_restante = monto_contable
             detalles_pago = []
             monto_mora_total = Decimal('0.00')
@@ -187,6 +226,17 @@ class PagoService:
                     detalles_pago
                 )
                 monto_mora_total += mora_pagada
+
+            # REGLA DE NEGOCIO: Si es pago parcial, congelar mora del período actual
+            # Un pago parcial es cuando después del pago aún queda saldo pendiente
+            es_pago_parcial = cuota.saldo_pendiente > 0
+            if es_pago_parcial:
+                MoraService.congelar_mora_por_pago_parcial(cuota.cuota_id)
+                logger.info(
+                    f"Pago parcial detectado en cuota {cuota.cuota_id}: "
+                    f"Saldo antes={saldo_antes_pago}, Saldo después={cuota.saldo_pendiente}. "
+                    f"Mora del período actual congelada."
+                )
 
             # Registrar el pago principal
             nuevo_pago, error_pago = registrar_pago(
@@ -227,8 +277,16 @@ class PagoService:
                 'fecha_pago': fecha_pago.isoformat(),
                 'medio_pago': medio_pago_enum.value,
                 'detalles_aplicacion': detalles_pago,
-                'comprobante_referencia': comprobante_referencia
+                'comprobante_referencia': comprobante_referencia,
+                'es_pago_parcial': es_pago_parcial
             }
+            
+              # Agregar información de mora congelada si aplica
+            if es_pago_parcial:
+                respuesta['mora_info'] = {
+                    'mora_congelada': True,
+                    'mensaje': 'Pago parcial registrado. La mora del período actual ha sido congelada hasta la próxima fecha de vencimiento.'
+                }
 
             # Agregar información de redondeo si aplica
             if medio_pago_enum == MedioPagoEnum.EFECTIVO and ajuste_redondeo != 0:
@@ -241,13 +299,14 @@ class PagoService:
                     'mensaje': f'{"Ahorro" if ajuste_redondeo < 0 else "Diferencia"} de S/ {abs(ajuste_redondeo):.2f} {"a favor del cliente" if ajuste_redondeo < 0 else "a favor del negocio"}'
                 }
 
-            # Si el cliente entregó más dinero que lo registrado en caja, registrar el vuelto como egreso
+
+             # Si el cliente entregó más dinero que lo registrado en caja, registrar el vuelto como egreso
             try:
                 from app.services.caja_service import CajaService
-                vuelto = monto_entregado - monto_pagado_registrado
-                if vuelto and vuelto > 0:
-                    CajaService.registrar_egreso(vuelto, f'Vuelto por pago #{nuevo_pago.pago_id}', pago_id=nuevo_pago.pago_id)
-                    respuesta['vuelto_registrado'] = float(vuelto)
+                vuelto_caja = monto_entregado - monto_pagado_registrado
+                if vuelto_caja and vuelto_caja > 0:
+                    CajaService.registrar_egreso(vuelto_caja, f'Vuelto por pago #{nuevo_pago.pago_id}', pago_id=nuevo_pago.pago_id)
+                    respuesta['vuelto_registrado'] = float(vuelto_caja)
             except Exception as exc:
                 logger.error(f"Error registrando vuelto: {exc}", exc_info=True)
 
@@ -263,7 +322,8 @@ class PagoService:
 
             logger.info(
                 f"Pago registrado: Préstamo={prestamo_id}, Caja={monto_pagado_registrado}, Mora={monto_mora_total}, "
-                f"Ajuste redondeo={ajuste_redondeo}, Detalles={len(detalles_pago)} movimientos"
+                f"Ajuste redondeo={ajuste_redondeo}, Detalles={len(detalles_pago)} movimientos, "
+                f"Pago parcial={es_pago_parcial}"
             )
 
             return respuesta, None, 201
