@@ -3,7 +3,7 @@ set -e
 
 echo "Iniciando aplicación Flask..."
 
-# Esperar a que PostgreSQL esté listo usando Python y psycopg2
+# Esperar a que PostgreSQL esté listo usando Python y psycopg2ss
 echo "Esperando a PostgreSQL..."
 python << END
 import sys
