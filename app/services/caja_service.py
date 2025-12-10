@@ -7,6 +7,8 @@ from sqlalchemy import func, and_
 from app.common.extensions import db
 from app.models.pago import Pago, MedioPagoEnum
 from app.models.prestamo import Prestamo
+from app.models.egreso import Egreso
+from app.models.apertura_caja import AperturaCaja
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,9 @@ class CajaService:
                 total_capital_general += (capital or Decimal('0'))
                 total_ajuste_general += (ajuste or Decimal('0'))
                 cantidad_total += cantidad
-            
+            # Total egresos del día
+            total_egresos = db.session.query(func.sum(Egreso.monto)).filter(func.date(Egreso.fecha_registro) == fecha).scalar() or Decimal('0')
+
             return {
                 'fecha': fecha.isoformat(),
                 'detalle_por_medio': detalle_medios,
@@ -66,6 +70,7 @@ class CajaService:
                     'total_mora_cobrada': float(total_mora_general),
                     'total_capital_cobrado': float(total_capital_general),
                     'total_ajuste_redondeo': float(total_ajuste_general),
+                    'total_egresos': float(total_egresos),
                     'nota_ajuste': 'Positivo = ganancia del negocio, Negativo = condonación al cliente'
                 }
             }
@@ -253,4 +258,78 @@ class CajaService:
             
         except Exception as exc:
             logger.error(f"Error en obtener_estadisticas_caja: {exc}", exc_info=True)
+            raise
+
+    @staticmethod
+    def registrar_egreso(monto: Decimal, concepto: str, pago_id: Optional[int] = None, usuario_id: Optional[int] = None) -> Dict:
+        """Registra un egreso en la caja (por ejemplo: vuelto entregado al cliente).
+
+        Args:
+            monto: Monto del egreso (positivo)
+            concepto: Concepto/descripción del egreso
+            pago_id: (opcional) pago asociado al egreso
+            usuario_id: (opcional) usuario que registró el egreso
+
+        Returns:
+            Diccionario con el egreso registrado
+        """
+        try:
+            from app.models import Egreso
+
+            if monto <= 0:
+                raise ValueError('El monto del egreso debe ser mayor que cero')
+
+            nuevo = Egreso(
+                pago_id=pago_id,
+                monto=monto,
+                concepto=concepto,
+                usuario_id=usuario_id
+            )
+            db.session.add(nuevo)
+            db.session.commit()
+
+            logger.info(f"Egreso registrado: ID={nuevo.egreso_id}, Monto={monto}, Pago={pago_id}")
+
+            return nuevo.to_dict()
+
+        except Exception as exc:
+            db.session.rollback()
+            logger.error(f"Error en registrar_egreso: {exc}", exc_info=True)
+            raise
+
+    @staticmethod
+    def registrar_apertura(fecha: date, monto: Decimal, usuario_id: Optional[int] = None) -> Dict:
+        """Registra la apertura de caja para una fecha determinada.
+
+        Si ya existe una apertura para la fecha, la actualiza con el nuevo monto.
+        """
+        try:
+            if monto < Decimal('0'):
+                raise ValueError('El monto de apertura no puede ser negativo')
+
+            apertura = db.session.query(AperturaCaja).filter(AperturaCaja.fecha == fecha).first()
+            if apertura:
+                apertura.monto = monto
+                apertura.usuario_id = usuario_id
+                apertura.fecha_registro = datetime.utcnow()
+            else:
+                apertura = AperturaCaja(fecha=fecha, monto=monto, usuario_id=usuario_id)
+                db.session.add(apertura)
+
+            db.session.commit()
+            return apertura.to_dict()
+
+        except Exception as exc:
+            db.session.rollback()
+            logger.error(f"Error en registrar_apertura: {exc}", exc_info=True)
+            raise
+
+    @staticmethod
+    def obtener_apertura_por_fecha(fecha: date) -> Optional[Dict]:
+        """Devuelve la apertura registrada para la fecha, o None si no existe."""
+        try:
+            apertura = db.session.query(AperturaCaja).filter(AperturaCaja.fecha == fecha).first()
+            return apertura.to_dict() if apertura else None
+        except Exception as exc:
+            logger.error(f"Error en obtener_apertura_por_fecha: {exc}", exc_info=True)
             raise

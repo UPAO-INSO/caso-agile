@@ -2,7 +2,7 @@
 
 import logging
 from datetime import date, datetime
-from flask import jsonify, request, render_template
+from flask import jsonify, request, render_template, session
 from app.common.auth_decorators import login_required
 from app.routes import caja_bp
 from app.services.caja_service import CajaService
@@ -227,3 +227,89 @@ def debug_todos_pagos():
     except Exception as exc:
         logger.error(f"Error en debug_todos_pagos: {exc}", exc_info=True)
         return jsonify({'error': str(exc)}), 500
+
+
+@caja_bp.route('/egreso', methods=['POST'])
+@login_required
+def registrar_egreso_route():
+    """Registra un egreso (por ejemplo: vuelto entregado al cliente).
+    Espera JSON: { monto: number, concepto: string, pago_id?: int }
+    """
+    try:
+        data = request.get_json() or {}
+        monto = data.get('monto')
+        concepto = data.get('concepto')
+        pago_id = data.get('pago_id')
+
+        if monto is None or concepto is None:
+            return jsonify({'error': 'Debe proporcionar monto y concepto'}), 400
+
+        try:
+            from decimal import Decimal
+            monto_dec = Decimal(str(monto))
+        except Exception:
+            return jsonify({'error': 'Monto inválido'}), 400
+
+        usuario_id = session.get('usuario_id')
+
+        egreso = CajaService.registrar_egreso(monto_dec, concepto, pago_id=pago_id, usuario_id=usuario_id)
+        return jsonify({'success': True, 'egreso': egreso}), 201
+
+    except Exception as exc:
+        logger.error(f"Error en registrar_egreso_route: {exc}", exc_info=True)
+        return jsonify({'error': 'Error interno al registrar egreso'}), 500
+
+
+@caja_bp.route('/apertura', methods=['GET'])
+@login_required
+def obtener_apertura():
+    """Obtiene la apertura de caja para una fecha dada. Query param: fecha=YYYY-MM-DD"""
+    try:
+        fecha_str = request.args.get('fecha')
+        if not fecha_str:
+            fecha = date.today()
+        else:
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+
+        apertura = CajaService.obtener_apertura_por_fecha(fecha)
+        return jsonify({'apertura': apertura}), 200
+
+    except Exception as exc:
+        logger.error(f"Error en obtener_apertura: {exc}", exc_info=True)
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+
+@caja_bp.route('/apertura', methods=['POST'])
+@login_required
+def registrar_apertura_route():
+    """Registra o actualiza la apertura de caja. JSON: { fecha: 'YYYY-MM-DD', monto: number }"""
+    try:
+        data = request.get_json() or {}
+        fecha_str = data.get('fecha')
+        monto = data.get('monto')
+
+        if not fecha_str or monto is None:
+            return jsonify({'error': 'Debe proporcionar fecha y monto'}), 400
+
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+
+        try:
+            from decimal import Decimal
+            monto_dec = Decimal(str(monto))
+        except Exception:
+            return jsonify({'error': 'Monto inválido'}), 400
+
+        usuario_id = session.get('usuario_id')
+
+        apertura = CajaService.registrar_apertura(fecha, monto_dec, usuario_id=usuario_id)
+        return jsonify({'success': True, 'apertura': apertura}), 201
+
+    except Exception as exc:
+        logger.error(f"Error en registrar_apertura_route: {exc}", exc_info=True)
+        return jsonify({'error': 'Error interno al registrar apertura'}), 500

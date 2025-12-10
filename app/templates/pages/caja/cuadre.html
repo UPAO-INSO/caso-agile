@@ -48,6 +48,7 @@
                 </div>
                 <p class="text-3xl font-bold text-gray-700" id="saldo_inicial">S/ 0.00</p>
                 <p class="text-xs text-gray-500 mt-1">Balance anterior</p>
+                <p class="mt-3"><button onclick="editarApertura()" class="text-sm text-blue-600 hover:underline">Editar apertura</button></p>
             </div>
 
             <!-- Total Ingresos -->
@@ -66,7 +67,9 @@
                     <span class="text-sm font-medium text-red-700">Total Egresos</span>
                     <i class="fas fa-arrow-trend-down text-red-500 text-xl"></i>
                 </div>
-                <p class="text-3xl font-bold text-red-700" id="total_egresos">S/ 0.00</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-3xl font-bold text-red-700" id="total_egresos">S/ 0.00</p>
+                </div>
                 <p class="text-xs text-red-600 mt-1">Gastos del día</p>
             </div>
 
@@ -311,6 +314,11 @@
         const fecha = document.getElementById('fecha_cuadre').value;
         
         try {
+            // Cargar apertura primero
+            const aperturaResponse = await fetch(`/caja/apertura?fecha=${fecha}`);
+            const aperturaJson = await aperturaResponse.json();
+            const apertura = aperturaJson.apertura;
+
             // Cargar resumen diario
             const resumenResponse = await fetch(`/caja/resumen/diario?fecha=${fecha}`);
             const resumenData = await resumenResponse.json();
@@ -320,8 +328,7 @@
             const detalleData = await detalleResponse.json();
             
             datosActuales = { resumen: resumenData, movimientos: detalleData };
-            
-            mostrarResumen(resumenData);
+            mostrarResumen(resumenData, apertura);
             mostrarMovimientos(detalleData);
             
         } catch (error) {
@@ -330,7 +337,7 @@
         }
     }
 
-    function mostrarResumen(data) {
+    function mostrarResumen(data, apertura) {
         const resumen = data.resumen;
         
         // Total Ingresos
@@ -339,9 +346,13 @@
         document.getElementById('cantidad_ingresos').textContent = 
             `${resumen.cantidad_total_pagos} movimiento${resumen.cantidad_total_pagos !== 1 ? 's' : ''}`;
         
-        // Saldo Esperado (inicialmente igual a ingresos, si no hay saldo inicial)
-        document.getElementById('saldo_esperado').textContent = 
-            `S/ ${resumen.total_recaudado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        // Saldo Inicial
+        const montoInicial = apertura && apertura.monto ? apertura.monto : 0;
+        document.getElementById('saldo_inicial').textContent = `S/ ${montoInicial.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Saldo Esperado = Inicial + Ingresos - Egresos
+        const esperado = (montoInicial || 0) + (resumen.total_recaudado || 0) - (resumen.total_egresos || 0);
+        document.getElementById('saldo_esperado').textContent = `S/ ${esperado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
         // Mostrar categorías
         const categorias = {
@@ -409,6 +420,36 @@
             document.getElementById('nota_ajuste_texto').textContent = textoAjuste;
         } else {
             document.getElementById('nota_ajuste_container').style.display = 'none';
+        }
+    }
+
+    async function editarApertura() {
+        const fecha = document.getElementById('fecha_cuadre').value;
+        const current = prompt('Ingrese el monto de apertura para ' + fecha + ' (formato sin S/):', '0.00');
+        if (current === null) return; // cancel
+
+        const monto = parseFloat(current);
+        if (isNaN(monto)) {
+            alert('Monto inválido');
+            return;
+        }
+
+        try {
+            const resp = await fetch('/caja/apertura', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha: fecha, monto: monto })
+            });
+            const j = await resp.json();
+            if (resp.ok) {
+                alert('Apertura guardada');
+                cargarDatosCaja();
+            } else {
+                alert(j.error || 'Error al guardar apertura');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de red');
         }
     }
 
@@ -543,6 +584,8 @@
     function imprimirReporte() {
         window.print();
     }
+
+    // Manual egreso registration removed: egresos (vueltos) are recorded automatically
 </script>
 
 <style>

@@ -71,6 +71,11 @@
                             class="w-full flex items-center justify-center px-4 py-3 border-2 border-blue-600 text-base font-medium rounded-lg text-blue-600 bg-transparent hover:bg-blue-50 md:text-lg transition-colors">
                         <i class="fa-solid fa-envelope mr-2"></i> Enviar comprobante a {{ client_email }}
                     </button>
+                <div class="mt-4">
+                    <button onclick="abrirModalVuelto({{ datos_pago.pago_id }})" class="w-full flex items-center justify-center px-4 py-3 border border-red-600 text-base font-medium rounded-lg text-red-600 bg-transparent hover:bg-red-50 md:text-lg transition-colors">
+                        <i class="fa-solid fa-money-bill-transfer mr-2"></i> Registrar Vuelto (Egreso)
+                    </button>
+                </div>
             </div>
 
             <div class="mt-8 pt-6 border-t border-gray-100">
@@ -208,6 +213,15 @@
                                 <p class="text-sm font-semibold text-blue-800">Saldo Restante</p>
                                 <p class="text-2xl font-bold text-red-600" id="display_saldo">S/ 0.00</p>
                             </div>
+
+                            <!-- Vuelto estimado (solo para efectivo cuando cliente entrega más) -->
+                            <div class="flex items-center justify-between pt-2" id="vuelto_container" style="display: none;">
+                                <p class="text-sm font-semibold text-gray-700">Vuelto estimado</p>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-gray-800" id="display_vuelto">S/ 0.00</p>
+                                    <p class="text-xs text-gray-500" id="display_vuelto_registrado" style="display:none;">(registrado en caja: S/ 0.00)</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -341,8 +355,8 @@
                 // Verificar si se está pagando el monto COMPLETO de la cuota
                 const esPagoCompleto = Math.abs(montoIngresado - totalAPagar) < 0.01;
 
-                // Calcular redondeo SOLO si es EFECTIVO y PAGO COMPLETO
-                if (currentPaymentMethod === 'EFECTIVO' && esPagoCompleto && montoIngresado > 0) {
+                // Si es EFECTIVO, calcular redondeo para mostrar información y calcular vuelto estimado
+                if (currentPaymentMethod === 'EFECTIVO' && montoIngresado > 0) {
                     redondeoData = await calcularRedondeo(montoIngresado, 'EFECTIVO');
                     
                     if (redondeoData && redondeoData.aplica_redondeo && Math.abs(redondeoData.ajuste) > 0.001) {
@@ -375,6 +389,27 @@
                     let saldoRestante = totalAPagar - montoIngresado;
                     if (saldoRestante < 0.01) saldoRestante = 0;
                     displaySaldo.textContent = 'S/ ' + saldoRestante.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+
+                // Mostrar vuelto estimado si el cliente entregó más que la deuda
+                const vueltoContainer = document.getElementById('vuelto_container');
+                const displayVuelto = document.getElementById('display_vuelto');
+                const displayVueltoReg = document.getElementById('display_vuelto_registrado');
+
+                if (currentPaymentMethod === 'EFECTIVO' && montoIngresado > totalAPagar) {
+                    const vueltoSimple = montoIngresado - totalAPagar;
+                    displayVuelto.textContent = 'S/ ' + vueltoSimple.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    // Mostrar cuánto sería el vuelto según lo que se registrará en caja (si aplica redondeo)
+                    if (redondeoData && typeof redondeoData.monto_redondeado === 'number') {
+                        const vueltoRegistrado = montoIngresado - redondeoData.monto_redondeado;
+                        displayVueltoReg.style.display = 'block';
+                        displayVueltoReg.textContent = '(registrado en caja: S/ ' + (vueltoRegistrado > 0 ? vueltoRegistrado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00') + ')';
+                    } else {
+                        displayVueltoReg.style.display = 'none';
+                    }
+                    vueltoContainer.style.display = 'flex';
+                } else {
+                    vueltoContainer.style.display = 'none';
                 }
             }
 
@@ -431,6 +466,56 @@
             document.getElementById('card_number')?.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').match(/.{1,4}/g)?.join(' ') || e.target.value.replace(/\D/g, ''); });
             document.getElementById('card_expiry')?.addEventListener('input', e => { let v = e.target.value.replace(/\D/g, ''); if (v.length >= 3) v = v.substring(0, 2) + '/' + v.substring(2, 4); e.target.value = v; });
         });
+    </script>
+    <script>
+        function abrirModalVuelto(pagoId) {
+            const existing = document.getElementById('modal_vuelto');
+            if (existing) { existing.classList.remove('hidden'); return; }
+
+            const modal = document.createElement('div');
+            modal.id = 'modal_vuelto';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+                    <h3 class="text-lg font-bold mb-2">Registrar Vuelto (Egreso)</h3>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-700">Monto Vuelto (S/)</label>
+                        <input id="vuelto_monto" type="number" step="0.01" class="w-full rounded border px-3 py-2 mt-1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-700">Concepto</label>
+                        <input id="vuelto_concepto" type="text" class="w-full rounded border px-3 py-2 mt-1" value="Vuelto por pago #${pagoId}" />
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button onclick="document.getElementById('modal_vuelto')?.remove()" class="px-4 py-2 bg-gray-200 rounded">Cancelar</button>
+                        <button onclick="enviarVuelto(${pagoId})" class="px-4 py-2 bg-red-600 text-white rounded">Registrar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function enviarVuelto(pagoId) {
+            const monto = parseFloat(document.getElementById('vuelto_monto').value) || 0;
+            const concepto = document.getElementById('vuelto_concepto').value || '';
+            if (monto <= 0 || concepto.trim() === '') { alert('Ingrese monto y concepto válidos'); return; }
+
+            try {
+                const resp = await fetch('/caja/egreso', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monto: monto, concepto: concepto, pago_id: pagoId })
+                });
+                if (resp.ok) {
+                    alert('Vuelto registrado correctamente');
+                    document.getElementById('modal_vuelto')?.remove();
+                } else {
+                    const err = await resp.json();
+                    alert('Error: ' + (err.error || JSON.stringify(err)));
+                }
+            } catch (e) {
+                console.error(e); alert('Error registrando vuelto');
+            }
+        }
     </script>
     
     {% endif %}
