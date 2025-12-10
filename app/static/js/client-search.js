@@ -159,6 +159,8 @@ async function consultarYRegistrarCliente(dni) {
   }
 }
 
+function fetchPrestamoActivo(clienteId) {}
+
 /**
  * Mostrar información del cliente en la interfaz
  */
@@ -774,7 +776,9 @@ async function crearNuevoPrestamo(event) {
         error = await response.json();
       } catch (e) {
         // Si no se puede parsear el JSON, crear un objeto de error genérico
-        error = { mensaje: `Error HTTP ${response.status}: ${response.statusText}` };
+        error = {
+          mensaje: `Error HTTP ${response.status}: ${response.statusText}`,
+        };
       }
 
       console.error("Error del servidor:", error);
@@ -792,18 +796,18 @@ async function crearNuevoPrestamo(event) {
         );
       } else if (error.errors) {
         // Errores de validación de Pydantic
-        const erroresList = error.errors.map(e => 
-          `- ${e.loc.join('.')}: ${e.msg}`
-        ).join('\n');
-        showAlert(
-          `Errores de validación:\n\n${erroresList}`,
-          "error"
-        );
+        const erroresList = error.errors
+          .map((e) => `- ${e.loc.join(".")}: ${e.msg}`)
+          .join("\n");
+        showAlert(`Errores de validación:\n\n${erroresList}`, "error");
       } else {
         // Otros errores
         showAlert(
           `ERROR: ${
-            error.error || error.mensaje || error.message || "Error al crear el préstamo"
+            error.error ||
+            error.mensaje ||
+            error.message ||
+            "Error al crear el préstamo"
           }`,
           "error"
         );

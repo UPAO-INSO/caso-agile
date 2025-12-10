@@ -144,7 +144,7 @@ def verificar_prestamo_activo_api(cliente_id):
     
     return jsonify({
         'tiene_prestamo_activo': prestamo is not None,
-        'prestamo_id': prestamo.prestamo_id if prestamo else None
+        'prestamo': prestamo.to_dict() if prestamo else None
     }), 200
 
 
