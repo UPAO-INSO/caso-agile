@@ -47,6 +47,9 @@ class Pago(db.Model):
     
     monto_mora = db.Column(db.Numeric(12, 2), default=0.00, nullable=False)
     fecha_pago = db.Column(db.Date, nullable=False)
+    hora_pago = db.Column(db.Time, nullable=True, comment='Hora en que se realizó el pago')
+    monto_dado = db.Column(db.Numeric(12, 2), nullable=True, comment='Monto entregado por el cliente (billetes)')
+    vuelto = db.Column(db.Numeric(12, 2), default=0.00, nullable=False, comment='Vuelto entregado al cliente')
     metodo_pago = db.Column(SQLAlchemyEnum(MetodoPagoEnum), nullable=False, comment='Método de pago: EFECTIVO, TARJETA, TRANSFERENCIA')
     medio_pago = db.Column(SQLAlchemyEnum(MedioPagoEnum), nullable=False)
     comprobante_referencia = db.Column(db.String(100), nullable=True)

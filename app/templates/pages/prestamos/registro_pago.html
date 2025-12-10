@@ -90,7 +90,7 @@
             <p class="text-gray-600">Ingrese los detalles a continuación para registrar un nuevo pago.</p>
         </div>
 
-        <form method="POST" action="" class="flex flex-col gap-8">
+        <form method="POST" id="form-pago" class="flex flex-col gap-8">
             <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Información del Préstamo</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -104,10 +104,14 @@
             <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Detalles del Pago</h2>
                 <div class="flex flex-col gap-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-medium text-gray-700">Fecha del Pago</label>
                             <input class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" type="date" name="fecha_pago" value="{{ hoy }}"/>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-medium text-gray-700">Hora del Pago</label>
+                            <input id="input_hora" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" type="time" name="hora_pago" required/>
                         </div>
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-medium text-gray-700">Cuota a Pagar</label>
@@ -138,6 +142,20 @@
                             <p class="text-xs text-gray-500 mt-1">
                                 <i class="fa-solid fa-info-circle mr-1"></i>
                                 <span id="redondeo_text">Para efectivo: pagos parciales en múltiplos de S/ 0.10</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Monto Dado (solo para EFECTIVO) -->
+                    <div id="monto_dado_container" class="grid grid-cols-1 sm:grid-cols-1 gap-6">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-medium text-gray-700">Monto Dado (Billetes entregados) S/</label>
+                            <div class="relative">
+                                <input id="input_monto_dado" name="monto_dado" type="number" step="0.10" min="0" class="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" placeholder="0.00" />
+                            </div>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <i class="fa-solid fa-hand-holding-dollar mr-1"></i>
+                                Ingrese la cantidad de billetes que el cliente entrega (debe ser mayor o igual al monto a pagar)
                             </p>
                         </div>
                     </div>
@@ -184,41 +202,52 @@
                     </div>
 
                     <div class="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">Resumen del Pago</h3>
                         <div class="grid grid-cols-1 gap-4">
-                            <!-- Monto Efectivo -->
+                            <!-- Monto Ingresado (Monto Dado para efectivo) -->
                             <div class="flex items-center justify-between">
-                                <p class="text-sm font-medium text-gray-700">Monto Efectivo</p>
+                                <p class="text-sm font-medium text-gray-700" id="label_monto_ingresado">Monto Ingresado</p>
                                 <p class="text-2xl font-bold text-blue-800" id="display_monto_ingresado">S/ 0.00</p>
                             </div>
                             <div class="border-t border-blue-300"></div>
-                            <!-- Monto de la Cuota -->
+                            
+                            <!-- Monto a Pagar (lo que quiere pagar) -->
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium text-gray-700">Monto a Pagar</p>
+                                <p class="text-2xl font-bold text-gray-800" id="display_monto_a_pagar">S/ 0.00</p>
+                            </div>
+                            <div class="border-t border-blue-300"></div>
+                            
+                            <!-- Monto de la Cuota (redondeado para efectivo en pago completo) -->
                             <div class="flex items-center justify-between">
                                 <p class="text-sm font-medium text-gray-700">Monto de la Cuota</p>
-                                <p class="text-2xl font-bold text-gray-800" id="display_monto_cuota">S/ 0.00</p>
+                                <p class="text-2xl font-bold text-purple-800" id="display_monto_cuota">S/ 0.00</p>
                             </div>
+                            
+                            <!-- Ajuste/Condonación (solo para efectivo en pago completo) -->
+                            <div id="ajuste_container" class="hidden">
+                                <div class="border-t border-blue-300"></div>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-gray-700" id="ajuste_label">Ajuste/Condonación</p>
+                                    <p class="text-2xl font-bold" id="display_ajuste">S/ 0.00</p>
+                                </div>
+                            </div>
+                            
                             <div class="border-t border-blue-300"></div>
-                            <!-- Ajuste -->
-                            <div class="flex items-center justify-between">
-                                <p class="text-sm font-medium text-gray-700">Ajuste</p>
-                                <p class="text-2xl font-bold text-blue-600" id="display_ajuste">S/ 0.00</p>
-                            </div>
-                            <div class="border-t border-blue-300"></div>
-                            <!-- Vuelto -->
-                            <div class="flex items-center justify-between" id="vuelto_container" style="display: none;">
-                                <p class="text-sm font-medium text-gray-700">Vuelto</p>
-                                <p class="text-2xl font-bold text-amber-700" id="display_vuelto">S/ 0.00</p>
-                            </div>
-                            <!-- Saldo Restante -->
+                            
+                            <!-- Saldo Restante (Cuota - Monto a pagar) -->
                             <div class="flex items-center justify-between">
                                 <p class="text-sm font-medium text-gray-700">Saldo Restante</p>
                                 <p class="text-2xl font-bold text-red-600" id="display_saldo_restante">S/ 0.00</p>
                             </div>
-                        </div>
                             
-                            <!-- Mensaje si no hay vuelto para efectivo -->
-                            <div class="flex items-center justify-between pt-2" id="sin_vuelto_container" style="display: none; padding-top: 12px; border-top: 2px solid #d1d5db;">
-                                <p class="text-sm font-medium text-gray-600">Pago Exacto</p>
-                                <p class="text-sm text-green-600 font-semibold">✓ Sin vuelto</p>
+                            <!-- Vuelto (Monto dado - Monto a pagar) -->
+                            <div id="vuelto_container" class="hidden">
+                                <div class="border-t border-blue-300"></div>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-gray-700">Vuelto</p>
+                                    <p class="text-2xl font-bold text-green-700" id="display_vuelto">S/ 0.00</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -238,6 +267,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             const selectCuota = document.getElementById('select_cuota');
             const inputMonto = document.getElementById('input_monto');
+            const inputMontoDado = document.getElementById('input_monto_dado');
+            const inputHora = document.getElementById('input_hora');
+            const montoDadoContainer = document.getElementById('monto_dado_container');
             const redondeoText = document.getElementById('redondeo_text');
             const paymentRadios = document.querySelectorAll('.payment-method-radio');
             const cardContainer = document.getElementById('card-form-container');
@@ -245,16 +277,27 @@
             const btnSubmitText = document.getElementById('btn-text');
             const btnSubmitIcon = document.getElementById('btn-icon');
 
+            const labelMontoIngresado = document.getElementById('label_monto_ingresado');
             const displayMontoIngresado = document.getElementById('display_monto_ingresado');
+            const displayMontoAPagar = document.getElementById('display_monto_a_pagar');
             const displayMontoCuota = document.getElementById('display_monto_cuota');
-            const vueltoContainer = document.getElementById('vuelto_container');
-            const sinVueltoContainer = document.getElementById('sin_vuelto_container');
-            const displayVuelto = document.getElementById('display_vuelto');
+            const ajusteContainer = document.getElementById('ajuste_container');
+            const ajusteLabel = document.getElementById('ajuste_label');
             const displayAjuste = document.getElementById('display_ajuste');
+            const vueltoContainer = document.getElementById('vuelto_container');
+            const displayVuelto = document.getElementById('display_vuelto');
             const displaySaldoRestante = document.getElementById('display_saldo_restante');
 
             let currentPaymentMethod = 'EFECTIVO';
             let montoTotalCuota = 0; // Monto total de la cuota (saldo + mora)
+            
+            // Establecer hora actual
+            if (inputHora) {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                inputHora.value = `${hours}:${minutes}`;
+            }
 
             function actualizarInputConCuota() {
                 const selectedOption = selectCuota.options[selectCuota.selectedIndex];
@@ -283,76 +326,115 @@
                 actualizarDisplays();
             }
 
-            // Nueva función: actualiza los valores visibles en el recuadro celeste
-            function actualizarDisplays() {
-                const valorIngresado = parseFloat(inputMonto.value) || 0;
+            // Nueva función: actualiza los valores visibles según nueva lógica
+            async function actualizarDisplays() {
+                const montoAPagar = parseFloat(inputMonto.value) || 0;
+                const montoDado = parseFloat(inputMontoDado.value) || 0;
+                const esEfectivo = currentPaymentMethod === 'EFECTIVO';
+                const esPagoCompleto = Math.abs(montoAPagar - montoTotalCuota) < 0.01;
+                
                 const fmt = v => 'S/ ' + Number(v || 0).toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2});
-                if (displayMontoIngresado) displayMontoIngresado.textContent = fmt(valorIngresado);
-                if (displayMontoCuota) displayMontoCuota.textContent = fmt(montoTotalCuota);
-                // Ajuste: solo las unidades de la parte decimal que no forman parte del múltiplo de S/ 0.10
-                // Ej: 84.32 -> centavos = 32 -> ajusteCents = 32 % 10 = 2 -> ajuste = 0.02
-                const cuotaCents = Math.round(montoTotalCuota * 100);
-                const ajusteCents = cuotaCents % 10; // unidades que sobran sobre el múltiplo de 10 centavos
-                const ajuste = ajusteCents / 100;
-                if (displayAjuste) displayAjuste.textContent = fmt(ajuste);
-                // Vuelto: solo si monto ingresado > cuota
-                if (valorIngresado > montoTotalCuota) {
-                    if (displayVuelto) displayVuelto.textContent = fmt(valorIngresado - montoTotalCuota);
-                    if (vueltoContainer) vueltoContainer.style.display = 'flex';
+                
+                // Monto Ingresado
+                if (esEfectivo) {
+                    labelMontoIngresado.textContent = 'Monto Ingresado (Billetes)';
+                    displayMontoIngresado.textContent = fmt(montoDado);
                 } else {
-                    if (displayVuelto) displayVuelto.textContent = fmt(0);
-                    if (vueltoContainer) vueltoContainer.style.display = 'none';
+                    labelMontoIngresado.textContent = 'Monto Ingresado';
+                    displayMontoIngresado.textContent = fmt(montoAPagar);
                 }
-                // Saldo restante: lo que falta pagar de la cuota
-                let saldoRestante = montoTotalCuota - valorIngresado;
+                
+                // Monto a Pagar (lo que quiere pagar)
+                displayMontoAPagar.textContent = fmt(montoAPagar);
+                
+                // Monto de la Cuota + Ajuste/Condonación
+                if (esEfectivo && esPagoCompleto && montoTotalCuota > 0) {
+                    // Llamar al BACKEND para obtener el cálculo del redondeo
+                    const datosRedondeo = await calcularRedondeo(montoTotalCuota, 'EFECTIVO');
+                    
+                    if (datosRedondeo && datosRedondeo.success && Math.abs(datosRedondeo.ajuste_redondeo) > 0.001) {
+                        // Mostrar cuota redondeada
+                        displayMontoCuota.textContent = fmt(datosRedondeo.monto_redondeado);
+                        
+                        // Mostrar ajuste/condonación
+                        ajusteContainer.classList.remove('hidden');
+                        const esCondonacion = datosRedondeo.ajuste_redondeo < 0;
+                        ajusteLabel.textContent = esCondonacion ? 'Condonación' : 'Ajuste';
+                        displayAjuste.textContent = fmt(Math.abs(datosRedondeo.ajuste_redondeo));
+                        displayAjuste.className = esCondonacion ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-blue-600';
+                    } else {
+                        // Sin ajuste
+                        displayMontoCuota.textContent = fmt(montoTotalCuota);
+                        ajusteContainer.classList.add('hidden');
+                    }
+                } else {
+                    // Pago parcial o no efectivo: mostrar cuota sin redondeo
+                    displayMontoCuota.textContent = fmt(montoTotalCuota);
+                    ajusteContainer.classList.add('hidden');
+                }
+                
+                // Saldo Restante (Cuota - Monto a pagar)
+                let saldoRestante = montoTotalCuota - montoAPagar;
                 if (saldoRestante < 0) saldoRestante = 0;
-                if (displaySaldoRestante) displaySaldoRestante.textContent = fmt(saldoRestante);
+                displaySaldoRestante.textContent = fmt(saldoRestante);
+                
+                // Vuelto (Monto dado - Monto a pagar) - solo para efectivo
+                if (esEfectivo && montoDado > 0) {
+                    const vuelto = montoDado - montoAPagar;
+                    if (vuelto > 0.001) {
+                        vueltoContainer.classList.remove('hidden');
+                        displayVuelto.textContent = fmt(vuelto);
+                    } else {
+                        vueltoContainer.classList.add('hidden');
+                    }
+                } else {
+                    vueltoContainer.classList.add('hidden');
+                }
             }
 
-            // Validar entrada manual: solo múltiplos de 0.10 para EFECTIVO en pagos parciales
+            // Validar entrada manual: forzar redondeo en pagos parciales
             function validarInputManual(event) {
-                if (currentPaymentMethod !== 'EFECTIVO') {
-                    actualizarDisplays();
-                    return;
-                }
-                
                 let valor = parseFloat(inputMonto.value) || 0;
                 
-                // No permitir valores mayores al cronograma para medios distintos a EFECTIVO
-                if (currentPaymentMethod !== 'EFECTIVO' && valor > montoTotalCuota) {
+                // No permitir valores mayores a la cuota
+                if (valor > montoTotalCuota) {
                     valor = montoTotalCuota;
                     inputMonto.value = valor.toFixed(2);
-                    actualizarDisplays();
-                    return;
                 }
                 
-                // Si es el monto EXACTO del cronograma, permitirlo sin redondear
-                // El backend aplicará el redondeo legal y mostrará MONTO EFECTIVO
-                if (Math.abs(valor - montoTotalCuota) < 0.001) {
-                    // Es pago completo, no redondear el input
-                    // El backend calculará el Monto EFECTIVO redondeado
-                    actualizarDisplays();
-                    return;
-                }
+                // Si es el monto EXACTO del cronograma, permitir decimales
+                const esPagoCompleto = Math.abs(valor - montoTotalCuota) < 0.01;
                 
-                // Para PAGOS PARCIALES (cuando el pago es menor a la cuota): redondear a múltiplos de 0.10
-                if (valor < montoTotalCuota) {
+                if (!esPagoCompleto) {
+                    // PAGO PARCIAL: FORZAR redondeo a múltiplos de 0.10
                     const centavos = Math.round(valor * 100) % 10;
                     if (centavos !== 0) {
-                    // Redondear al múltiplo de 0.10 más cercano
-                    let valorRedondeado = Math.round(valor * 10) / 10;
-                    
-                    // Si el redondeo excede el cronograma, redondear hacia abajo
-                    if (valorRedondeado > montoTotalCuota) {
-                        valorRedondeado = Math.floor(valor * 10) / 10;
-                    }
-                    
+                        let valorRedondeado = Math.round(valor * 10) / 10;
+                        if (valorRedondeado > montoTotalCuota) {
+                            valorRedondeado = Math.floor(valor * 10) / 10;
+                        }
                         valor = valorRedondeado;
                         inputMonto.value = valor.toFixed(2);
                     }
                 }
                 
                 actualizarDisplays();
+            }
+            
+            // Validar monto dado con denominaciones válidas
+            function validarMontoDado() {
+                if (currentPaymentMethod !== 'EFECTIVO') return;
+                
+                const montoDado = parseFloat(inputMontoDado.value) || 0;
+                const montoAPagar = parseFloat(inputMonto.value) || 0;
+                
+                if (montoDado > 0 && montoDado < montoAPagar) {
+                    inputMontoDado.setCustomValidity('El monto dado debe ser mayor o igual al monto a pagar');
+                } else if (montoDado - montoAPagar > 200) {
+                    inputMontoDado.setCustomValidity('La diferencia no puede ser mayor a S/ 200.00');
+                } else {
+                    inputMontoDado.setCustomValidity('');
+                }
             }
 
             async function calcularRedondeo(monto, medioPago) {
@@ -378,18 +460,20 @@
                 }
             }
 
-            function ocultarRedondeo() {
-                montoEfectivoContainer.style.display = 'none';
-                ajusteContainer.style.display = 'none';
-            }
+
 
             function actualizarMetodoPago(metodo) {
                 currentPaymentMethod = metodo;
                 
                 if (metodo === 'EFECTIVO') {
                     redondeoText.textContent = 'Para efectivo: pagos parciales en múltiplos de S/ 0.10';
+                    montoDadoContainer.classList.remove('hidden');
+                    inputMontoDado.required = true;
                 } else {
                     redondeoText.textContent = 'Puede ingresar cualquier monto con centavos';
+                    montoDadoContainer.classList.add('hidden');
+                    inputMontoDado.required = false;
+                    inputMontoDado.value = '';
                     // No forzar el restablecimiento del campo si el usuario ya lo editó
                     if (!inputMonto.dataset.userEdited && montoTotalCuota > 0) {
                         inputMonto.value = montoTotalCuota.toFixed(2);
@@ -407,15 +491,81 @@
                     this.dataset.userEdited = '1';
                     actualizarDisplays();
                 });
-                // Evitar validaciones que reseteen el input al hacer click fuera.
-                // Hacemos la validación final en el submit del formulario.
-                const form = inputMonto.closest('form');
-                if (form) {
-                    form.addEventListener('submit', function(e){
-                        // Ejecutar validación final antes de enviar
-                        validarInputManual();
+                
+                // Event listener para monto dado
+                if (inputMontoDado) {
+                    inputMontoDado.addEventListener('input', function() {
+                        validarMontoDado();
                         actualizarDisplays();
-                        // Dejar que el formulario continúe su submit (no prevenimos aquí)
+                    });
+                    inputMontoDado.addEventListener('blur', validarInputManual);
+                }
+                
+                // Validar monto a pagar al escribir
+                inputMonto.addEventListener('blur', validarInputManual);
+                
+                // Validación y envío al backend
+                const form = document.getElementById('form-pago');
+                if (form) {
+                    form.addEventListener('submit', async function(e){
+                        e.preventDefault();
+                        
+                        // Validar que monto dado >= monto a pagar para efectivo
+                        if (currentPaymentMethod === 'EFECTIVO') {
+                            const montoDado = parseFloat(inputMontoDado.value) || 0;
+                            const montoAPagar = parseFloat(inputMonto.value) || 0;
+                            if (montoDado < montoAPagar) {
+                                alert('El monto dado debe ser mayor o igual al monto a pagar');
+                                return false;
+                            }
+                        }
+                        
+                        // Preparar datos para enviar al backend
+                        const formData = {
+                            prestamo_id: {{ prestamo.prestamo_id }},
+                            numero_cuota: parseInt(selectCuota.value),
+                            monto_pagado: parseFloat(inputMonto.value),
+                            medio_pago: currentPaymentMethod,
+                            fecha_pago: document.querySelector('input[name="fecha_pago"]').value,
+                            hora_pago: inputHora.value
+                        };
+                        
+                        // Agregar monto_dado si es efectivo
+                        if (currentPaymentMethod === 'EFECTIVO' && inputMontoDado.value) {
+                            formData.monto_dado = parseFloat(inputMontoDado.value);
+                        }
+                        
+                        // Deshabilitar botón y mostrar loading
+                        const btnSubmit = document.getElementById('btn-submit');
+                        btnSubmit.disabled = true;
+                        btnSubmitText.textContent = 'Procesando...';
+                        
+                        try {
+                            // Enviar al backend
+                            const response = await fetch('/pagos/registrar', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(formData)
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (response.ok && result.success) {
+                                // Redirigir a página de éxito o detalle del préstamo
+                                window.location.href = '/prestamos/{{ prestamo.prestamo_id }}?pago_exitoso=1';
+                            } else {
+                                alert('Error al registrar pago: ' + (result.error || 'Error desconocido'));
+                                btnSubmit.disabled = false;
+                                btnSubmitText.textContent = 'Registrar Pago';
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('Error de conexión con el servidor');
+                            btnSubmit.disabled = false;
+                            btnSubmitText.textContent = 'Registrar Pago';
+                        }
                     });
                 }
                 actualizarInputConCuota();

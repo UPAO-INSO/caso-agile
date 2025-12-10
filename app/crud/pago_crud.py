@@ -13,10 +13,13 @@ def registrar_pago(
     cuota_id: int,
     monto_pagado: Decimal,
     fecha_pago: Optional[date] = None,
+    hora_pago=None,
     medio_pago: MedioPagoEnum = MedioPagoEnum.TRANSFERENCIA,
     monto_mora: Decimal = Decimal('0.00'),
     monto_contable: Optional[Decimal] = None,
     ajuste_redondeo: Decimal = Decimal('0.00'),
+    monto_dado: Optional[Decimal] = None,
+    vuelto: Decimal = Decimal('0.00'),
     comprobante_referencia: Optional[str] = None,
     observaciones: Optional[str] = None
 ) -> Tuple[Optional[Pago], Optional[str]]:
@@ -25,12 +28,15 @@ def registrar_pago(
     
     Args:
         cuota_id: ID de la cuota
-        monto_pagado: Monto pagado
+        monto_pagado: Monto pagado (lo que se aplica a la deuda)
         fecha_pago: Fecha del pago
+        hora_pago: Hora del pago
         medio_pago: Medio de pago (enum)
         monto_mora: Monto de mora pagado
         monto_contable: Monto contable original (antes de redondeo)
         ajuste_redondeo: Ajuste por redondeo según Ley N° 29571
+        monto_dado: Monto entregado por el cliente (billetes) - EFECTIVO
+        vuelto: Vuelto entregado al cliente
         comprobante_referencia: Referencia del comprobante (generado internamente)
         observaciones: Observaciones (uso interno)
         
@@ -62,6 +68,9 @@ def registrar_pago(
             monto_contable=monto_contable,
             ajuste_redondeo=ajuste_redondeo,
             fecha_pago=fecha_pago,
+            hora_pago=hora_pago,
+            monto_dado=monto_dado,
+            vuelto=vuelto,
             comprobante_referencia=comprobante_referencia,
             observaciones=observaciones,
             metodo_pago=metodo_pago,

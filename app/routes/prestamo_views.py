@@ -1,7 +1,4 @@
-"""
-Views - Endpoints de Préstamos
-Endpoints que renderizan templates HTML
-"""
+# → Views para Préstamos - Endpoints para renderizar templates HTML
 from flask import render_template, redirect, url_for, flash
 import logging
 from datetime import datetime, date
@@ -27,7 +24,6 @@ error_handler = ErrorHandler(logger)
 def index_view():
     """Vista principal - Landing page"""
     return render_template('index.html')
-
 
 @prestamos_view_bp.route('/prestamos')
 @login_required

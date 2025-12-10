@@ -23,10 +23,14 @@ def registrar_pago():
     Body esperado:
     {
         "prestamo_id": int,
-        "cuota_id": int,
+        "numero_cuota": int,
+        "monto_pagado": float (monto que desea pagar),
         "metodo_pago": string (EFECTIVO, TARJETA, TRANSFERENCIA) - opcional, default EFECTIVO,
         "medio_pago": string ("EFECTIVO", "TARJETA_DEBITO", etc.),
-        "fecha_pago": "YYYY-MM-DD" (opcional)
+        "fecha_pago": "YYYY-MM-DD" (opcional),
+        "hora_pago": "HH:MM" (opcional),
+        "monto_dado": float (billetes entregados - solo EFECTIVO),
+        "vuelto": float (opcional, se calcula automáticamente)
     }
     
     Returns:
@@ -43,22 +47,34 @@ def registrar_pago():
         
         # Validar campos requeridos
         prestamo_id = datos.get('prestamo_id')
-        cuota_id = datos.get('cuota_id')
+        numero_cuota = datos.get('numero_cuota')
+        monto_pagado = datos.get('monto_pagado')
         medio_pago = datos.get('medio_pago')
         
-        if not all([prestamo_id, cuota_id, medio_pago]):
+        if not all([prestamo_id, numero_cuota, monto_pagado, medio_pago]):
             return jsonify({
-                'error': 'Faltan campos requeridos: prestamo_id, cuota_id, medio_pago'
+                'error': 'Faltan campos requeridos: prestamo_id, numero_cuota, monto_pagado, medio_pago'
             }), 400
         
         # Convertir tipos
         try:
             prestamo_id = int(prestamo_id)
-            cuota_id = int(cuota_id)
+            numero_cuota = int(numero_cuota)
+            monto_pagado = Decimal(str(monto_pagado))
         except (ValueError, TypeError):
             return jsonify({
-                'error': 'Tipos de datos inválidos para prestamo_id o cuota_id'
+                'error': 'Tipos de datos inválidos para prestamo_id, numero_cuota o monto_pagado'
             }), 400
+        
+        # Buscar la cuota por número
+        from app.models import Cuota
+        cuota = Cuota.query.filter_by(prestamo_id=prestamo_id, numero_cuota=numero_cuota).first()
+        if not cuota:
+            return jsonify({
+                'error': f'Cuota {numero_cuota} no encontrada para el préstamo {prestamo_id}'
+            }), 404
+        
+        cuota_id = cuota.cuota_id
         
         # Procesar método de pago (opcional, default EFECTIVO)
         metodo_pago_str = datos.get('metodo_pago', 'EFECTIVO').upper()
@@ -93,6 +109,30 @@ def registrar_pago():
             except (ValueError, TypeError):
                 return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
         
+        # Procesar hora (opcional)
+        from datetime import time as dt_time
+        hora_pago = None
+        if 'hora_pago' in datos and datos['hora_pago']:
+            try:
+                hora_str = datos['hora_pago']
+                hora_parts = hora_str.split(':')
+                hora_pago = dt_time(int(hora_parts[0]), int(hora_parts[1]))
+            except (ValueError, TypeError, IndexError):
+                return jsonify({'error': 'Formato de hora inválido. Use HH:MM'}), 400
+        
+        # Procesar monto_dado y calcular vuelto (solo para EFECTIVO)
+        monto_dado = None
+        vuelto = Decimal('0.00')
+        if medio_pago == 'EFECTIVO':
+            if 'monto_dado' in datos and datos['monto_dado']:
+                try:
+                    monto_dado = Decimal(str(datos['monto_dado']))
+                    if monto_dado < monto_pagado:
+                        return jsonify({'error': 'El monto dado debe ser mayor o igual al monto a pagar'}), 400
+                    vuelto = monto_dado - monto_pagado
+                except (ValueError, TypeError):
+                    return jsonify({'error': 'Tipo de dato inválido para monto_dado'}), 400
+        
         # Procesar comprobante y observaciones (opcionales)
         comprobante_referencia = datos.get('comprobante_referencia')
         observaciones = datos.get('observaciones')
@@ -101,9 +141,14 @@ def registrar_pago():
         respuesta, error, status_code = PagoService.registrar_pago_cuota(
             prestamo_id,
             cuota_id,
-            metodo_pago,
+            monto_pagado,
             medio_pago,
-            fecha_pago
+            fecha_pago,
+            comprobante_referencia,
+            observaciones,
+            hora_pago,
+            monto_dado,
+            vuelto
         )
         
         if error:

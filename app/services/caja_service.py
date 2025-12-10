@@ -58,14 +58,22 @@ class CajaService:
                 total_capital_general += (capital or Decimal('0'))
                 total_ajuste_general += (ajuste or Decimal('0'))
                 cantidad_total += cantidad
-            # Total egresos del día
+            # Total egresos del día (incluyendo vueltos)
             from datetime import datetime as dt
             total_egresos = db.session.query(func.sum(Egreso.monto)).filter(
                 db.and_(
                     func.date(Egreso.fecha_registro) == fecha
                 )
             ).scalar() or Decimal('0')
+            
+            # También sumar vueltos directamente de la tabla pagos
+            total_vueltos = db.session.query(func.sum(Pago.vuelto)).filter(
+                Pago.fecha_pago == fecha
+            ).scalar() or Decimal('0')
 
+            # Calcular efectivo neto en caja (ingresos - vueltos)
+            efectivo_neto = total_general - total_vueltos
+            
             return {
                 'fecha': fecha.isoformat(),
                 'detalle_por_medio': detalle_medios,
@@ -75,8 +83,11 @@ class CajaService:
                     'total_mora_cobrada': float(total_mora_general),
                     'total_capital_cobrado': float(total_capital_general),
                     'total_ajuste_redondeo': float(total_ajuste_general),
+                    'total_vueltos': float(total_vueltos),
                     'total_egresos': float(total_egresos),
-                    'nota_ajuste': 'Positivo = ganancia del negocio, Negativo = condonación al cliente'
+                    'efectivo_neto_en_caja': float(efectivo_neto),
+                    'nota_ajuste': 'Positivo = ganancia del negocio, Negativo = condonación al cliente',
+                    'nota_vueltos': 'Vueltos entregados al cliente (egreso de caja)'
                 }
             }
             
@@ -190,12 +201,15 @@ class CajaService:
                 prestamo = cuota.prestamo
                 cliente = prestamo.cliente
                 
-                # Como no tenemos hora exacta, usamos el ID del pago para simular una hora
-                hora_ficticia = f"{8 + (pago.pago_id % 12):02d}:{(pago.pago_id * 15) % 60:02d}:00"
+                # Usar hora real si existe, sino hora ficticia
+                if hasattr(pago, 'hora_pago') and pago.hora_pago:
+                    hora_display = pago.hora_pago.strftime('%H:%M:%S')
+                else:
+                    hora_display = f"{8 + (pago.pago_id % 12):02d}:{(pago.pago_id * 15) % 60:02d}:00"
                 
                 detalle.append({
                     'pago_id': pago.pago_id,
-                    'hora': hora_ficticia,
+                    'hora': hora_display,
                     'comprobante': pago.comprobante_referencia,
                     'cliente': {
                         'nombre': cliente.nombre_completo,
@@ -206,6 +220,8 @@ class CajaService:
                     'medio_pago': pago.medio_pago.value,
                     'monto_contable': float(pago.monto_contable) if pago.monto_contable else float(pago.monto_pagado),
                     'monto_pagado': float(pago.monto_pagado),
+                    'monto_dado': float(pago.monto_dado) if hasattr(pago, 'monto_dado') and pago.monto_dado else None,
+                    'vuelto': float(pago.vuelto) if hasattr(pago, 'vuelto') and pago.vuelto else 0,
                     'ajuste_redondeo': float(pago.ajuste_redondeo),
                     'monto_mora': float(pago.monto_mora),
                     'monto_capital': float(pago.monto_pagado - pago.monto_mora),

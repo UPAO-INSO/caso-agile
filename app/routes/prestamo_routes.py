@@ -2,7 +2,6 @@ from flask import render_template, request, jsonify
 from decimal import Decimal
 import logging
 from pydantic import ValidationError
-
 from app.common.extensions import db
 from app.crud import (
     listar_prestamos_por_cliente_id,
@@ -19,9 +18,9 @@ from app.services.prestamo_service import PrestamoService
 logger = logging.getLogger(__name__)
 error_handler = ErrorHandler(logger)
 
+# → ENDPOINT PARA REGISTRAR PRÉSTAMO COMPLETO
 @prestamos_bp.route('/register', methods=['POST'])
 def registrar_prestamo():
-    """Endpoint para registrar un nuevo préstamo"""
     payload = request.get_json(silent=True)
     if payload is None:
         return error_handler.respond('El cuerpo de la solicitud debe ser JSON válido.', 400)
@@ -254,9 +253,9 @@ def actualizar_estado_prestamo(prestamo_id):
     
     return jsonify(respuesta), status_code
 
+# → ENDPOINT JSON PARA OBTENER PRÉSTAMOS DE UN CLIENTE CON CRONOGRAMA
 @prestamos_bp.route('/cliente/<int:cliente_id>/json', methods=['GET'])
 def obtener_prestamos_cliente_json(cliente_id):
-    """Endpoint JSON para obtener todos los préstamos de un cliente con sus cronogramas"""
     from app.crud.cuota_crud import listar_cuotas_por_prestamo
     
     cliente = obtener_cliente_por_id(cliente_id)
@@ -295,9 +294,9 @@ def obtener_prestamos_cliente_json(cliente_id):
     
     return jsonify(prestamos_data), 200
 
+# → ENDPOINT PARA CALCULAR REDONDEO EN PAGOS EN EFECTIVO
 @prestamos_bp.route('/api/calcular-redondeo', methods=['POST'])
 def calcular_redondeo():
-    """Endpoint para calcular el redondeo de un monto en efectivo"""
     try:
         data = request.get_json()
         monto = Decimal(str(data.get('monto', 0)))
@@ -305,24 +304,26 @@ def calcular_redondeo():
         
         if medio_pago != 'EFECTIVO':
             return jsonify({
+                'success': True,
                 'monto_original': float(monto),
                 'monto_redondeado': float(monto),
-                'ajuste': 0.0,
+                'ajuste_redondeo': 0.0,
                 'aplica_redondeo': False
             }), 200
         
         from app.services.pago_service import PagoService
         monto_redondeado = PagoService.aplicar_redondeo(monto)
-        ajuste = monto_redondeado - monto
+        ajuste_redondeo = monto_redondeado - monto
         
         return jsonify({
+            'success': True,
             'monto_original': float(monto),
             'monto_redondeado': float(monto_redondeado),
-            'ajuste': float(ajuste),
+            'ajuste_redondeo': float(ajuste_redondeo),
             'aplica_redondeo': True,
-            'mensaje': f'{"Ahorro" if ajuste < 0 else "Ajuste"} de S/ {abs(ajuste):.2f}'
+            'mensaje': f'{"Condonación" if ajuste_redondeo < 0 else "Sobrepago"} de S/ {abs(ajuste_redondeo):.2f}'
         }), 200
         
     except Exception as e:
         logger.error(f"Error calculando redondeo: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
