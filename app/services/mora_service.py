@@ -2,7 +2,6 @@ import logging
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Tuple, Optional, Dict, Any
-
 from app.common.extensions import db
 from app.models import Cuota, Prestamo
 
