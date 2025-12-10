@@ -260,6 +260,85 @@ def registrar_egreso_route():
         return jsonify({'error': 'Error interno al registrar egreso'}), 500
 
 
+@caja_bp.route('/cierre', methods=['GET'])
+@login_required
+def obtener_estado_cierre_route():
+    """Devuelve si la caja está cerrada para la fecha dada."""
+    try:
+        fecha_str = request.args.get('fecha')
+        if not fecha_str:
+            fecha = date.today()
+        else:
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+
+        estado = CajaService.obtener_estado_cierre(fecha)
+        return jsonify({'cierre': estado}), 200
+    except Exception as exc:
+        logger.error(f"Error en obtener_estado_cierre_route: {exc}", exc_info=True)
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+
+@caja_bp.route('/cierre', methods=['POST'])
+@login_required
+def cerrar_caja_route():
+    """Cierra la caja para la fecha dada. JSON: { fecha: 'YYYY-MM-DD', monto_real: number }"""
+    try:
+        data = request.get_json() or {}
+        fecha_str = data.get('fecha')
+        monto_real = data.get('monto_real')
+
+        if not fecha_str or monto_real is None:
+            return jsonify({'error': 'Debe proporcionar fecha y monto_real'}), 400
+
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+
+        from decimal import Decimal
+        try:
+            monto_dec = Decimal(str(monto_real))
+        except Exception:
+            return jsonify({'error': 'Monto inválido'}), 400
+
+        usuario_id = session.get('usuario_id')
+        resultado = CajaService.cerrar_caja(fecha, monto_dec, usuario_id=usuario_id)
+        return jsonify({'success': True, 'cierre': resultado}), 200
+
+    except Exception as exc:
+        logger.error(f"Error en cerrar_caja_route: {exc}", exc_info=True)
+        return jsonify({'error': 'Error interno al cerrar caja'}), 500
+
+
+@caja_bp.route('/abrir', methods=['POST'])
+@login_required
+def abrir_caja_route():
+    """Reabre la caja para la fecha indicada. JSON: { fecha: 'YYYY-MM-DD' }"""
+    try:
+        data = request.get_json() or {}
+        fecha_str = data.get('fecha')
+        if not fecha_str:
+            fecha = date.today()
+        else:
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+
+        ok = CajaService.abrir_caja(fecha)
+        if ok:
+            return jsonify({'success': True}), 200
+        else:
+            return jsonify({'success': False, 'message': 'La caja no estaba cerrada'}), 200
+
+    except Exception as exc:
+        logger.error(f"Error en abrir_caja_route: {exc}", exc_info=True)
+        return jsonify({'error': 'Error interno al abrir caja'}), 500
+
+
 @caja_bp.route('/apertura', methods=['GET'])
 @login_required
 def obtener_apertura():

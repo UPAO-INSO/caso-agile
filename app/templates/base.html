@@ -34,6 +34,9 @@
     </style>
   </head>
   <body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+    <!-- Script global para gestión de cierre de caja -->
+    <script src="{{ url_for('static', filename='js/caja_state.js') }}"></script>
+    
     {% include 'components/shared/navbar.html' %}
 
     <main class="flex-1 p-6">

@@ -264,7 +264,13 @@
     </div>
 
     <script>
+        // Variable global para almacenar si la caja está cerrada
+        let cajaCerrada = false;
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si la caja está cerrada usando el estado global
+            verificarYRestaurarEstadoCaja();
+            
             const selectCuota = document.getElementById('select_cuota');
             const inputMonto = document.getElementById('input_monto');
             const inputMontoDado = document.getElementById('input_monto_dado');

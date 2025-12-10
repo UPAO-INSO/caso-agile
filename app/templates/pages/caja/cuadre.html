@@ -1,7 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 py-8">
+<!-- Overlay full-screen que muestra caja cerrada (excepto navbar) -->
+<div id="caja_cerrada_overlay" style="display:none; position:fixed; top:64px; left:0; right:0; bottom:0; background:white; z-index:50; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+    <div style="text-align:center;">
+        <h1 id="caja_cerrada_texto" style="font-size:48px; font-weight:700; color:#111827; margin-bottom:16px;">Caja cerrada</h1>
+        <p id="caja_cerrada_detalle" style="color:#6B7280; margin-bottom:30px; display:none; font-size:18px;"></p>
+        <div>
+            <button onclick="reabrirCaja()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg">Abrir caja</button>
+        </div>
+    </div>
+</div>
+
+<div class="min-h-screen bg-gray-50 py-8" id="contenido_caja">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
@@ -183,13 +194,6 @@
                     <i class="fas fa-list text-blue-600"></i>
                     Movimientos del Día
                 </h2>
-                <button 
-                    onclick="imprimirReporte()" 
-                    class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                >
-                    <i class="fas fa-print"></i>
-                    Imprimir Reporte
-                </button>
             </div>
 
             <!-- Tabla de Movimientos -->
@@ -307,6 +311,10 @@
 
     // Cargar datos al iniciar
     document.addEventListener('DOMContentLoaded', function() {
+        // Primero restaurar el estado de la caja desde localStorage (si está cerrada)
+        verificarYRestaurarEstadoCaja();
+        
+        // Luego cargar los datos de la caja
         cargarDatosCaja();
     });
 
@@ -581,9 +589,93 @@
         }
         
         if (confirm('¿Está seguro de cerrar la caja? Esta acción no se puede deshacer.')) {
-            alert('Funcionalidad de cierre de caja en desarrollo');
-            // Aquí se implementaría la lógica de cierre
+            // Llamada al backend para cerrar la caja
+            const fecha = document.getElementById('fecha_cuadre').value;
+            fetch('/caja/cierre', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha: fecha, monto_real: saldoReal })
+            }).then(r => r.json()).then(j => {
+                if (j && j.success) {
+                    mostrarOverlayCajaCerrada(j.cierre);
+                    alert('Caja cerrada correctamente');
+                } else {
+                    alert(j.error || j.message || 'No se pudo cerrar la caja');
+                }
+            }).catch(err => {
+                console.error(err);
+                alert('Error al cerrar la caja');
+            });
         }
+    }
+
+    // Overlay de caja cerrada (full-screen excepto navbar)
+    function mostrarOverlayCajaCerrada(info) {
+        const overlay = document.getElementById('caja_cerrada_overlay');
+        if (!overlay) return;
+        overlay.style.display = 'flex';
+        
+        // También guardar en localStorage y mostrar banner global
+        guardarEstadoCajaCerrada(info);
+        
+        // Mostrar texto y, si hay incidencia, mostrar detalle pequeño
+        const texto = document.getElementById('caja_cerrada_texto');
+        texto.textContent = 'Caja cerrada';
+        const detalle = document.getElementById('caja_cerrada_detalle');
+        if (info && info.incidencia) {
+            detalle.textContent = `Incidencia: ${info.incidencia} — Diferencia S/ ${parseFloat(info.diferencia).toFixed(2)}`;
+            detalle.style.display = 'block';
+        } else {
+            detalle.style.display = 'none';
+        }
+    }
+
+    function ocultarOverlayCajaCerrada() {
+        const overlay = document.getElementById('caja_cerrada_overlay');
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        
+        // También limpiar el estado global
+        limpiarEstadoCajaCerrada();
+    }
+
+    // Función para verificar estado de caja sin recargar todo
+    async function verificarYActualizarEstadoCaja() {
+        try {
+            const fecha = document.getElementById('fecha_cuadre').value;
+            const cierreResp = await fetch(`/caja/cierre?fecha=${fecha}`);
+            const cierreJson = await cierreResp.json();
+            if (cierreJson && cierreJson.cierre) {
+                mostrarOverlayCajaCerrada(cierreJson.cierre);
+            } else {
+                ocultarOverlayCajaCerrada();
+            }
+        } catch (err) {
+            console.warn('No se pudo verificar estado de cierre:', err);
+        }
+    }
+
+    function reabrirCaja() {
+        const fecha = document.getElementById('fecha_cuadre').value;
+        fetch('/caja/abrir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fecha: fecha })
+        }).then(r => r.json()).then(j => {
+            if (j && j.success) {
+                ocultarOverlayCajaCerrada();
+                // Limpiar estado global también
+                limpiarEstadoCajaCerrada();
+                alert('✅ Caja reabierta');
+                // Recargar datos pero sin mostrar múltiples confirmaciones
+                cargarDatosCaja();
+            } else {
+                alert('❌ ' + (j.error || j.message || 'No se pudo reabrir la caja'));
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('❌ Error al reabrir la caja');
+        });
     }
 
     function imprimirReporte() {
