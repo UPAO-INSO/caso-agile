@@ -73,6 +73,17 @@ class Config:
     COMPRESSION_MIN_SIZE = int(os.environ.get('COMPRESSION_MIN_SIZE', '1024'))  # 1KB
     SLOW_QUERY_THRESHOLD = float(os.environ.get('SLOW_QUERY_THRESHOLD', '0.1'))  # 100ms en segundos
     SLOW_REQUEST_THRESHOLD = int(os.environ.get('SLOW_REQUEST_THRESHOLD', '500'))  # 500ms
+    
+    # Flow Payment Gateway Configuration
+    FLOW_API_KEY = os.environ.get('FLOW_API_KEY', '').strip()
+    FLOW_SECRET_KEY = os.environ.get('FLOW_SECRET_KEY', '').strip()
+    FLOW_API_URL_SANDBOX = os.environ.get('FLOW_API_URL_SANDBOX', 'https://sandbox.flow.cl/api')
+    FLOW_API_URL_PROD = os.environ.get('FLOW_API_URL_PROD', 'https://www.flow.cl/api')
+    FLOW_SANDBOX_MODE = _str_to_bool(os.environ.get('FLOW_SANDBOX_MODE', 'true'))
+    FLOW_BYPASS_MODE = _str_to_bool(os.environ.get('FLOW_BYPASS_MODE', 'false'))  # Procesar pagos sin Flow (testing)
+    
+    # Public URL for webhooks (use ngrok URL in development)
+    PUBLIC_URL = os.environ.get('PUBLIC_URL', '').strip()
 
 
 class DevelopmentConfig(Config):

@@ -101,10 +101,57 @@ def registrar_pago():
             except (ValueError, TypeError, IndexError):
                 return jsonify({'error': 'Formato de hora inválido. Use HH:MM'}), 400
         
-        # PAGOS DIGITALES: Redirigir a Flow API
+        # PAGOS DIGITALES: Redirigir a Flow API (o bypass en modo testing)
         medios_digitales = ['TRANSFERENCIA', 'TARJETA_DEBITO', 'TARJETA_CREDITO', 'YAPE', 'PLIN']
         
         if medio_pago in medios_digitales:
+            # MODO BYPASS: Procesar pagos digitales sin Flow (testing local)
+            from flask import current_app
+            if current_app.config.get('FLOW_BYPASS_MODE', False):
+                logger.info(f"⚠️ MODO BYPASS ACTIVADO - Procesando pago {medio_pago} sin Flow API")
+                
+                # Obtener la cuota para poder procesarla
+                from app.models import Prestamo, Cuota
+                from app import db
+                
+                prestamo = Prestamo.query.get(prestamo_id)
+                if not prestamo:
+                    return jsonify({'error': 'Préstamo no encontrado'}), 404
+                
+                # Buscar la cuota por número
+                cuota = Cuota.query.filter_by(
+                    prestamo_id=prestamo_id,
+                    numero_cuota=numero_cuota
+                ).first()
+                
+                if not cuota:
+                    return jsonify({'error': f'Cuota #{numero_cuota} no encontrada'}), 404
+                
+                # Procesar pago directamente
+                resultado, error, status = PagoService.registrar_pago_cuota(
+                    prestamo_id=prestamo_id,
+                    cuota_id=cuota.cuota_id,
+                    monto_pagado=monto_pagado,
+                    medio_pago=medio_pago,
+                    fecha_pago=fecha_pago,
+                    hora_pago=hora_pago,
+                    comprobante_referencia=f'TEST-{medio_pago}-{int(datetime.now().timestamp())}',
+                    observaciones=f'Pago de prueba {medio_pago} - Modo Bypass (sin Flow)',
+                    monto_dado=None,
+                    vuelto=Decimal('0.00')
+                )
+                
+                if error:
+                    return jsonify({'error': error}), status
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'✅ Pago {medio_pago} procesado correctamente (Modo Prueba)',
+                    'modo_prueba': True,
+                    **resultado
+                }), 201
+            
+            # MODO NORMAL: Usar Flow API
             from app.services.flow_service import FlowService
             from app.models import Prestamo
             
@@ -119,7 +166,11 @@ def registrar_pago():
             commerce_order = f'PAGO-{prestamo_id}-{numero_cuota}-{int(datetime.now().timestamp())}'
             
             # Construir URLs de callback
-            base_url = request.url_root.rstrip('/')
+            # Usar PUBLIC_URL si está configurada (para ngrok), sino usar request.url_root
+            from flask import current_app
+            public_url = current_app.config.get('PUBLIC_URL')
+            base_url = public_url if public_url else request.url_root.rstrip('/')
+            
             url_confirmation = f'{base_url}/flow/webhook/confirmation'
             url_return = f'{base_url}/flow/return'
             

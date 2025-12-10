@@ -359,7 +359,7 @@
         const esperado = (montoInicial || 0) + (resumen.total_recaudado || 0) - totalEgresos;
         document.getElementById('saldo_esperado').textContent = `S/ ${esperado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
-        // Mostrar categorías
+        // Mostrar categorías (agrupando YAPE y PLIN como billetera electrónica)
         const categorias = {
             'EFECTIVO': { total: 0, cantidad: 0, mora: 0, ajuste: 0 },
             'TRANSFERENCIA': { total: 0, cantidad: 0, mora: 0, ajuste: 0 },
@@ -369,12 +369,18 @@
         };
         
         data.detalle_por_medio.forEach(medio => {
-            const key = medio.medio_pago;
+            let key = medio.medio_pago;
+            
+            // Agrupar YAPE y PLIN como BILLETERA_ELECTRONICA
+            if (key === 'YAPE' || key === 'PLIN') {
+                key = 'BILLETERA_ELECTRONICA';
+            }
+            
             if (categorias[key]) {
-                categorias[key].total = medio.total;
-                categorias[key].cantidad = medio.cantidad_pagos;
-                categorias[key].mora = medio.total_mora;
-                categorias[key].ajuste = medio.ajuste_redondeo || 0;
+                categorias[key].total += medio.total;
+                categorias[key].cantidad += medio.cantidad_pagos;
+                categorias[key].mora += medio.total_mora;
+                categorias[key].ajuste += (medio.ajuste_redondeo || 0);
             }
         });
         
@@ -516,6 +522,8 @@
         const badges = {
             'EFECTIVO': 'bg-green-100 text-green-800',
             'TRANSFERENCIA': 'bg-blue-100 text-blue-800',
+            'YAPE': 'bg-purple-100 text-purple-800',
+            'PLIN': 'bg-purple-100 text-purple-800',
             'BILLETERA_ELECTRONICA': 'bg-purple-100 text-purple-800',
             'TARJETA_CREDITO': 'bg-orange-100 text-orange-800',
             'TARJETA_DEBITO': 'bg-orange-100 text-orange-800'
@@ -527,6 +535,8 @@
         const icons = {
             'EFECTIVO': '<i class="fas fa-money-bill-wave mr-1"></i>',
             'TRANSFERENCIA': '<i class="fas fa-building-columns mr-1"></i>',
+            'YAPE': '<i class="fas fa-qrcode mr-1"></i>',
+            'PLIN': '<i class="fas fa-qrcode mr-1"></i>',
             'BILLETERA_ELECTRONICA': '<i class="fas fa-qrcode mr-1"></i>',
             'TARJETA_CREDITO': '<i class="fas fa-credit-card mr-1"></i>',
             'TARJETA_DEBITO': '<i class="fas fa-credit-card mr-1"></i>'
@@ -538,6 +548,8 @@
         const nombres = {
             'EFECTIVO': 'Efectivo',
             'TRANSFERENCIA': 'Transferencia',
+            'YAPE': 'Yape',
+            'PLIN': 'Plin',
             'BILLETERA_ELECTRONICA': 'Yape/Plin',
             'TARJETA_CREDITO': 'Tarjeta Créd.',
             'TARJETA_DEBITO': 'Tarjeta Déb.'

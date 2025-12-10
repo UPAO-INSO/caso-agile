@@ -15,9 +15,18 @@ logger = logging.getLogger(__name__)
 class FlowService:
     """Servicio para gestionar pagos con Flow API"""
     
-    # Credenciales hardcodeadas desde .env
-    API_KEY = "55BE7F9B-6F16-40BD-972E-57AE8L4C6C0E"
-    SECRET_KEY = "a6cc47b739746a35bde300ba829337f7f5391767"
+    # Credenciales cargadas desde variables de entorno (SEGURIDAD)
+    @classmethod
+    def _get_credentials(cls):
+        """Obtiene credenciales de Flow desde variables de entorno"""
+        api_key = current_app.config.get('FLOW_API_KEY')
+        secret_key = current_app.config.get('FLOW_SECRET_KEY')
+        
+        if not api_key or not secret_key:
+            raise ValueError("FLOW_API_KEY y FLOW_SECRET_KEY deben estar configurados en variables de entorno")
+        
+        return api_key, secret_key
+    
     SANDBOX_URL = "https://sandbox.flow.cl/api"
     PROD_URL = "https://www.flow.cl/api"
     
@@ -55,9 +64,12 @@ class FlowService:
         for key in sorted_keys:
             string_to_sign += str(key) + str(params[key])
         
+        # Obtener secret key desde config
+        _, secret_key = cls._get_credentials()
+        
         # Firmar con HMAC-SHA256
         signature = hmac.new(
-            cls.SECRET_KEY.encode('utf-8'),
+            secret_key.encode('utf-8'),
             string_to_sign.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
@@ -102,12 +114,15 @@ class FlowService:
             if medio_pago not in cls.PAYMENT_METHOD_MAP:
                 return None, f"Medio de pago {medio_pago} no soportado por Flow", 400
             
+            # Obtener credenciales desde config
+            api_key, _ = cls._get_credentials()
+            
             # Construir parámetros (sin firma todavía)
             params = {
-                'apiKey': cls.API_KEY,
+                'apiKey': api_key,
                 'commerceOrder': commerce_order,
                 'subject': subject,
-                'currency': 'PEN',  # Soles peruanos (PEN) para Perú
+                'currency': 'PEN',  # Soles peruanos para producción en Perú
                 'amount': int(amount),  # Flow requiere entero (centavos)
                 'email': email,
                 'paymentMethod': cls.PAYMENT_METHOD_MAP[medio_pago],
@@ -170,9 +185,12 @@ class FlowService:
             (payment_status_dict, error_msg, status_code)
         """
         try:
+            # Obtener credenciales desde config
+            api_key, _ = cls._get_credentials()
+            
             # Construir parámetros
             params = {
-                'apiKey': cls.API_KEY,
+                'apiKey': api_key,
                 'token': token
             }
             
