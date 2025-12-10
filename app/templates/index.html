@@ -1,4 +1,5 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+{% block content %}
 <div class="max-w-7xl mx-auto">
   <!-- Hero Section -->
   <div class="mb-8 text-center">
@@ -9,85 +10,30 @@
   </div>
 
   <!-- Tarjetas de Acceso Rápido -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <!-- Clientes -->
-    <a
-      href="{{ url_for('clientes_view.listar_clientes_view') }}"
-      class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300 border-t-4 border-blue-500"
-    >
-      <div class="flex items-center mb-4">
-        <!-- <i class="fa-solid fa-user"></i> -->
-        <svg
-          class="w-7 h-7"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 640 640"
-        >
-          <path
-            d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
-          />
-        </svg>
-        <h2 class="text-2xl font-bold text-gray-800">Clientes</h2>
-      </div>
-      <p class="text-gray-600 mb-4">
-        Gestiona la información de tus clientes y consulta su historial
-      </p>
-      <div class="text-blue-600 font-semibold flex items-center">
-        Ver clientes
-        <svg
-          class="w-5 h-5 ml-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          ></path>
-        </svg>
-      </div>
-    </a>
-
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     <!-- Préstamos -->
     <a
       href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
       class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300 border-t-4 border-green-500"
     >
       <div class="flex items-center mb-4">
-        <svg
-          class="w-7 h-7"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 640 640"
-        >
-          <path
-            d="M384 224L480 224L480 160L384 160L384 224zM96 224L96 144C96 117.5 117.5 96 144 96L496 96C522.5 96 544 117.5 544 144L544 240C544 266.5 522.5 288 496 288L144 288C117.5 288 96 266.5 96 240L96 224zM256 480L480 480L480 416L256 416L256 480zM96 480L96 400C96 373.5 117.5 352 144 352L496 352C522.5 352 544 373.5 544 400L544 496C544 522.5 522.5 544 496 544L144 544C117.5 544 96 522.5 96 496L96 480z"
-          />
+        <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+          <path d="M384 224L480 224L480 160L384 160L384 224zM96 224L96 144C96 117.5 117.5 96 144 96L496 96C522.5 96 544 117.5 544 144L544 240C544 266.5 522.5 288 496 288L144 288C117.5 288 96 266.5 96 240L96 224zM256 480L480 480L480 416L256 416L256 480zM96 480L96 400C96 373.5 117.5 352 144 352L496 352C522.5 352 544 373.5 544 400L544 496C544 522.5 522.5 544 496 544L144 544C117.5 544 96 522.5 96 496L96 480z"/>
         </svg>
-        <h2 class="text-2xl font-bold text-gray-800">Préstamos</h2>
+        <h2 class="text-2xl font-bold text-gray-800 ml-3">Préstamos</h2>
       </div>
       <p class="text-gray-600 mb-4">
         Gestiona préstamos, consulta historiales y cronogramas de pago
       </p>
       <div class="text-green-600 font-semibold flex items-center">
         Ver préstamos
-        <svg
-          class="w-5 h-5 ml-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          ></path>
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
       </div>
     </a>
 
-    <!-- Buscar Cliente -->
+    <!-- Buscar Cliente (centralizado) -->
     <a
       href="{{ url_for('clientes.listar_clientes_view') }}"
       class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300 border-t-4 border-purple-500"
@@ -99,117 +45,28 @@
         <h2 class="text-2xl font-bold text-gray-800">Buscar Cliente</h2>
       </div>
       <p class="text-gray-600 mb-4">
-        Encuentra clientes por DNI y consulta su información
+        Encuentra clientes por DNI, consulta su información y gestiona datos que antes estaban en la sección de “Clientes”
       </p>
       <div class="text-purple-600 font-semibold flex items-center">
         Buscar cliente
-        <svg
-          class="w-5 h-5 ml-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          ></path>
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
       </div>
     </a>
   </div>
 
-  <!-- Formulario de Registro/Búsqueda -->
+  <!-- Formulario de Registro/Búsqueda (centralizado aquí también) -->
   <div class="bg-white rounded-lg shadow-md p-8">
     <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
       <i class="fa-solid fa-clipboard-list mr-3 text-gray-700"></i> Registro y
-      Consulta de Préstamos
+      Consulta de Clientes y Préstamos
     </h2>
     {% include "components/form.html" %}
   </div>
-
-  <!-- Características -->
-  <!-- <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6">
-      <h3 class="text-xl font-bold text-blue-900 mb-3">✨ Características</h3>
-      <ul class="space-y-2 text-blue-800">
-        <li class="flex items-center">
-          <svg
-            class="w-5 h-5 mr-2 text-blue-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clip-rule="evenodd"
-            ></path>
-          </svg>
-          Cronograma de pagos automático
-        </li>
-        <li class="flex items-center">
-          <svg
-            class="w-5 h-5 mr-2 text-blue-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clip-rule="evenodd"
-            ></path>
-          </svg>
-          Validación de PEP integrada
-        </li>
-        <li class="flex items-center">
-          <svg
-            class="w-5 h-5 mr-2 text-blue-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clip-rule="evenodd"
-            ></path>
-          </svg>
-          Consulta RENIEC automática
-        </li>
-        <li class="flex items-center">
-          <svg
-            class="w-5 h-5 mr-2 text-blue-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clip-rule="evenodd"
-            ></path>
-          </svg>
-          Generación de PDFs
-        </li>
-      </ul>
-    </div>
-
-    <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6">
-      <h3 class="text-xl font-bold text-green-900 mb-3">
-        🚀 API REST Disponible
-      </h3>
-      <p class="text-green-800 mb-3">
-        Integra el sistema con tus aplicaciones usando nuestra API REST
-        versionada.
-      </p>
-      <div class="bg-white rounded p-3 font-mono text-sm text-gray-700">
-        <div class="mb-2">GET /api/v1/clientes</div>
-        <div class="mb-2">POST /api/v1/prestamos</div>
-        <div>GET /api/v1/prestamos/{id}</div>
-      </div>
-    </div>
-  </div>
-</div> -->
-  {% endblock %} {% block scripts %}
-  <script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
-  {% endblock %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/loan-summary.js') }}"></script>
+{% endblock %}
