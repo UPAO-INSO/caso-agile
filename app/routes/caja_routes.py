@@ -2,12 +2,20 @@
 
 import logging
 from datetime import date, datetime
-from flask import Blueprint, jsonify, request
+from flask import jsonify, request, render_template
+from app.routes import caja_bp
 from app.services.caja_service import CajaService
 
 logger = logging.getLogger(__name__)
 
-caja_bp = Blueprint('caja', __name__, url_prefix='/caja')
+# → Vista principal de cuadre de caja
+@caja_bp.route('/', methods=['GET'])
+@caja_bp.route('/cuadre', methods=['GET'])
+def cuadre_caja():
+    """Vista principal del cuadre de caja"""
+    return render_template('pages/caja/cuadre.html', 
+                         title='Cuadre de Caja',
+                         fecha_hoy=date.today())
 
 # → Obtiene el resumen de caja por fecha
 @caja_bp.route('/resumen/diario', methods=['GET'])
@@ -182,3 +190,33 @@ def obtener_estadisticas():
     except Exception as exc:
         logger.error(f"Error en obtener_estadisticas: {exc}", exc_info=True)
         return jsonify({'error': 'Error interno del servidor'}), 500
+
+# → DEBUG: Obtiene TODOS los pagos para verificar fechas
+@caja_bp.route('/debug/todos-pagos', methods=['GET'])
+def debug_todos_pagos():
+    """Endpoint de debug para ver todos los pagos registrados"""
+    try:
+        from app.models import Pago
+        from app.common.extensions import db
+        
+        pagos = db.session.query(Pago).order_by(Pago.pago_id.desc()).limit(50).all()
+        
+        resultado = []
+        for pago in pagos:
+            resultado.append({
+                'pago_id': pago.pago_id,
+                'fecha_pago': pago.fecha_pago.isoformat() if pago.fecha_pago else None,
+                'monto_pagado': float(pago.monto_pagado),
+                'ajuste_redondeo': float(pago.ajuste_redondeo),
+                'medio_pago': pago.medio_pago.value,
+                'cuota_id': pago.cuota_id
+            })
+        
+        return jsonify({
+            'total_pagos': len(resultado),
+            'pagos': resultado
+        }), 200
+        
+    except Exception as exc:
+        logger.error(f"Error en debug_todos_pagos: {exc}", exc_info=True)
+        return jsonify({'error': str(exc)}), 500

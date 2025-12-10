@@ -47,6 +47,7 @@ class Pago(db.Model):
     
     monto_mora = db.Column(db.Numeric(12, 2), default=0.00, nullable=False)
     fecha_pago = db.Column(db.Date, nullable=False)
+    metodo_pago = db.Column(SQLAlchemyEnum(MetodoPagoEnum), nullable=False, comment='Método de pago: EFECTIVO, TARJETA, TRANSFERENCIA')
     medio_pago = db.Column(SQLAlchemyEnum(MedioPagoEnum), nullable=False)
     comprobante_referencia = db.Column(db.String(100), nullable=True)
     observaciones = db.Column(db.Text, nullable=True)

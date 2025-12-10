@@ -121,13 +121,15 @@ class PagoService:
                 return None, f"Medio de pago inválido: {medio_pago}", 400
 
             fecha_pago = fecha_pago or date.today()
+            
+            logger.info(f"Registrando pago para préstamo {prestamo_id} con fecha: {fecha_pago}")
 
             # APLICAR REDONDEO si es pago en EFECTIVO
-            monto_contable = monto_pagado  # Monto que debería pagarse (deuda real)
+            monto_contable = Decimal(str(monto_pagado))  # Convertir a Decimal
             ajuste_redondeo = Decimal('0.00')
             
             if medio_pago_enum == MedioPagoEnum.EFECTIVO:
-                monto_pagado_redondeado = PagoService.aplicar_redondeo(monto_pagado)
+                monto_pagado_redondeado = PagoService.aplicar_redondeo(Decimal(str(monto_pagado)))
                 ajuste_redondeo = monto_pagado_redondeado - monto_contable  # Puede ser positivo o negativo
                 monto_pagado = monto_pagado_redondeado
                 
@@ -135,6 +137,8 @@ class PagoService:
                     f"Pago EFECTIVO - Contable: S/ {monto_contable}, "
                     f"Cliente paga: S/ {monto_pagado}, Ajuste: S/ {ajuste_redondeo}"
                 )
+            else:
+                monto_pagado = Decimal(str(monto_pagado))
 
             # Actualizar moras de todas las cuotas
             MoraService.actualizar_mora_prestamo(prestamo_id)

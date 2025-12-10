@@ -7,7 +7,6 @@ from app.models import Cuota, Prestamo
 
 logger = logging.getLogger(__name__)
 
-
 class MoraService:
     """Servicio para calcular y aplicar mora a las cuotas"""
 
