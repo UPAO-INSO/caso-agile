@@ -524,16 +524,36 @@ async function verCronogramaPagos() {
 
     let saldo = monto;
     let html = "";
-    const fechaInicio = new Date();
+    // Tomar la fecha seleccionada por el usuario en el input
+    const fOtorgamientoInput = document.getElementById("f_otorgamiento");
+    let fechaInicio;
+    let fechaOtorgamientoValor = fOtorgamientoInput ? fOtorgamientoInput.value : "";
+    console.log("Fecha de otorgamiento seleccionada:", fechaOtorgamientoValor);
+    if (fechaOtorgamientoValor) {
+      // Validar formato YYYY-MM-DD
+      const partes = fechaOtorgamientoValor.split("-");
+      if (partes.length === 3) {
+        fechaInicio = new Date(partes[0], partes[1] - 1, partes[2]);
+      } else {
+        showAlert("La fecha de otorgamiento es inválida", "error");
+        return;
+      }
+    } else {
+      // Si no hay fecha seleccionada, usar hoy
+      const hoy = new Date();
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    }
 
     for (let i = 1; i <= cuotas; i++) {
       const interes = saldo * tasaMensual;
       const capital = cuotaMensual - interes;
       saldo = Math.max(0, saldo - capital);
 
-      // Calcular fecha de vencimiento: sumar exactamente 30 días por cada cuota
+      // Calcular fecha de vencimiento: mismo día del mes, sumando meses
       const fechaVencimiento = new Date(fechaInicio);
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + i * 30);
+      fechaVencimiento.setMonth(fechaVencimiento.getMonth() + i);
+
+      // Si el mes siguiente no tiene el mismo día, JS ajusta al último día del mes automáticamente
 
       // Estilo alternado para filas
       const rowClass = i % 2 === 0 ? "bg-gray-50" : "bg-white";
@@ -700,11 +720,20 @@ async function crearNuevoPrestamo(event) {
   saveButton.disabled = true;
 
   try {
-    // Obtener fecha actual en formato YYYY-MM-DD (zona horaria local)
-    const hoy = new Date();
-    const fechaLocal = `${hoy.getFullYear()}-${String(
-      hoy.getMonth() + 1
-    ).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+    // Tomar la fecha seleccionada por el usuario en el input
+    // Leer el valor actual del input de fecha justo antes de enviar
+    let fechaOtorgamiento = "";
+    const fOtorgamientoInput = document.getElementById("f_otorgamiento");
+    if (fOtorgamientoInput) {
+      fechaOtorgamiento = fOtorgamientoInput.value;
+    }
+    if (!fechaOtorgamiento) {
+      // Si el usuario no selecciona fecha, usar la fecha actual
+      const hoy = new Date();
+      fechaOtorgamiento = `${hoy.getFullYear()}-${String(
+        hoy.getMonth() + 1
+      ).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+    }
 
     const prestamoData = {
       dni: window.currentClient.dni,
@@ -712,7 +741,7 @@ async function crearNuevoPrestamo(event) {
       monto: parseFloat(monto),
       interes_tea: teaNumerico, // Usar el TEA ingresado por el usuario
       plazo: parseInt(cuotas),
-      f_otorgamiento: fechaLocal,
+      f_otorgamiento: fechaOtorgamiento,
     };
 
     const response = await fetch("/api/v1/prestamos", {
