@@ -2,7 +2,7 @@
 
 {% block content %}
 <!-- Overlay full-screen que muestra caja cerrada (excepto navbar) -->
-<div id="caja_cerrada_overlay" style="display:none; position:fixed; top:64px; left:0; right:0; bottom:0; background:white; z-index:50; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+<div id="caja_cerrada_overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:white; z-index:50; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
     <div style="text-align:center;">
         <h1 id="caja_cerrada_texto" style="font-size:48px; font-weight:700; color:#111827; margin-bottom:16px;">Caja cerrada</h1>
         <p id="caja_cerrada_detalle" style="color:#6B7280; margin-bottom:30px; display:none; font-size:18px;"></p>
@@ -625,12 +625,19 @@
     function mostrarOverlayCajaCerrada(info) {
         const overlay = document.getElementById('caja_cerrada_overlay');
         if (!overlay) return;
+        
+        // Bloquear scroll completamente
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        document.body.dataset.scrollY = String(scrollY);
+        
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100vh';
+        
+        // Mostrar overlay
         overlay.style.display = 'flex';
-        
-        // También guardar en localStorage y mostrar banner global
-        guardarEstadoCajaCerrada(info);
-        
-        // Mostrar texto y, si hay incidencia, mostrar detalle pequeño
+
+        // Actualizar texto del overlay
         const texto = document.getElementById('caja_cerrada_texto');
         texto.textContent = 'Caja cerrada';
         const detalle = document.getElementById('caja_cerrada_detalle');
@@ -640,6 +647,9 @@
         } else {
             detalle.style.display = 'none';
         }
+        
+        // Guardar en localStorage (esto mostrará el banner rojo en OTRAS páginas, no aquí)
+        guardarEstadoCajaCerrada(info);
     }
 
     function ocultarOverlayCajaCerrada() {
@@ -647,7 +657,22 @@
         if (!overlay) return;
         overlay.style.display = 'none';
         
-        // También limpiar el estado global
+        // Restaurar estilos de scroll y overflow
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.height = '';
+        document.body.style.paddingRight = '';
+        
+        // Restaurar scroll a la posición guardada
+        const saved = parseInt(document.body.dataset.scrollY || '0');
+        delete document.body.dataset.scrollY;
+        window.scrollTo(0, saved);
+        
+        // Restaurar overlay a estilos por defecto
+        overlay.style.top = '64px';
+        overlay.style.height = '';
+
+        // Limpiar estado global
         limpiarEstadoCajaCerrada();
     }
 

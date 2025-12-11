@@ -413,18 +413,27 @@ class CajaService:
 
     @staticmethod
     def abrir_caja(fecha: date) -> bool:
-        """Reabre la caja (elimina el estado de cierre en memoria).
+        """Reabre la caja (elimina el estado de cierre en memoria) y SIEMPRE registra apertura de 400.
         
         Returns:
             True siempre - la caja queda abierta después de esta operación
         """
-        key = fecha.isoformat()
-        estaba_cerrada = key in CERRADAS
-        if estaba_cerrada:
-            del CERRADAS[key]
-            logger.info(f"Caja abierta para fecha {fecha} - estaba cerrada")
-        else:
-            logger.info(f"Caja abierta para fecha {fecha} - ya estaba abierta")
-        # Siempre retorna True porque el resultado es: caja abierta
-        return True
+        try:
+            key = fecha.isoformat()
+            estaba_cerrada = key in CERRADAS
+            if estaba_cerrada:
+                del CERRADAS[key]
+                logger.info(f"Caja abierta para fecha {fecha} - estaba cerrada")
+            else:
+                logger.info(f"Caja abierta para fecha {fecha} - ya estaba abierta")
+            
+            # SIEMPRE registrar o actualizar apertura con monto 400
+            CajaService.registrar_apertura(fecha, Decimal(  '400'), usuario_id=None)
+            logger.info(f"Apertura de S/ 400 registrada/actualizada para {fecha}")
+            
+            return True
+            
+        except Exception as exc:
+            logger.error(f"Error en abrir_caja: {exc}", exc_info=True)
+            raise
 
