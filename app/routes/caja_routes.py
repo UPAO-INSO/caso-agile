@@ -328,11 +328,8 @@ def abrir_caja_route():
             except ValueError:
                 return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
 
-        ok = CajaService.abrir_caja(fecha)
-        if ok:
-            return jsonify({'success': True}), 200
-        else:
-            return jsonify({'success': False, 'message': 'La caja no estaba cerrada'}), 200
+        CajaService.abrir_caja(fecha)
+        return jsonify({'success': True, 'message': 'Caja abierta correctamente'}), 200
 
     except Exception as exc:
         logger.error(f"Error en abrir_caja_route: {exc}", exc_info=True)
