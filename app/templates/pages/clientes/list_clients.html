@@ -1,0 +1,111 @@
+{% extends 'base.html' %} {% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+      <svg
+        class="w-7 h-7"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 640 640"
+      >
+        <!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.-->
+        <path
+          d="M384 224L480 224L480 160L384 160L384 224zM96 224L96 144C96 117.5 117.5 96 144 96L496 96C522.5 96 544 117.5 544 144L544 240C544 266.5 522.5 288 496 288L144 288C117.5 288 96 266.5 96 240L96 224zM256 480L480 480L480 416L256 416L256 480zM96 480L96 400C96 373.5 117.5 352 144 352L496 352C522.5 352 544 373.5 544 400L544 496C544 522.5 522.5 544 496 544L144 544C117.5 544 96 522.5 96 496L96 480z"
+        />
+      </svg>
+      Clientes con Préstamos
+    </h1>
+    <p class="text-gray-600 mt-1">
+      Consulta el historial de préstamos de cada cliente
+    </p>
+  </div>
+
+  <!-- Lista de clientes -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    {% if clientes %}
+    <div class="divide-y divide-gray-200">
+      {% for c in clientes %}
+      <a
+        href="{{ url_for('prestamos_view.ver_prestamos_cliente_view', cliente_id=c.id) }}"
+        class="block px-6 py-4 hover:bg-gray-50 transition-colors"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div
+                class="w-12 h-12 bg-blue-400/70 rounded-full flex items-center justify-center"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="30"
+                  height="30"
+                  viewBox="0 0 1536 1792"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M1201 784q47 14 89.5 38t89 73t79.5 115.5t55 172t22 236.5q0 154-100 263.5T1195 1792H341q-141 0-241-109.5T0 1419q0-131 22-236.5t55-172T156.5 895t89-73t89.5-38q-79-125-79-272q0-104 40.5-198.5T406 150T569.5 40.5T768 0t198.5 40.5T1130 150t109.5 163.5T1280 512q0 147-79 272M768 128q-159 0-271.5 112.5T384 512t112.5 271.5T768 896t271.5-112.5T1152 512t-112.5-271.5T768 128m427 1536q88 0 150.5-71.5T1408 1419q0-239-78.5-377T1104 897q-145 127-336 127T432 897q-147 7-225.5 145T128 1419q0 102 62.5 173.5T341 1664z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-semibold text-gray-900">
+                {{ c.nombre_completo }}
+              </h3>
+              <svg
+                class="w-5 h-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 640 640"
+              >
+                <path
+                  d="M96 96C60.7 96 32 124.7 32 160L32 480C32 515.3 60.7 544 96 544L544 544C579.3 544 608 515.3 608 480L608 160C608 124.7 579.3 96 544 96L96 96zM176 352L240 352C284.2 352 320 387.8 320 432C320 440.8 312.8 448 304 448L112 448C103.2 448 96 440.8 96 432C96 387.8 131.8 352 176 352zM152 256C152 225.1 177.1 200 208 200C238.9 200 264 225.1 264 256C264 286.9 238.9 312 208 312C177.1 312 152 286.9 152 256zM392 208L504 208C517.3 208 528 218.7 528 232C528 245.3 517.3 256 504 256L392 256C378.7 256 368 245.3 368 232C368 218.7 378.7 208 392 208zM392 304L504 304C517.3 304 528 314.7 528 328C528 341.3 517.3 352 504 352L392 352C378.7 352 368 341.3 368 328C368 314.7 378.7 304 392 304z"
+                />
+              </svg>
+              <p class="text-sm text-gray-500">DNI: {{ c.dni }}</p>
+            </div>
+          </div>
+          <div class="flex items-center text-blue-600">
+            <span class="text-sm font-medium mr-2">Ver préstamos</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- Estado vacío -->
+    <div class="text-center py-16">
+      <div class="text-6xl mb-4 text-gray-300">
+        <i class="fa-solid fa-users-slash"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">
+        No hay clientes con préstamos
+      </h3>
+      <p class="text-gray-600 mb-6">
+        Aún no hay clientes registrados con historial de préstamos
+      </p>
+      <a
+        href="{{ url_for('prestamos_view.index_view') }}"
+        class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        <i class="fa-solid fa-home mr-2"></i>
+        Volver al Inicio
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Botón volver -->
+  {% if clientes %}
+  <div class="mt-6">
+    <a
+      href="{{ url_for('prestamos_view.index_view') }}"
+      class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+    >
+      <i class="fa-solid fa-arrow-left mr-2"></i>
+      Volver al Inicio
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

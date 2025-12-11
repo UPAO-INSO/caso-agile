@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Pago - Financiera</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 30px 25px;
+        }
+        .success-badge {
+            background-color: #d1fae5;
+            border: 2px solid #10b981;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .success-badge .icon {
+            font-size: 40px;
+            color: #059669;
+            margin-bottom: 10px;
+        }
+        .success-badge h2 {
+            margin: 0;
+            color: #065f46;
+            font-size: 20px;
+        }
+        .success-badge p {
+            margin: 5px 0 0 0;
+            color: #047857;
+            font-size: 14px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+        .voucher-card {
+            background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .voucher-header {
+            text-align: center;
+            border-bottom: 2px dashed #d1d5db;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .voucher-header h3 {
+            margin: 0;
+            color: #1f2937;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .voucher-header .transaction-id {
+            font-family: 'Courier New', monospace;
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        .voucher-header .date {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e5e7eb;
+            font-size: 14px;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #1f2937;
+            font-weight: 600;
+            text-align: right;
+        }
+        .info-value.mono {
+            font-family: 'Courier New', monospace;
+        }
+        .financial-details {
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .financial-details h4 {
+            margin: 0 0 12px 0;
+            color: #374151;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .financial-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+        .financial-label {
+            color: #6b7280;
+        }
+        .financial-value {
+            font-family: 'Courier New', monospace;
+            color: #374151;
+            font-weight: 600;
+        }
+        .total-row {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 2px solid #d1d5db;
+        }
+        .total-row .financial-label {
+            color: #1f2937;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .total-row .financial-value {
+            color: #059669;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .payment-method {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .payment-method strong {
+            color: #1e40af;
+            font-size: 14px;
+        }
+        .conciliation-box {
+            background-color: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .conciliation-box h4 {
+            margin: 0 0 10px 0;
+            color: #92400e;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        .conciliation-box .conciliation-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 12px;
+        }
+        .conciliation-box .conciliation-label {
+            color: #78350f;
+        }
+        .conciliation-box .conciliation-value {
+            font-family: 'Courier New', monospace;
+            color: #92400e;
+            font-weight: 600;
+        }
+        .law-badge {
+            display: inline-block;
+            background-color: #fbbf24;
+            color: #78350f;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+        .info-box {
+            background-color: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #1e40af;
+            line-height: 1.6;
+        }
+        .info-box strong {
+            color: #1e3a8a;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .attachment-note {
+            background-color: #f3f4f6;
+            border: 1px dashed #9ca3af;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .attachment-note strong {
+            color: #1f2937;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .voucher-card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>FINANCIERA DEMO</h1>
+            <p class="subtitle">Comprobante de Pago</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Success Badge -->
+            <div class="success-badge">
+                <div class="icon">✓</div>
+                <h2>¡Pago Registrado Exitosamente!</h2>
+                <p>Tu pago ha sido procesado correctamente</p>
+            </div>
+
+            <div class="greeting">Hola, <strong>{{ nombre_cliente }}</strong></div>
+            
+            <p style="color: #4b5563; margin-bottom: 25px; font-size: 14px;">
+                Confirmamos que hemos recibido tu pago correspondiente a la 
+                <strong>Cuota N° {{ numero_cuota }}</strong> de tu préstamo. 
+                A continuación, encontrarás el detalle completo de la transacción.
+            </p>
+
+            <!-- Voucher Card -->
+            <div class="voucher-card">
+                <div class="voucher-header">
+                    <h3>Constancia de Pago</h3>
+                    <div class="transaction-id">Operación #{{ pago_id }}</div>
+                    <div class="date">{{ fecha_pago }} {{ hora_pago }}</div>
+                </div>
+
+                <!-- Client & Loan Info -->
+                <div class="info-row">
+                    <span class="info-label">Cliente:</span>
+                    <span class="info-value">{{ nombre_cliente }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">DNI:</span>
+                    <span class="info-value mono">{{ dni_cliente }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Préstamo N°:</span>
+                    <span class="info-value mono">#{{ prestamo_id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Cuota N°:</span>
+                    <span class="info-value">{{ numero_cuota }} de {{ total_cuotas }}</span>
+                </div>
+                {% if comprobante_referencia %}
+                <div class="info-row">
+                    <span class="info-label">Comprobante:</span>
+                    <span class="info-value mono">{{ comprobante_referencia }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Financial Details -->
+                <div class="financial-details">
+                    <h4>💰 Detalle Financiero</h4>
+                    <div class="financial-row">
+                        <span class="financial-label">Amortización Capital:</span>
+                        <span class="financial-value">S/ {{ "%.2f"|format(monto_capital) }}</span>
+                    </div>
+                    <div class="financial-row">
+                        <span class="financial-label">Intereses:</span>
+                        <span class="financial-value">S/ {{ "%.2f"|format(monto_interes) }}</span>
+                    </div>
+                    {% if mora_otros > 0 %}
+                    <div class="financial-row">
+                        <span class="financial-label">Mora/Otros:</span>
+                        <span class="financial-value">S/ {{ "%.2f"|format(mora_otros) }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="financial-row total-row">
+                        <span class="financial-label">TOTAL PAGADO:</span>
+                        <span class="financial-value">S/ {{ "%.2f"|format(monto_pagado) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-method">
+                <strong>Método de Pago:</strong> {{ metodo_pago }}
+            </div>
+
+            <!-- Conciliation Box (Solo si hay ajuste de redondeo) -->
+            {% if ajuste_redondeo != 0 %}
+            <div class="conciliation-box">
+                <h4>📊 Conciliación Contable <span class="law-badge">Ley 29571</span></h4>
+                <div class="conciliation-row">
+                    <span class="conciliation-label">Monto Contable (Deuda):</span>
+                    <span class="conciliation-value">S/ {{ "%.2f"|format(monto_contable) }}</span>
+                </div>
+                <div class="conciliation-row">
+                    <span class="conciliation-label">Monto Recibido (Caja):</span>
+                    <span class="conciliation-value">S/ {{ "%.2f"|format(monto_pagado) }}</span>
+                </div>
+                <div class="conciliation-row">
+                    <span class="conciliation-label">Ajuste por Redondeo:</span>
+                    <span class="conciliation-value">S/ {{ "%.2f"|format(ajuste_redondeo) }}</span>
+                </div>
+                <p style="font-size: 11px; color: #92400e; margin-top: 10px; margin-bottom: 0;">
+                    * Se aplicó redondeo al múltiplo de S/ 0.10 más cercano según Ley N° 29571 
+                    (Ley de Redondeo a favor del consumidor).
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <p>
+                    <strong>Estado del Préstamo:</strong> Tu préstamo está al día. 
+                    {% if cuotas_pendientes > 0 %}
+                    Tienes {{ cuotas_pendientes }} cuota(s) pendiente(s). 
+                    La próxima cuota vence el <strong>{{ proxima_fecha_vencimiento }}</strong>.
+                    {% else %}
+                    ¡Felicidades! Has completado el pago de todas las cuotas de tu préstamo.
+                    {% endif %}
+                </p>
+            </div>
+
+            {% if observaciones %}
+            <div style="background-color: #f9fafb; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                <p style="margin: 0; font-size: 13px; color: #4b5563;">
+                    <strong>Observaciones:</strong> {{ observaciones }}
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Attachment Note -->
+            <div class="attachment-note">
+                📎 <strong>Adjunto:</strong> Comprobante de pago en formato PDF
+            </div>
+
+            <p style="color: #6b7280; font-size: 13px; margin-top: 25px; text-align: center;">
+                Conserva este comprobante para tu control personal. Si tienes alguna consulta, 
+                no dudes en contactarnos.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>© 2025 Financiera Demo S.A.</strong> | RUC 20123456789</p>
+            <p>Av. Financiera 123, San Isidro, Lima, Perú</p>
+            <p>
+                <a href="#">Términos y Condiciones</a> | 
+                <a href="#">Política de Privacidad</a> | 
+                <a href="#">Contacto</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

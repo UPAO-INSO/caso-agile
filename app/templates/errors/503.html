@@ -1,0 +1,128 @@
+{% extends "base.html" %} {% block title %}503 - Servicio No Disponible{%
+endblock %} {% block content %}
+<div
+  class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-100 px-4"
+>
+  <div class="max-w-lg w-full">
+    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+      <!-- Maintenance Icon -->
+      <div class="mb-6">
+        <div class="mx-auto flex items-center justify-center h-32 w-32">
+          <svg
+            class="w-full h-full text-blue-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Error Code -->
+      <h1 class="text-7xl font-bold text-blue-600 mb-4">503</h1>
+
+      <!-- Error Message -->
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+        Servicio No Disponible
+      </h2>
+
+      <p class="text-gray-600 mb-8">
+        El servicio no está disponible temporalmente debido a mantenimiento o
+        sobrecarga del servidor. Por favor, intenta más tarde.
+      </p>
+
+      <!-- Status Info -->
+      <div class="bg-blue-50 rounded-lg p-4 mb-8">
+        <div class="flex items-center justify-center mb-3">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+          ></div>
+        </div>
+        <p class="text-sm text-blue-800">
+          Estamos trabajando para resolver el problema...
+        </p>
+      </div>
+
+      <!-- What to do -->
+      <div class="bg-gray-50 rounded-lg p-4 mb-8 text-left">
+        <p class="text-sm font-medium text-gray-700 mb-2">¿Qué puedes hacer?</p>
+        <ul class="text-sm text-gray-600 space-y-1">
+          <li>✓ Espera unos minutos e intenta nuevamente</li>
+          <li>✓ Verifica nuestro estado en redes sociales</li>
+          <li>✓ Si es urgente, contáctanos directamente</li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          onclick="window.location.reload()"
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Reintentar
+        </button>
+
+        <a
+          href="/"
+          class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+          Ir al Inicio
+        </a>
+      </div>
+    </div>
+
+    <!-- Estimated Time -->
+    <div class="mt-6 text-center">
+      <p class="text-sm text-gray-500">
+        Tiempo estimado de recuperación:
+        <span class="font-semibold text-gray-700">5-10 minutos</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-refresh después de 30 segundos
+  setTimeout(function () {
+    window.location.reload();
+  }, 30000);
+</script>
+{% endblock %}

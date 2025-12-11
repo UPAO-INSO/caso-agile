@@ -1,0 +1,219 @@
+{% extends "base.html" %} {% from 'components/macros/badge_macros.html' import
+badge %} {% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Breadcrumb -->
+  <nav class="mb-6 text-sm">
+    <ol class="flex items-center space-x-2">
+      <li>
+        <a
+          href="{{ url_for('clientes_view.listar_clientes_view') }}"
+          class="text-blue-600 hover:text-blue-800"
+          >Clientes</a
+        >
+      </li>
+      <li class="text-gray-400">/</li>
+      <li>
+        <a
+          href="{{ url_for('clientes_view.ver_cliente_view', cliente_id=cliente.cliente_id) }}"
+          class="text-blue-600 hover:text-blue-800"
+          >{{ cliente.dni }}</a
+        >
+      </li>
+      <li class="text-gray-400">/</li>
+      <li class="text-gray-600">Préstamos</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">
+      <i class="fa-solid fa-money-bill-wave mr-2"></i> Préstamos del Cliente
+    </h1>
+    <p class="text-gray-600 mt-1">
+      {{ cliente.nombre_completo }} - DNI: {{ cliente.dni }}
+    </p>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex items-center">
+        <div class="text-3xl mr-3 text-gray-600">
+          <i class="fa-solid fa-clipboard-list"></i>
+        </div>
+        <div>
+          <div class="text-sm text-gray-500">Total</div>
+          <div class="text-2xl font-bold">{{ prestamos|length }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-green-50 rounded-lg shadow-md p-6">
+      <div class="flex items-center">
+        <div class="text-3xl mr-3 text-green-600">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <div class="text-sm text-green-600">Vigentes</div>
+          <div class="text-2xl font-bold text-green-900">
+            {{ prestamos|selectattr('estado.value', 'equalto',
+            'VIGENTE')|list|length }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-gray-50 rounded-lg shadow-md p-6">
+      <div class="flex items-center">
+        <div class="text-3xl mr-3 text-gray-600">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <div>
+          <div class="text-sm text-gray-600">Cancelados</div>
+          <div class="text-2xl font-bold text-gray-900">
+            {{ prestamos|selectattr('estado.value', 'equalto',
+            'CANCELADO')|list|length }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 rounded-lg shadow-md p-6">
+      <div class="flex items-center">
+        <div class="text-3xl mr-3 text-blue-600">
+          <i class="fa-solid fa-sack-dollar"></i>
+        </div>
+        <div>
+          <div class="text-sm text-blue-600">Monto Total</div>
+          <div class="text-2xl font-bold text-blue-900">
+            S/ {{ "{:,.2f}".format(prestamos|map(attribute='monto_total')|sum)
+            }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Préstamos -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    {% if prestamos %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              ID
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Monto
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              TEA
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Plazo
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Fecha
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Estado
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for prestamo in prestamos %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+            >
+              #{{ prestamo.prestamo_id }}
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900"
+            >
+              S/ {{ "{:,.2f}".format(prestamo.monto_total) }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ "{:.2f}".format(prestamo.interes_tea) }}%
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ prestamo.plazo }} meses
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ prestamo.f_otorgamiento.strftime('%d/%m/%Y') }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if prestamo.estado.value == 'VIGENTE' %} {{ badge('success',
+              'Vigente') }} {% else %} {{ badge('info', 'Cancelado') }} {% endif
+              %}
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+            >
+              <a
+                href="{{ url_for('prestamos_view.ver_prestamo_view', prestamo_id=prestamo.prestamo_id) }}"
+                class="text-blue-600 hover:text-blue-900"
+              >
+                Ver Detalle
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <div class="text-6xl mb-4 text-gray-400">
+        <i class="fa-solid fa-money-bill-wave"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">No hay préstamos</h3>
+      <p class="text-gray-600 mb-6">
+        Este cliente aún no tiene préstamos registrados
+      </p>
+      <a
+        href="{{ url_for('prestamos.list_clientes_con_prestamos') }}"
+        class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        Ver Préstamos
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Botones de acción -->
+  <div class="mt-6 flex gap-3">
+    <a
+      href="{{ url_for('clientes_view.ver_cliente_view', cliente_id=cliente.cliente_id) }}"
+      class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+    >
+      ← Volver al Cliente
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -4,15 +4,51 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title or "Mi sitio Flask" }}</title>
+    <script
+      src="https://kit.fontawesome.com/cf7e82587e.js"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+    <style>
+      .flash-wrapper {
+        max-width: 960px;
+        margin: 0 auto 1.5rem;
+      }
+      .flash {
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+      }
+      .flash-success {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .flash-error {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+    </style>
   </head>
   <body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+    <!-- Script global para gestión de cierre de caja -->
+    <script src="{{ url_for('static', filename='js/caja_state.js') }}"></script>
+    
     {% include 'components/shared/navbar.html' %}
 
-    <main class="flex-1 p-6">{% block content %}{% endblock %}</main>
+    <main class="flex-1 p-6">
+      {% with messages = get_flashed_messages(with_categories=True) %} {% if
+      messages %}
+      <div class="flash-wrapper">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </main>
 
     {% include 'components/shared/footer.html' %}
   </body>

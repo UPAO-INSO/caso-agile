@@ -1,0 +1,13 @@
+{# Componente: Table Uso: {% call(header) table('tabla-id') %}
+<!-- Definir headers -->
+{% endcall %} #}
+<div class="overflow-x-auto">
+  <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+    <thead class="bg-gray-50">
+      {{ caller() if caller else '' }}
+    </thead>
+    <tbody class="divide-y divide-gray-200">
+      {% block table_body %}{% endblock %}
+    </tbody>
+  </table>
+</div>

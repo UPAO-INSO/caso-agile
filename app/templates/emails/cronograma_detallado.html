@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma de Pagos - Financiera</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 700px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 1px;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 30px 25px;
+        }
+        .greeting {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 15px;
+        }
+        .intro-text {
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.8;
+        }
+        .summary-card {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .summary-card h3 {
+            margin-top: 0;
+            color: #1e3a8a;
+            font-size: 18px;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        .summary-label {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .summary-value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .summary-value.highlight {
+            color: #3b82f6;
+            font-size: 16px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        th.text-right, td.text-right {
+            text-align: right;
+        }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tr:hover {
+            background-color: #f8fafc;
+        }
+        tr.cuota-ajuste {
+            background-color: #fef3c7;
+        }
+        tr.cuota-ajuste td {
+            font-weight: 600;
+            color: #92400e;
+        }
+        .badge-ajuste {
+            display: inline-block;
+            background-color: #fbbf24;
+            color: #78350f;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 5px;
+        }
+        .totals-row {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+        .totals-row td {
+            border-top: 2px solid #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+        .info-box {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .info-box h4 {
+            margin-top: 0;
+            color: #1e3a8a;
+            font-size: 14px;
+        }
+        .info-box ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin-bottom: 8px;
+            color: #1e40af;
+            font-size: 13px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            table {
+                font-size: 11px;
+            }
+            th, td {
+                padding: 8px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>FINANCIERA DEMO</h1>
+            <p class="subtitle">Tu socio estratégico en cada paso</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">¡Hola, {{ nombre_cliente }}!</div>
+            
+            <p class="intro-text">
+                ¡Felicidades! Tu préstamo ha sido <strong>desembolsado exitosamente</strong>. 
+                A continuación, encontrarás el cronograma detallado de pagos con todas las cuotas, 
+                incluyendo el desglose de capital e intereses. Por favor, revisa las fechas de 
+                vencimiento para mantener un historial crediticio positivo.
+            </p>
+
+            <!-- Resumen del Préstamo -->
+            <div class="summary-card">
+                <h3>📋 Resumen del Préstamo</h3>
+                <div class="summary-row">
+                    <span class="summary-label">Préstamo N°:</span>
+                    <span class="summary-value">#{{ prestamo_id }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Monto Desembolsado:</span>
+                    <span class="summary-value highlight">S/ {{ "%.2f"|format(monto_total) }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Tasa de Interés (TEA):</span>
+                    <span class="summary-value">{{ "%.2f"|format(interes_tea) }}%</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Plazo:</span>
+                    <span class="summary-value">{{ plazo }} meses</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Fecha de Otorgamiento:</span>
+                    <span class="summary-value">{{ fecha_otorgamiento }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Primera Cuota:</span>
+                    <span class="summary-value">{{ primera_fecha_vencimiento }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Número de Cuotas:</span>
+                    <span class="summary-value">{{ num_cuotas }}</span>
+                </div>
+            </div>
+
+            <!-- Cronograma Completo -->
+            <div class="section-title">📅 Cronograma Detallado de Pagos</div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Cuota</th>
+                            <th>Vencimiento</th>
+                            <th class="text-right">Total Cuota</th>
+                            <th class="text-right">Capital</th>
+                            <th class="text-right">Interés</th>
+                            <th class="text-right">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cuota in cronograma %}
+                        <tr {% if cuota.es_cuota_ajuste %}class="cuota-ajuste"{% endif %}>
+                            <td>
+                                {{ cuota.numero_cuota }}
+                                {% if cuota.es_cuota_ajuste %}
+                                <span class="badge-ajuste">Ajuste</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ cuota.fecha_vencimiento.strftime('%d/%m/%Y') }}</td>
+                            <td class="text-right">S/ {{ "%.2f"|format(cuota.monto_cuota) }}</td>
+                            <td class="text-right">S/ {{ "%.2f"|format(cuota.monto_capital) }}</td>
+                            <td class="text-right">S/ {{ "%.2f"|format(cuota.monto_interes) }}</td>
+                            <td class="text-right">S/ {{ "%.2f"|format(cuota.saldo_capital) }}</td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Totales -->
+                        <tr class="totals-row">
+                            <td colspan="2"><strong>TOTALES</strong></td>
+                            <td class="text-right">S/ {{ "%.2f"|format(total_cuotas) }}</td>
+                            <td class="text-right">S/ {{ "%.2f"|format(total_capital) }}</td>
+                            <td class="text-right">S/ {{ "%.2f"|format(total_interes) }}</td>
+                            <td class="text-right">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Información Importante -->
+            <div class="info-box">
+                <h4>ℹ️ Información Importante:</h4>
+                <ul>
+                    <li>Las cuotas marcadas como <strong>"AJUSTE"</strong> corresponden al ajuste final del cronograma para garantizar la exactitud contable.</li>
+                    <li>El incumplimiento de pago generará intereses moratorios según el tarifario vigente.</li>
+                    <li>Los pagos realizados después de las 6:00 PM se procesarán al día siguiente hábil.</li>
+                    <li>Para pagos en efectivo, se aplicará la Ley N° 29571 (redondeo al múltiplo de S/ 0.10 más cercano).</li>
+                    <li>Conserva este cronograma para tu referencia personal. También está disponible en formato PDF adjunto.</li>
+                </ul>
+            </div>
+
+            <p style="color: #64748b; font-size: 14px; margin-top: 20px;">
+                Si tienes alguna consulta, no dudes en contactarnos. ¡Gracias por confiar en nosotros!
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>© 2025 Financiera Demo S.A.</strong> | RUC 20123456789</p>
+            <p>Av. Financiera 123, San Isidro, Lima, Perú</p>
+            <p>
+                <a href="#">Términos y Condiciones</a> | 
+                <a href="#">Política de Privacidad</a> | 
+                <a href="#">Contacto</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

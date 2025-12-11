@@ -1,62 +1,210 @@
+"""
+Application Factory
+Crea y configura la aplicación Flask usando el patrón Factory.
+Permite crear múltiples instancias con diferentes configuraciones (dev, prod, test).
+"""
+
 import os
 import importlib
 from flask import Flask
 from dotenv import load_dotenv
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 
-# Carga las variables de entorno desde el archivo .env
-load_dotenv() 
+# Cargar variables de entorno desde .env
+load_dotenv()
 
-db = SQLAlchemy()
-migrate = Migrate()
+# Importar extensiones centralizadas
+from app.common.extensions import db, migrate, mail
+from app.common.config import get_config
 
-def create_app():
-    # Inicializa la aplicación Flask
-    app = Flask(__name__)
+# Módulos que se registrarán automáticamente
+MODULES = ['clients', 'prestamos', 'declaraciones', 'cuotas']
 
-    # 1. Configurar la aplicación
-    # Lee la URL de la base de datos desde la variable de entorno
-    database_url = os.environ.get('DATABASE_URL')
 
-    # DATABASE_URL es obligatorio en esta app (Option A)
-    if not database_url:
-        raise RuntimeError('DATABASE_URL environment variable is required')
-
-    # Configura la URI de la base de datos para SQLAlchemy
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    # Desactiva una función de seguimiento de SQLAlchemy que no necesitamos
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+def create_app(config_name=None):
+    """
+    Application Factory para crear instancia de Flask.
     
-    # Inicializa la extensión SQLAlchemy con la aplicación
-    # db.init_app(app)
+    Args:
+        config_name: Nombre del ambiente ('development', 'production', 'testing')
+                    Si es None, usa FLASK_ENV de variables de entorno
     
+    Returns:
+        Instancia de Flask configurada y lista para usar
+    """
+    app = Flask(__name__, instance_relative_config=True)
+    
+    # Cargar configuración desde config.py
+    config_class = get_config(config_name)
+    app.config.from_object(config_class)
+    
+    # Cargar configuración sensible desde instance/config.py (si existe)
+    try:
+        app.config.from_pyfile('config.py', silent=True)
+    except Exception as e:
+        app.logger.debug(f'No se pudo cargar instance/config.py: {e}')
+    
+    # Asegurar que existe el directorio instance/
+    try:
+        os.makedirs(app.instance_path, exist_ok=True)
+    except OSError as e:
+        app.logger.warning(f'No se pudo crear directorio instance/: {e}')
+    
+    # Inicializar extensiones con la app
     db.init_app(app)
     migrate.init_app(app, db)
+    mail.init_app(app)
     
-    # Importar modelos por módulo para que Flask-Migrate los detecte
-    # y registrar los módulos/blueprints de forma dinámica.
-    MODULES = ['clients', 'prestamos', 'declaraciones', 'cuotas']
-
-    for mod_name in MODULES:
-        try:
-            importlib.import_module(f'.{mod_name}.model.{mod_name}', package=__name__)
-        except Exception as e:
-            # Registrar la excepción para depuración; no silenciamos.
-            app.logger.warning("No se pudo importar modelo %s: %s", mod_name, e)
-
-    # Registra blueprint principal
-    from .routes import main as main_blueprint
-    app.register_blueprint(main_blueprint)
-
-    # Registrar módulos por dominio llamando a su init_app si existe
-    for mod_name in MODULES:
-        try:
-            pkg = importlib.import_module(f'.{mod_name}', package=__name__)
-            init_fn = getattr(pkg, 'init_app', None)
-            if callable(init_fn):
-                init_fn(app)
-        except Exception as e:
-            app.logger.warning("No se pudo inicializar el módulo %s: %s", mod_name, e)
-
+    # Registrar modelos de SQLAlchemy (para migrations)
+    _register_models(app)
+    
+    # Registrar blueprints principales
+    _register_blueprints(app)
+    
+    # Registrar módulos dinámicamente
+    _register_modules(app)
+    
+    # Configurar logging
+    _configure_logging(app)
+    
+    # Configurar manejo de errores
+    _configure_error_handlers(app)
+    
+    # Configurar cache y optimización
+    _configure_cache(app)
+    _configure_performance(app)
+    
+    # Configurar seguridad
+    _configure_security(app)
+    
+    # Log de inicialización
+    app.logger.info(f'Aplicación iniciada en modo: {config_class.__name__}')
+    
     return app
+
+# → Importa todos los modelos de SQLAlchemy para Alembic
+def _register_models(app):
+    # Importar todos los modelos desde el paquete centralizado
+    from app.models import (
+        Cliente, 
+        Prestamo, 
+        Cuota, 
+        DeclaracionJurada,
+        Pago,
+        Usuario
+    )
+    app.logger.info('Modelos registrados correctamente')
+
+# → Registrar blueprints principales
+def _register_blueprints(app):
+    # → Importar blueprints desde app/routes/__init__.py
+    from app.routes import (
+        main_bp,
+        auth_bp,
+        api_v1_bp,
+        clientes_view_bp,
+        prestamos_view_bp,
+        clientes_bp,
+        prestamos_bp,
+        cuotas_bp,
+        declaraciones_bp,
+        pagos_bp,
+        caja_bp
+    )
+    
+    # Importar Flow blueprint
+    from app.routes.flow_routes import flow_bp
+    
+    # Registrar blueprint de autenticación primero
+    app.register_blueprint(auth_bp)
+    
+    # Registrar blueprint principal
+    app.register_blueprint(main_bp)
+    
+    # Registrar API v1
+    app.register_blueprint(api_v1_bp)
+    
+    # Registrar vistas HTML
+    app.register_blueprint(clientes_view_bp)
+    app.register_blueprint(prestamos_view_bp)
+    
+    # Registrar módulos
+    app.register_blueprint(clientes_bp)
+    app.register_blueprint(prestamos_bp)
+    app.register_blueprint(cuotas_bp)
+    app.register_blueprint(declaraciones_bp)
+    app.register_blueprint(pagos_bp)
+    app.register_blueprint(caja_bp)
+    
+    # Registrar Flow API
+    app.register_blueprint(flow_bp)
+    
+    app.logger.info('Blueprints registrados correctamente')
+
+
+def _register_modules(app):
+    """
+    Función heredada - ya no es necesaria con la nueva estructura.
+    Los módulos ahora se registran directamente en _register_blueprints.
+    """
+    pass
+
+def _configure_security(app):
+    """
+    Configura las medidas de seguridad de la aplicación.
+    - Headers de seguridad
+    - CORS (si es necesario)
+    - Rate limiting
+    """
+    from app.common.security import add_security_headers
+    
+    # Agregar security headers a todas las respuestas
+    @app.after_request
+    def apply_security_headers(response):
+        return add_security_headers(response)
+    
+    app.logger.info('Security headers configurados')
+
+def _configure_logging(app):
+    """
+    Configura el sistema de logging estructurado.
+    - Logging a archivo con rotación
+    - Logging a consola
+    - Logging de requests/responses
+    """
+    from app.common.logging_config import configure_logging
+    configure_logging(app)
+    app.logger.info('Sistema de logging configurado')
+
+def _configure_error_handlers(app):
+    """
+    Configura el manejo centralizado de errores.
+    - Excepciones personalizadas
+    - Errores HTTP (4xx, 5xx)
+    - Errores de base de datos
+    - Páginas de error personalizadas
+    """
+    from app.common.errors import register_error_handlers
+    register_error_handlers(app)
+    app.logger.info('Error handlers configurados')
+
+def _configure_cache(app):
+    """
+    Configura el sistema de caching.
+    - Flask-Caching con múltiples backends (SimpleCache, Redis, FileSystem)
+    - Cache para respuestas de API
+    - Cache para queries de base de datos
+    """
+    from app.common.cache import configure_cache
+    configure_cache(app)
+    app.logger.info('Sistema de cache configurado')
+
+def _configure_performance(app):
+    """
+    Configura las herramientas de optimización de rendimiento.
+    - Query profiling
+    - Compression middleware
+    - Performance monitoring
+    """
+    from app.common.performance import configure_performance
+    configure_performance(app)
+    app.logger.info('Performance optimization configurado')

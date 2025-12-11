@@ -1,0 +1,715 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Overlay full-screen que muestra caja cerrada (excepto navbar) -->
+<div id="caja_cerrada_overlay" style="display:none; position:fixed; top:64px; left:0; right:0; bottom:0; background:white; z-index:50; align-items:center; justify-content:center; flex-direction:column; overflow:hidden;">
+    <div style="text-align:center;">
+        <h1 id="caja_cerrada_texto" style="font-size:48px; font-weight:700; color:#111827; margin-bottom:16px;">Caja cerrada</h1>
+        <p id="caja_cerrada_detalle" style="color:#6B7280; margin-bottom:30px; display:none; font-size:18px;"></p>
+        <div>
+            <button onclick="reabrirCaja()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg">Abrir caja</button>
+        </div>
+    </div>
+</div>
+
+<div class="min-h-screen bg-gray-50 py-8" id="contenido_caja">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                        <i class="fas fa-cash-register text-blue-600"></i>
+                        Cuadre de Caja
+                    </h1>
+                    <p class="mt-2 text-sm text-gray-600">
+                        Gestión y control de movimientos diarios de caja
+                    </p>
+                </div>
+                
+                <!-- Selector de Fecha -->
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">Fecha:</label>
+                        <input 
+                            type="date" 
+                            id="fecha_cuadre" 
+                            class="rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            value="{{ fecha_hoy }}"
+                        />
+                    </div>
+                    <button 
+                        onclick="cargarDatosCaja()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                    >
+                        <i class="fas fa-sync-alt"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen General -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Saldo Inicial -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">Saldo Inicial</span>
+                    <i class="fas fa-wallet text-gray-400 text-xl"></i>
+                </div>
+                <p class="text-3xl font-bold text-gray-700" id="saldo_inicial">S/ 0.00</p>
+                <p class="text-xs text-gray-500 mt-1">Balance anterior</p>
+                <p class="mt-3"><button onclick="editarApertura()" class="text-sm text-blue-600 hover:underline">Editar apertura</button></p>
+            </div>
+
+            <!-- Total Ingresos -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-md border border-green-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-green-700">Total Ingresos</span>
+                    <i class="fas fa-arrow-trend-up text-green-500 text-xl"></i>
+                </div>
+                <p class="text-3xl font-bold text-green-700" id="total_ingresos">S/ 0.00</p>
+                <p class="text-xs text-green-600 mt-1" id="cantidad_ingresos">0 movimientos</p>
+            </div>
+
+            <!-- Total Egresos -->
+            <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-md border border-red-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-red-700">Total Egresos</span>
+                    <i class="fas fa-arrow-trend-down text-red-500 text-xl"></i>
+                </div>
+                <div class="flex items-center justify-between">
+                    <p class="text-3xl font-bold text-red-700" id="total_egresos">S/ 0.00</p>
+                </div>
+                <p class="text-xs text-red-600 mt-1">Gastos del día</p>
+            </div>
+
+            <!-- Saldo Esperado -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-md border border-blue-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-blue-700">Saldo Esperado</span>
+                    <i class="fas fa-calculator text-blue-500 text-xl"></i>
+                </div>
+                <p class="text-3xl font-bold text-blue-700" id="saldo_esperado">S/ 0.00</p>
+                <p class="text-xs text-blue-600 mt-1">Inicial + Ingresos - Egresos</p>
+            </div>
+        </div>
+
+        <!-- Resumen por Categorías -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <i class="fas fa-chart-pie text-blue-600"></i>
+                Ingresos por Medio de Pago
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6" id="categorias_container">
+                <!-- EFECTIVO -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-money-bill-wave text-green-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-600">Efectivo</p>
+                            <p class="text-xs text-gray-500" id="efectivo_cantidad">0 pagos</p>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900" id="efectivo_total">S/ 0.00</p>
+                    <div class="mt-2 pt-2 border-t border-gray-200">
+                        <p class="text-xs text-gray-600">Mora: <span id="efectivo_mora" class="font-semibold">S/ 0.00</span></p>
+                        <p class="text-xs text-blue-600">Ajuste: <span id="efectivo_ajuste" class="font-semibold">S/ 0.00</span></p>
+                    </div>
+                </div>
+
+                <!-- TRANSFERENCIA -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-building-columns text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-600">Transferencia</p>
+                            <p class="text-xs text-gray-500" id="transferencia_cantidad">0 pagos</p>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900" id="transferencia_total">S/ 0.00</p>
+                    <div class="mt-2 pt-2 border-t border-gray-200">
+                        <p class="text-xs text-gray-600">Mora: <span id="transferencia_mora" class="font-semibold">S/ 0.00</span></p>
+                    </div>
+                </div>
+
+                <!-- BILLETERA ELECTRÓNICA -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-qrcode text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-600">Yape/Plin</p>
+                            <p class="text-xs text-gray-500" id="billetera_cantidad">0 pagos</p>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900" id="billetera_total">S/ 0.00</p>
+                    <div class="mt-2 pt-2 border-t border-gray-200">
+                        <p class="text-xs text-gray-600">Mora: <span id="billetera_mora" class="font-semibold">S/ 0.00</span></p>
+                    </div>
+                </div>
+
+                <!-- TARJETA -->
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-credit-card text-orange-600 text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-600">Tarjetas</p>
+                            <p class="text-xs text-gray-500" id="tarjeta_cantidad">0 pagos</p>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-900" id="tarjeta_total">S/ 0.00</p>
+                    <div class="mt-2 pt-2 border-t border-gray-200">
+                        <p class="text-xs text-gray-600">Mora: <span id="tarjeta_mora" class="font-semibold">S/ 0.00</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nota sobre Ajuste de Redondeo -->
+            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4" id="nota_ajuste_container" style="display: none;">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-info-circle text-blue-600 text-xl mt-0.5"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-blue-900 mb-1">Ajuste por Redondeo</p>
+                        <p class="text-xs text-blue-700" id="nota_ajuste_texto">
+                            El ajuste representa la diferencia entre el monto contable y el monto efectivo redondeado.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial de Movimientos -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-list text-blue-600"></i>
+                    Movimientos del Día
+                </h2>
+            </div>
+
+            <!-- Tabla de Movimientos -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Hora
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Comprobante
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Cliente
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Concepto
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Medio de Pago
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Monto Contable
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Monto Recibido
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Ajuste
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="movimientos_tbody">
+                        <tr>
+                            <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-2 text-gray-300"></i>
+                                <p>No hay movimientos para mostrar</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cierre de Caja -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <i class="fas fa-lock text-blue-600"></i>
+                Cierre de Caja
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Saldo Real -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Saldo Real en Caja
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                            S/
+                        </span>
+                        <input 
+                            type="number" 
+                            id="saldo_real" 
+                            step="0.01"
+                            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="0.00"
+                            oninput="calcularDiferencia()"
+                        />
+                    </div>
+                </div>
+
+                <!-- Diferencia -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Diferencia
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2">
+                            <p class="text-2xl font-bold" id="diferencia_display">S/ 0.00</p>
+                        </div>
+                        <div id="diferencia_icon" class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-equals text-gray-400 text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">
+                        Saldo Real - Saldo Esperado
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-4">
+                <button 
+                    onclick="cerrarCaja()" 
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                    <i class="fas fa-lock"></i>
+                    Cerrar Caja
+                </button>
+                <button 
+                    onclick="imprimirReporte()" 
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                >
+                    <i class="fas fa-print"></i>
+                    Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let datosActuales = null;
+
+    // Cargar datos al iniciar
+    document.addEventListener('DOMContentLoaded', function() {
+        // Primero restaurar el estado de la caja desde localStorage (si está cerrada)
+        verificarYRestaurarEstadoCaja();
+        
+        // Luego cargar los datos de la caja
+        cargarDatosCaja();
+    });
+
+    async function cargarDatosCaja() {
+        const fecha = document.getElementById('fecha_cuadre').value;
+        
+        try {
+            // Cargar apertura primero
+            const aperturaResponse = await fetch(`/caja/apertura?fecha=${fecha}`);
+            const aperturaJson = await aperturaResponse.json();
+            const apertura = aperturaJson.apertura;
+
+            // Cargar resumen diario
+            const resumenResponse = await fetch(`/caja/resumen/diario?fecha=${fecha}`);
+            const resumenData = await resumenResponse.json();
+            
+            // Cargar detalle de movimientos
+            const detalleResponse = await fetch(`/caja/detalle/diario?fecha=${fecha}`);
+            const detalleData = await detalleResponse.json();
+            
+            datosActuales = { resumen: resumenData, movimientos: detalleData };
+            mostrarResumen(resumenData, apertura);
+            mostrarMovimientos(detalleData);
+            
+        } catch (error) {
+            console.error('Error cargando datos:', error);
+            alert('Error al cargar los datos de caja');
+        }
+    }
+
+    function mostrarResumen(data, apertura) {
+        const resumen = data.resumen;
+        
+        // Total Ingresos
+        document.getElementById('total_ingresos').textContent = 
+            `S/ ${resumen.total_recaudado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('cantidad_ingresos').textContent = 
+            `${resumen.cantidad_total_pagos} movimiento${resumen.cantidad_total_pagos !== 1 ? 's' : ''}`;
+        
+        // Saldo Inicial
+        const montoInicial = apertura && apertura.monto ? apertura.monto : 0;
+        document.getElementById('saldo_inicial').textContent = `S/ ${montoInicial.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Total Egresos
+        const totalEgresos = resumen.total_egresos || 0;
+        document.getElementById('total_egresos').textContent = 
+            `S/ ${totalEgresos.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Saldo Esperado = Inicial + Ingresos - Egresos
+        const esperado = (montoInicial || 0) + (resumen.total_recaudado || 0) - totalEgresos;
+        document.getElementById('saldo_esperado').textContent = `S/ ${esperado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // Mostrar categorías (agrupando YAPE y PLIN como billetera electrónica)
+        const categorias = {
+            'EFECTIVO': { total: 0, cantidad: 0, mora: 0, ajuste: 0 },
+            'TRANSFERENCIA': { total: 0, cantidad: 0, mora: 0, ajuste: 0 },
+            'BILLETERA_ELECTRONICA': { total: 0, cantidad: 0, mora: 0, ajuste: 0 },
+            'TARJETA_CREDITO': { total: 0, cantidad: 0, mora: 0, ajuste: 0 },
+            'TARJETA_DEBITO': { total: 0, cantidad: 0, mora: 0, ajuste: 0 }
+        };
+        
+        data.detalle_por_medio.forEach(medio => {
+            let key = medio.medio_pago;
+            
+            // Agrupar YAPE y PLIN como BILLETERA_ELECTRONICA
+            if (key === 'YAPE' || key === 'PLIN') {
+                key = 'BILLETERA_ELECTRONICA';
+            }
+            
+            if (categorias[key]) {
+                categorias[key].total += medio.total;
+                categorias[key].cantidad += medio.cantidad_pagos;
+                categorias[key].mora += medio.total_mora;
+                categorias[key].ajuste += (medio.ajuste_redondeo || 0);
+            }
+        });
+        
+        // EFECTIVO
+        document.getElementById('efectivo_total').textContent = 
+            `S/ ${categorias.EFECTIVO.total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('efectivo_cantidad').textContent = 
+            `${categorias.EFECTIVO.cantidad} pago${categorias.EFECTIVO.cantidad !== 1 ? 's' : ''}`;
+        document.getElementById('efectivo_mora').textContent = 
+            `S/ ${categorias.EFECTIVO.mora.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('efectivo_ajuste').textContent = 
+            `S/ ${categorias.EFECTIVO.ajuste.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // TRANSFERENCIA
+        document.getElementById('transferencia_total').textContent = 
+            `S/ ${categorias.TRANSFERENCIA.total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('transferencia_cantidad').textContent = 
+            `${categorias.TRANSFERENCIA.cantidad} pago${categorias.TRANSFERENCIA.cantidad !== 1 ? 's' : ''}`;
+        document.getElementById('transferencia_mora').textContent = 
+            `S/ ${categorias.TRANSFERENCIA.mora.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // BILLETERA
+        document.getElementById('billetera_total').textContent = 
+            `S/ ${categorias.BILLETERA_ELECTRONICA.total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('billetera_cantidad').textContent = 
+            `${categorias.BILLETERA_ELECTRONICA.cantidad} pago${categorias.BILLETERA_ELECTRONICA.cantidad !== 1 ? 's' : ''}`;
+        document.getElementById('billetera_mora').textContent = 
+            `S/ ${categorias.BILLETERA_ELECTRONICA.mora.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // TARJETA (sumando débito y crédito)
+        const tarjetaTotal = categorias.TARJETA_CREDITO.total + categorias.TARJETA_DEBITO.total;
+        const tarjetaCantidad = categorias.TARJETA_CREDITO.cantidad + categorias.TARJETA_DEBITO.cantidad;
+        const tarjetaMora = categorias.TARJETA_CREDITO.mora + categorias.TARJETA_DEBITO.mora;
+        
+        document.getElementById('tarjeta_total').textContent = 
+            `S/ ${tarjetaTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('tarjeta_cantidad').textContent = 
+            `${tarjetaCantidad} pago${tarjetaCantidad !== 1 ? 's' : ''}`;
+        document.getElementById('tarjeta_mora').textContent = 
+            `S/ ${tarjetaMora.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // Mostrar nota de ajuste si hay ajuste de redondeo
+        if (resumen.total_ajuste_redondeo && Math.abs(resumen.total_ajuste_redondeo) > 0.001) {
+            document.getElementById('nota_ajuste_container').style.display = 'block';
+            const textoAjuste = resumen.total_ajuste_redondeo > 0 
+                ? `Ajuste total: +S/ ${resumen.total_ajuste_redondeo.toFixed(2)} (ganancia del negocio)`
+                : `Condonación total: S/ ${Math.abs(resumen.total_ajuste_redondeo).toFixed(2)} (a favor del cliente)`;
+            document.getElementById('nota_ajuste_texto').textContent = textoAjuste;
+        } else {
+            document.getElementById('nota_ajuste_container').style.display = 'none';
+        }
+    }
+
+    async function editarApertura() {
+        const fecha = document.getElementById('fecha_cuadre').value;
+        const current = prompt('Ingrese el monto de apertura para ' + fecha + ' (formato sin S/):', '0.00');
+        if (current === null) return; // cancel
+
+        const monto = parseFloat(current);
+        if (isNaN(monto)) {
+            alert('Monto inválido');
+            return;
+        }
+
+        try {
+            const resp = await fetch('/caja/apertura', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha: fecha, monto: monto })
+            });
+            const j = await resp.json();
+            if (resp.ok) {
+                alert('Apertura guardada');
+                cargarDatosCaja();
+            } else {
+                alert(j.error || 'Error al guardar apertura');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de red');
+        }
+    }
+
+    function mostrarMovimientos(movimientos) {
+        const tbody = document.getElementById('movimientos_tbody');
+        
+        if (!movimientos || movimientos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2 text-gray-300"></i>
+                        <p>No hay movimientos para esta fecha</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = movimientos.map(mov => {
+            const tieneAjuste = mov.ajuste_redondeo && Math.abs(mov.ajuste_redondeo) > 0.001;
+            const conceptoPrincipal = `Pago Préstamo #${mov.prestamo_id} - Cuota ${mov.cuota_numero}`;
+            const conceptoCompleto = tieneAjuste 
+                ? `${conceptoPrincipal} (${mov.ajuste_redondeo > 0 ? 'Ajuste' : 'Condonación'})`
+                : conceptoPrincipal;
+            
+            const ajusteClass = tieneAjuste 
+                ? (mov.ajuste_redondeo > 0 ? 'text-blue-600 font-semibold' : 'text-green-600 font-semibold')
+                : 'text-gray-400';
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-900">${mov.hora}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${mov.comprobante || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <div class="text-gray-900 font-medium">${mov.cliente.nombre}</div>
+                        <div class="text-gray-500 text-xs">DNI: ${mov.cliente.dni}</div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${conceptoCompleto}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMedioPagoBadge(mov.medio_pago)}">
+                            ${getMedioPagoIcon(mov.medio_pago)} ${formatMedioPago(mov.medio_pago)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-right text-gray-900 font-medium">
+                        S/ ${mov.monto_contable.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-right text-gray-900 font-bold">
+                        S/ ${mov.monto_pagado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-right ${ajusteClass}">
+                        ${tieneAjuste ? (mov.ajuste_redondeo > 0 ? '+' : '') + 'S/ ' + mov.ajuste_redondeo.toFixed(2) : '-'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function getMedioPagoBadge(medio) {
+        const badges = {
+            'EFECTIVO': 'bg-green-100 text-green-800',
+            'TRANSFERENCIA': 'bg-blue-100 text-blue-800',
+            'YAPE': 'bg-purple-100 text-purple-800',
+            'PLIN': 'bg-purple-100 text-purple-800',
+            'BILLETERA_ELECTRONICA': 'bg-purple-100 text-purple-800',
+            'TARJETA_CREDITO': 'bg-orange-100 text-orange-800',
+            'TARJETA_DEBITO': 'bg-orange-100 text-orange-800'
+        };
+        return badges[medio] || 'bg-gray-100 text-gray-800';
+    }
+
+    function getMedioPagoIcon(medio) {
+        const icons = {
+            'EFECTIVO': '<i class="fas fa-money-bill-wave mr-1"></i>',
+            'TRANSFERENCIA': '<i class="fas fa-building-columns mr-1"></i>',
+            'YAPE': '<i class="fas fa-qrcode mr-1"></i>',
+            'PLIN': '<i class="fas fa-qrcode mr-1"></i>',
+            'BILLETERA_ELECTRONICA': '<i class="fas fa-qrcode mr-1"></i>',
+            'TARJETA_CREDITO': '<i class="fas fa-credit-card mr-1"></i>',
+            'TARJETA_DEBITO': '<i class="fas fa-credit-card mr-1"></i>'
+        };
+        return icons[medio] || '<i class="fas fa-wallet mr-1"></i>';
+    }
+
+    function formatMedioPago(medio) {
+        const nombres = {
+            'EFECTIVO': 'Efectivo',
+            'TRANSFERENCIA': 'Transferencia',
+            'YAPE': 'Yape',
+            'PLIN': 'Plin',
+            'BILLETERA_ELECTRONICA': 'Yape/Plin',
+            'TARJETA_CREDITO': 'Tarjeta Créd.',
+            'TARJETA_DEBITO': 'Tarjeta Déb.'
+        };
+        return nombres[medio] || medio;
+    }
+
+    function calcularDiferencia() {
+        const saldoEsperadoText = document.getElementById('saldo_esperado').textContent;
+        const saldoEsperado = parseFloat(saldoEsperadoText.replace('S/ ', '').replace(',', ''));
+        
+        const saldoReal = parseFloat(document.getElementById('saldo_real').value) || 0;
+        const diferencia = saldoReal - saldoEsperado;
+        
+        const diferenciaDisplay = document.getElementById('diferencia_display');
+        const diferenciaIcon = document.getElementById('diferencia_icon');
+        
+        diferenciaDisplay.textContent = `S/ ${Math.abs(diferencia).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        if (Math.abs(diferencia) < 0.01) {
+            diferenciaDisplay.className = 'text-2xl font-bold text-gray-700';
+            diferenciaIcon.className = 'w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center';
+            diferenciaIcon.innerHTML = '<i class="fas fa-equals text-gray-400 text-xl"></i>';
+        } else if (diferencia > 0) {
+            diferenciaDisplay.className = 'text-2xl font-bold text-green-600';
+            diferenciaIcon.className = 'w-12 h-12 bg-green-100 rounded-full flex items-center justify-center';
+            diferenciaIcon.innerHTML = '<i class="fas fa-arrow-up text-green-600 text-xl"></i>';
+        } else {
+            diferenciaDisplay.className = 'text-2xl font-bold text-red-600';
+            diferenciaIcon.className = 'w-12 h-12 bg-red-100 rounded-full flex items-center justify-center';
+            diferenciaIcon.innerHTML = '<i class="fas fa-arrow-down text-red-600 text-xl"></i>';
+        }
+    }
+
+    function cerrarCaja() {
+        const saldoReal = parseFloat(document.getElementById('saldo_real').value);
+        
+        if (isNaN(saldoReal)) {
+            alert('Por favor, ingrese el saldo real en caja');
+            return;
+        }
+        
+        if (confirm('¿Está seguro de cerrar la caja? Esta acción no se puede deshacer.')) {
+            // Llamada al backend para cerrar la caja
+            const fecha = document.getElementById('fecha_cuadre').value;
+            fetch('/caja/cierre', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha: fecha, monto_real: saldoReal })
+            }).then(r => r.json()).then(j => {
+                if (j && j.success) {
+                    mostrarOverlayCajaCerrada(j.cierre);
+                    alert('Caja cerrada correctamente');
+                } else {
+                    alert(j.error || j.message || 'No se pudo cerrar la caja');
+                }
+            }).catch(err => {
+                console.error(err);
+                alert('Error al cerrar la caja');
+            });
+        }
+    }
+
+    // Overlay de caja cerrada (full-screen excepto navbar)
+    function mostrarOverlayCajaCerrada(info) {
+        const overlay = document.getElementById('caja_cerrada_overlay');
+        if (!overlay) return;
+        overlay.style.display = 'flex';
+        
+        // También guardar en localStorage y mostrar banner global
+        guardarEstadoCajaCerrada(info);
+        
+        // Mostrar texto y, si hay incidencia, mostrar detalle pequeño
+        const texto = document.getElementById('caja_cerrada_texto');
+        texto.textContent = 'Caja cerrada';
+        const detalle = document.getElementById('caja_cerrada_detalle');
+        if (info && info.incidencia) {
+            detalle.textContent = `Incidencia: ${info.incidencia} — Diferencia S/ ${parseFloat(info.diferencia).toFixed(2)}`;
+            detalle.style.display = 'block';
+        } else {
+            detalle.style.display = 'none';
+        }
+    }
+
+    function ocultarOverlayCajaCerrada() {
+        const overlay = document.getElementById('caja_cerrada_overlay');
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        
+        // También limpiar el estado global
+        limpiarEstadoCajaCerrada();
+    }
+
+    // Función para verificar estado de caja sin recargar todo
+    async function verificarYActualizarEstadoCaja() {
+        try {
+            const fecha = document.getElementById('fecha_cuadre').value;
+            const cierreResp = await fetch(`/caja/cierre?fecha=${fecha}`);
+            const cierreJson = await cierreResp.json();
+            if (cierreJson && cierreJson.cierre) {
+                mostrarOverlayCajaCerrada(cierreJson.cierre);
+            } else {
+                ocultarOverlayCajaCerrada();
+            }
+        } catch (err) {
+            console.warn('No se pudo verificar estado de cierre:', err);
+        }
+    }
+
+    function reabrirCaja() {
+        const fecha = document.getElementById('fecha_cuadre').value;
+        fetch('/caja/abrir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fecha: fecha })
+        }).then(r => r.json()).then(j => {
+            if (j && j.success) {
+                ocultarOverlayCajaCerrada();
+                // Limpiar estado global también
+                limpiarEstadoCajaCerrada();
+                alert('✅ Caja reabierta');
+                // Recargar datos pero sin mostrar múltiples confirmaciones
+                cargarDatosCaja();
+            } else {
+                alert('❌ ' + (j.error || j.message || 'No se pudo reabrir la caja'));
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('❌ Error al reabrir la caja');
+        });
+    }
+
+    function imprimirReporte() {
+        window.print();
+    }
+
+    // Manual egreso registration removed: egresos (vueltos) are recorded automatically
+</script>
+
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        body {
+            background: white !important;
+        }
+        
+        .shadow-md {
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}

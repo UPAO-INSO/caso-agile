@@ -1,0 +1,142 @@
+{% extends "base.html" %} {% from 'components/macros/badge_macros.html' import
+badge %} {% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">
+        <i class="fa-solid fa-users mr-2"></i> Clientes
+      </h1>
+      <p class="text-gray-600 mt-1">Gestiona la información de tus clientes</p>
+    </div>
+    <a
+      href="{{ url_for('main.buscar_cliente') }}"
+      class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+    >
+      <i class="fa-solid fa-hand-holding-dollar mr-2"></i>
+      Otorgar Préstamo
+    </a>
+  </div>
+
+  <!-- Tarjeta de lista -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    {% if clientes %}
+    <!-- Tabla de clientes -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              DNI
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Nombre Completo
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Correo
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Teléfono
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Estado
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for cliente in clientes %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+            >
+              {{ cliente.dni }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">
+                {{ cliente.nombre_completo }}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ cliente.correo_electronico }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ cliente.telefono or '-' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if cliente.pep %} {{ badge('warning', 'PEP') }} {% else %} {{
+              badge('success', 'Regular') }} {% endif %}
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+            >
+              <a
+                href="{{ url_for('clientes_view.ver_cliente_view', cliente_id=cliente.cliente_id) }}"
+                class="text-blue-600 hover:text-blue-900 mr-3"
+              >
+                Ver
+              </a>
+              <a
+                href="{{ url_for('prestamos_view.ver_prestamos_cliente_view', cliente_id=cliente.cliente_id) }}"
+                class="text-green-600 hover:text-green-900"
+              >
+                Préstamos
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer con contador -->
+    <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+      <p class="text-sm text-gray-700">
+        Total de clientes:
+        <span class="font-semibold">{{ clientes|length }}</span>
+      </p>
+    </div>
+    {% else %}
+    <!-- Estado vacío -->
+    <div class="text-center py-12">
+      <div class="text-6xl mb-4 text-gray-400">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">
+        No hay clientes registrados
+      </h3>
+      <p class="text-gray-600 mb-6">
+        Los clientes se registran automáticamente al otorgar su primer préstamo
+      </p>
+      <a
+        href="{{ url_for('main.buscar_cliente') }}"
+        class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        <i class="fa-solid fa-hand-holding-dollar mr-2"></i>
+        Otorgar Préstamo
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

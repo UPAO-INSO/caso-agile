@@ -1,0 +1,25 @@
+{# Componente: Button Uso: {% include 'components/button.html' with text='Click
+aquí', type='primary', href='/ruta', icon='➕' %} Tipos: primary, secondary,
+danger, success #} {% set button_classes = { 'primary': 'bg-blue-600
+hover:bg-blue-700 text-white', 'secondary': 'bg-gray-600 hover:bg-gray-700
+text-white', 'danger': 'bg-red-600 hover:bg-red-700 text-white', 'success':
+'bg-green-600 hover:bg-green-700 text-white' } %} {% set class =
+button_classes.get(type, button_classes['primary']) %} {% if href %}
+<a
+  href="{{ href }}"
+  class="inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors {{ class }} {{ extra_class or '' }}"
+>
+  {% if icon %}
+  <span class="mr-2">{{ icon }}</span>
+  {% endif %} {{ text }}
+</a>
+{% else %}
+<button
+  type="{{ submit_type or 'button' }}"
+  class="inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors {{ class }} {{ extra_class or '' }}"
+>
+  {% if icon %}
+  <span class="mr-2">{{ icon }}</span>
+  {% endif %} {{ text }}
+</button>
+{% endif %}

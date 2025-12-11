@@ -1,61 +1,481 @@
-<!-- Formulario de registro -->
-<article class="card loan-card">
-  <header class="loan-card__header">
-    <h2>Nueva Solicitud</h2>
-    <p>Complete los detalles para un nuevo préstamo.</p>
-  </header>
-
-  <form class="loan-form" id="loan-form" novalidate>
-    <div class="loan-form__group loan-form__group--full">
-      <label for="dni">DNI del Cliente</label>
-      <div class="input-with-icon">
-        <span class="input-icon" aria-hidden="true">👤</span>
+<div class="max-w-4xl mx-auto">
+  <div class="bg-white rounded-xl p-6 mb-6 shadow-sm">
+    <h1 class="text-2xl font-semibold text-gray-900 mb-6">Nueva Solicitud</h1>
+    <div class="flex gap-3 flex-wrap">
+      <div class="flex-1 min-w-[250px]">
         <input
-          id="dni"
           type="text"
-          name="dni"
-          placeholder="XXXXXXXX"
-          autocomplete="off"
+          id="dni-search"
+          placeholder="Ingrese el DNI"
+          value=""
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
         />
+      </div>
+      <button
+        type="button"
+        class="search-button px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition duration-200"
+      >
+        Buscar
+      </button>
+    </div>
+  </div>
+
+  <div class="results-section bg-white rounded-xl p-6 shadow-sm hidden">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold text-gray-900">
+        Resultados de la Búsqueda
+      </h2>
+      <span
+        class="status-badge bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-semibold"
+      >
+        Préstamo Activo
+      </span>
+    </div>
+
+    <div class="mb-6 space-y-2">
+      <div class="flex gap-2">
+        <span class="text-sm text-gray-600">DNI:</span>
+        <span class="text-sm font-semibold text-gray-900" id="client-dni"
+          >83940293</span
+        >
+      </div>
+      <div class="flex gap-2">
+        <span class="text-sm text-gray-600">Nombre:</span>
+        <span class="text-sm font-semibold text-gray-900" id="client-name"
+          >Pedro Pablo Kucinski</span
+        >
       </div>
     </div>
 
-    <div class="loan-form__group loan-form__group--full">
-      <label for="nombre">Nombre del Cliente</label>
-      <input
-        id="nombre"
-        type="text"
-        name="nombre"
-        placeholder="Gian Campos"
-        autocomplete="off"
-      />
+    <!-- PEP Notice -->
+    <div
+      class="pep-notice bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-6 hidden"
+      id="pep-notice"
+      style="display: none"
+    >
+      <div>
+        <h3 class="text-sm font-semibold text-amber-800 mb-1">Estado PEP</h3>
+        <p class="text-sm text-amber-700">
+          Cliente es una Persona Políticamente Expuesta (PEP).
+        </p>
+      </div>
     </div>
 
-    <div class="loan-form__status" role="status" data-status-message>
-      <span class="loan-form__status-icon" aria-hidden="true">✔</span>
-      <p>Aca debe ir la logica para ver si hay un prestamo existente</p>
+    <div
+      class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-6 hidden"
+      id="loan-active-notice"
+      style="display: none"
+    >
+      <div class="loan-active-content">
+        <h3 class="text-sm font-semibold text-yellow-800 mb-1">
+          ⚠️ Préstamo Activo
+        </h3>
+        <p class="text-sm text-yellow-700 mb-2">
+          Este cliente ya tiene un préstamo vigente. No se puede otorgar otro
+          crédito hasta que el préstamo actual sea cancelado.
+        </p>
+        <div
+          class="loan-details-text text-xs text-yellow-700 pt-2 border-t border-yellow-200"
+          id="loan-details-text"
+        ></div>
+      </div>
     </div>
 
-    <div class="loan-form__split">
-      <div class="loan-form__group">
-        <label for="monto">Monto del Préstamo</label>
-        <div class="input-with-prefix">
-          <span class="input-prefix">S/</span>
+    <form id="loan-form">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Monto del Préstamo
+          </h4>
+          <div class="relative">
+            <span
+              class="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-gray-600 pointer-events-none"
+              >S/</span
+            >
+            <input
+              type="number"
+              id="monto"
+              name="monto"
+              step="0.01"
+              min="0"
+              placeholder="5000.00"
+              required
+              class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Número de cuotas
+          </h4>
           <input
-            id="monto"
             type="number"
-            name="monto"
-            placeholder="00000.00"
-            min="0"
-            step="0.01"
+            id="cuotas"
+            name="cuotas"
+            min="1"
+            placeholder="6"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          />
+        </div>
+
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Tasa de Interés Anual (TEA)
+          </h4>
+          <div class="relative">
+            <input
+              type="number"
+              id="interes_tea"
+              name="interes_tea"
+              step="0.01"
+              min="0"
+              max="100"
+              value="10"
+              required
+              class="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
+            <span
+              class="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-gray-600 pointer-events-none"
+              >%</span
+            >
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            Ejemplo: 10.00 para 10% anual
+          </p>
+        </div>
+
+        <div>
+          <h4 class="text-sm text-gray-600 mb-2 font-medium">
+            Fecha de Otorgamiento
+          </h4>
+          <input
+            type="date"
+            id="f_otorgamiento"
+            name="f_otorgamiento"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           />
         </div>
       </div>
 
-      <div class="loan-form__group">
-        <label for="cuotas">Número de Cuotas</label>
-        <input id="cuotas" type="number" name="cuotas" min="1" />
+      <div class="flex justify-center">
+        <button
+          type="button"
+          id="cronograma-button"
+          onclick="verCronogramaPagos()"
+          class="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white border border-gray-300 rounded-lg text-sm font-medium transition duration-200 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
+          disabled
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+          >
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            >
+              <path
+                d="M9 20H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h11a4 4 0 0 1 4 4v3M8 2v2m7-2v2M2 8h19m-2.5 7.643l-1.5 1.5"
+              />
+              <circle cx="17" cy="17" r="5" />
+            </g>
+          </svg>
+          Ver cronograma de pagos
+        </button>
+      </div>
+
+      <div class="mb-6 mt-2">
+        <h4 class="text-sm text-gray-600 mb-2 font-medium">
+          Correo electrónico
+        </h4>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="cliente@ejemplo.com"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+        />
+      </div>
+
+      <div
+        id="validation-message"
+        class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg hidden"
+      >
+        <div class="flex items-start gap-3">
+          <svg
+            class="w-5 h-5 text-green-600 mt-0.5 shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <div>
+            <h4 class="text-sm font-semibold text-green-800 mb-1">
+              Validación de Monto
+            </h4>
+            <p class="text-sm text-green-700">
+              Monto validado menor a 1 UIT (S/ 5,350)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="uit-warning"
+        class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg hidden"
+      >
+        <div class="flex items-start gap-3">
+          <svg
+            class="w-5 h-5 text-amber-600 mt-0.5 shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <div>
+            <h4 class="text-sm font-semibold text-amber-800 mb-1">
+              Monto Mayor a 1 UIT
+            </h4>
+            <p class="text-sm text-amber-700">
+              El monto del préstamo supera 1 UIT (S/ 5,150). Debe aceptar la
+              Declaración Jurada.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div id="declaracion-jurada-container" class="mb-6 hidden">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="declaracion-jurada-check"
+            class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+          />
+          <span class="text-sm text-gray-700">
+            He leído y acepto la
+            <a
+              href="#"
+              class="text-blue-600 hover:text-blue-700 underline font-medium"
+              >Declaración Jurada</a
+            >.
+          </span>
+        </label>
+      </div>
+
+      <div class="flex justify-center">
+        <button
+          type="submit"
+          onclick="crearNuevoPrestamo(event)"
+          class="save-button min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+          disabled
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Crear Nuevo Préstamo
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Cronograma de Pagos -->
+<div
+  id="modalCronograma"
+  class="fixed inset-0 bg-gray-700/70 bg-opacity-50 hidden items-center justify-center z-50"
+  style="display: none"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden"
+  >
+    <!-- Header del Modal -->
+    <div
+      class="bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center"
+    >
+      <div>
+        <h2 class="text-xl font-bold text-white">Cronograma de Pagos</h2>
+        <p class="text-sm text-blue-100 mt-1">Simulación de cuotas mensuales</p>
+      </div>
+      <button
+        class="text-white hover:text-gray-200 transition-colors"
+        onclick="cerrarModalCronograma()"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div class="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+      <!-- Resumen del Préstamo -->
+      <div
+        class="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl p-5 mb-6 border border-blue-100"
+      >
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-xs text-gray-500 mb-1 uppercase font-medium">
+              Monto Solicitado
+            </p>
+            <p id="cronograma-monto" class="text-2xl font-bold text-gray-900">
+              S/ 0.00
+            </p>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-xs text-gray-500 mb-1 uppercase font-medium">
+              Número de Cuotas
+            </p>
+            <p id="cronograma-cuotas" class="text-2xl font-bold text-gray-900">
+              0 meses
+            </p>
+          </div>
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <p class="text-xs text-gray-500 mb-1 uppercase font-medium">
+              Tasa de Interés
+            </p>
+            <p id="cronograma-tea" class="text-2xl font-bold text-gray-900">
+              0% TEA
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Cronograma -->
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-linear-to-r from-gray-50 to-gray-100">
+              <tr>
+                <th
+                  class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300"
+                >
+                  #
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300"
+                >
+                  Fecha Vencimiento
+                </th>
+                <th
+                  class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300"
+                >
+                  Cuota
+                </th>
+                <th
+                  class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300"
+                >
+                  Capital
+                </th>
+                <th
+                  class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300"
+                >
+                  Interés
+                </th>
+                <th
+                  class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300"
+                >
+                  Saldo
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="cronograma-table-body"
+              class="bg-white divide-y divide-gray-100"
+            >
+              <!-- Se llenará dinámicamente con JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Nota informativa -->
+      <div
+        class="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg"
+      >
+        <div class="flex items-start gap-3">
+          <svg
+            class="w-5 h-5 text-amber-600 mt-0.5 shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <div>
+            <p class="text-sm font-semibold text-amber-800">Nota Importante</p>
+            <p class="text-xs text-amber-700 mt-1">
+              Este cronograma es una simulación. Las fechas y montos pueden
+              variar según la fecha de aprobación del préstamo.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
-  </form>
-</article>
+
+    <!-- Footer del Modal -->
+    <div
+      class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200"
+    >
+      <p class="text-xs text-gray-500"></p>
+      <button
+        class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+        onclick="cerrarModalCronograma()"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Cerrar modal al hacer clic fuera -->
+<script>
+  document
+    .getElementById("modalCronograma")
+    ?.addEventListener("click", function (e) {
+      if (e.target === this) {
+        cerrarModalCronograma();
+      }
+    });
+</script>
+
+<script src="{{ url_for('static', filename='js/utils.js') }}?v=2.0"></script>
+<script src="{{ url_for('static', filename='js/client-search.js') }}?v=2.1"></script>
+<script src="{{ url_for('static', filename='js/loan-modal.js') }}?v=2.0"></script>

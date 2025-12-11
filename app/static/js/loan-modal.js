@@ -1,0 +1,311 @@
+async function saveLoanChanges() {
+  console.log("saveLoanChanges called");
+
+  // Verificar que hay un cliente seleccionado
+  if (!window.currentClient) {
+    showAlert("Primero debe buscar y seleccionar un cliente", "error");
+    return;
+  }
+
+  // Verificar si el cliente ya tiene un préstamo activo
+  if (window.currentClient.tiene_prestamo_activo) {
+    showAlert(
+      "Este cliente ya tiene un préstamo activo. No se puede otorgar otro crédito.",
+      "error"
+    );
+    return;
+  }
+
+  // Obtener los datos del formulario
+  const monto = document.getElementById("monto")?.value;
+  const cuotas = document.getElementById("cuotas")?.value;
+  const email = document.getElementById("email")?.value || "";
+
+  console.log("Datos obtenidos:", { monto, cuotas, email });
+
+  // Validar campos
+  if (!monto || !cuotas) {
+    showAlert(
+      "Por favor complete todos los campos requeridos (Monto y Cuotas)",
+      "error"
+    );
+    return;
+  }
+
+  if (parseFloat(monto) <= 0) {
+    showAlert("El monto debe ser mayor a 0", "error");
+    return;
+  }
+
+  if (parseInt(cuotas) <= 0) {
+    showAlert("El número de cuotas debe ser mayor a 0", "error");
+    return;
+  }
+
+  // Datos del préstamo
+  const loanData = {
+    cliente_id: window.currentClient.id,
+    monto: parseFloat(monto),
+    cuotas: parseInt(cuotas),
+    email: email,
+    // Información del cliente para mostrar en el modal
+    cliente: {
+      dni: window.currentClient.dni,
+      nombre_completo: `${window.currentClient.nombre_completo || ""}`,
+    },
+  };
+
+  console.log("Enviando datos del préstamo:", loanData);
+
+  // Guardar préstamo en la base de datos
+  try {
+    const response = await fetch('/api/v1/prestamos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(loanData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.mensaje || error.error || 'Error al guardar el préstamo');
+    }
+
+    const data = await response.json();
+    
+    // Actualizar ID del préstamo en loanData
+    loanData.id = data.prestamo?.prestamo_id || data.id;
+    
+    // Mostrar modal de confirmación solo si todo salió bien
+    showLoanSuccessModal(loanData);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    showAlert('Error al guardar el préstamo: ' + error.message, 'error');
+  }
+}
+
+/**
+ * Mostrar modal de préstamo creado exitosamente
+ */
+function showLoanSuccessModal(loanData) {
+  const modalOverlay = document.createElement("div");
+  modalOverlay.className = "modal-overlay";
+  modalOverlay.id = "loan-success-modal";
+
+  modalOverlay.innerHTML = `
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeLoanModal()">✕</button>
+      
+      <div class="modal-icon modal-icon--success">
+        ✓
+      </div>
+      
+      <h2 class="modal-title">Solicitud de Préstamo Creada</h2>
+      
+      <p class="modal-message">
+        La solicitud de préstamo para ${
+          loanData.cliente.nombre_completo
+        } ha sido creada exitosamente.
+      </p>
+      
+      <div class="modal-details">
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Monto del Préstamo</span>
+          <span class="modal-detail-value">S/ ${parseFloat(
+            loanData.monto
+          ).toFixed(2)}</span>
+        </div>
+        
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Número de cuotas</span>
+          <span class="modal-detail-value">${loanData.cuotas} Cuotas</span>
+        </div>
+        
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Cliente</span>
+          <span class="modal-detail-value">${
+            loanData.cliente.nombre_completo
+          }</span>
+        </div>
+        
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">DNI</span>
+          <span class="modal-detail-value">${loanData.cliente.dni}</span>
+        </div>
+      </div>
+      
+      <button class="modal-button" onclick="closeLoanModal()">
+        Cerrar
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modalOverlay);
+
+  setTimeout(() => {
+    modalOverlay.classList.add("active");
+  }, 10);
+
+  // Cerrar al hacer click fuera del modal
+  modalOverlay.addEventListener("click", function (e) {
+    if (e.target === modalOverlay) {
+      closeLoanModal();
+    }
+  });
+}
+
+/**
+ * Cerrar modal de préstamo
+ */
+function closeLoanModal() {
+  const modal = document.getElementById("loan-success-modal");
+  if (modal) {
+    modal.classList.remove("active");
+    setTimeout(() => {
+      modal.remove();
+      // Limpiar el formulario después de cerrar
+      const loanForm = document.getElementById("loan-form");
+      if (loanForm) {
+        loanForm.reset();
+      }
+    }, 300);
+  }
+}
+
+// Cerrar modal con tecla Escape
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    closeLoanModal();
+    cerrarModalCronograma();
+  }
+});
+
+/**
+ * Ver cronograma de pagos
+ */
+async function verCronogramaPagos() {
+  const monto = document.getElementById("monto")?.value;
+  const cuotas = document.getElementById("cuotas")?.value;
+  const interes_tea = document.getElementById("interes_tea")?.value || "10";
+
+  if (!monto || !cuotas) {
+    alert("Por favor ingrese el monto y numero de cuotas primero");
+    return;
+  }
+
+  if (parseFloat(monto) <= 0) {
+    alert("El monto debe ser mayor a 0");
+    return;
+  }
+
+  if (parseInt(cuotas) <= 0) {
+    alert("El numero de cuotas debe ser mayor a 0");
+    return;
+  }
+
+  try {
+    // Llamar al backend para calcular el cronograma con las fórmulas correctas
+    const response = await fetch("/api/v1/financial/simular-cronograma", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        monto: parseFloat(monto),
+        plazo: parseInt(cuotas),
+        tea: parseFloat(interes_tea),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Error al calcular cronograma");
+    }
+
+    const data = await response.json();
+    const cronograma = data.cronograma;
+
+    // Llenar modal con datos
+    document.getElementById("cronograma-monto").textContent = `S/ ${parseFloat(
+      monto
+    ).toFixed(2)}`;
+
+    document.getElementById(
+      "cronograma-cuotas"
+    ).textContent = `${cuotas} meses`;
+
+    document.getElementById(
+      "cronograma-tea"
+    ).textContent = `${interes_tea}% TEA`;
+
+    const tbody = document.getElementById("cronograma-table-body");
+    tbody.innerHTML = "";
+
+    cronograma.forEach((cuota) => {
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-gray-50";
+      tr.innerHTML = `
+      <td class="px-4 py-3 text-gray-900 font-medium">${
+        cuota.numero_cuota
+      }</td>
+      <td class="px-4 py-3 text-gray-600">${cuota.fecha_vencimiento}</td>
+      <td class="px-4 py-3 text-right font-semibold text-gray-900">S/ ${parseFloat(
+        cuota.monto_cuota
+      ).toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-gray-600">S/ ${parseFloat(
+        cuota.monto_capital
+      ).toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-gray-600">S/ ${parseFloat(
+        cuota.monto_interes
+      ).toFixed(2)}</td>
+      <td class="px-4 py-3 text-right text-blue-600 font-medium">S/ ${parseFloat(
+        cuota.saldo_capital
+      ).toFixed(2)}</td>
+    `;
+      tbody.appendChild(tr);
+    });
+
+    // Mostrar resumen total si viene del backend
+    if (data.resumen) {
+      console.log("Resumen del cronograma:", data.resumen);
+    }
+
+    // Mostrar modal
+    const modal = document.getElementById("modalCronograma");
+    modal.style.display = "flex";
+    setTimeout(() => {
+      modal.classList.remove("hidden");
+    }, 10);
+  } catch (error) {
+    console.error("Error al obtener cronograma:", error);
+    alert(
+      "Error al calcular el cronograma. Por favor intente nuevamente.\n" +
+        error.message
+    );
+  }
+}
+
+/**
+ * Cerrar modal de cronograma
+ */
+function cerrarModalCronograma() {
+  const modal = document.getElementById("modalCronograma");
+  if (modal) {
+    modal.classList.add("hidden");
+    setTimeout(() => {
+      modal.style.display = "none";
+    }, 300);
+  }
+}
+
+// Cerrar modal al hacer clic fuera
+document.addEventListener("click", function (e) {
+  const modal = document.getElementById("modalCronograma");
+  if (modal && e.target === modal) {
+    cerrarModalCronograma();
+  }
+});
+
+console.log("loan-modal.js loaded");
