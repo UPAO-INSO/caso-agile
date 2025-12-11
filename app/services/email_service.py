@@ -53,7 +53,7 @@ class EmailService:
             
             # Crear mensaje
             msg = Message(
-                subject=f"📋 Cronograma Detallado de Pagos - Préstamo #{prestamo.prestamo_id}",
+                subject=f"Cronograma Detallado de Pagos - Préstamo #{prestamo.prestamo_id}",
                 recipients=[cliente.correo_electronico]
             )
             
@@ -184,60 +184,7 @@ Financiera Demo S.A.
                 subject=f"✓ Comprobante de Pago - Cuota #{cuota.numero_cuota} - Préstamo #{prestamo.prestamo_id}",
                 recipients=[cliente.correo_electronico]
             )
-            
-            # Cuerpo de texto plano
-            msg.body = f"""
-Hola {nombre_completo},
 
-¡Tu pago ha sido registrado exitosamente!
-
-COMPROBANTE DE PAGO
-===================
-Operación N°: #{pago.pago_id:08d}
-Fecha: {pago.fecha_registro.strftime('%d/%m/%Y %H:%M:%S')}
-Comprobante: {pago.comprobante_referencia or 'N/A'}
-
-DATOS DEL PRÉSTAMO
-==================
-Préstamo N°: #{prestamo.prestamo_id}
-Cuota N°: {cuota.numero_cuota} de {total_cuotas}
-Fecha Vencimiento: {cuota.fecha_vencimiento.strftime('%d/%m/%Y')}
-
-DETALLE FINANCIERO
-==================
-Amortización Capital: S/ {float(cuota.monto_capital):.2f}
-Intereses: S/ {float(cuota.monto_interes):.2f}
-Mora/Otros: S/ 0.00
------------------------------------------
-TOTAL PAGADO: S/ {float(pago.monto_pagado):.2f}
-
-MÉTODO DE PAGO: {pago.metodo_pago.value}
-"""
-            
-            # Agregar información de conciliación si hay ajuste
-            if float(pago.ajuste_redondeo) != 0:
-                msg.body += f"""
-CONCILIACIÓN CONTABLE (Ley N° 29571)
-=====================================
-Monto Contable (Deuda): S/ {float(pago.monto_contable):.2f}
-Monto Recibido (Caja): S/ {float(pago.monto_pagado):.2f}
-Ajuste por Redondeo: S/ {float(pago.ajuste_redondeo):.2f}
-"""
-            
-            msg.body += f"""
-ESTADO DEL PRÉSTAMO
-===================
-Cuotas Pendientes: {cuotas_pendientes}
-{'Próxima Cuota: ' + proxima_fecha if cuotas_pendientes > 0 else '¡Préstamo completado!'}
-
-Conserva este comprobante para tu control personal.
-
-Gracias por tu puntualidad.
-
-Atentamente,
-Financiera Demo S.A.
-"""
-            
             # Cuerpo HTML
             msg.html = render_template(
                 "emails/voucher_pago.html",
