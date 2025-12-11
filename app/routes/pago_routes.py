@@ -108,7 +108,7 @@ def registrar_pago():
             # MODO BYPASS: Procesar pagos digitales sin Flow (testing local)
             from flask import current_app
             if current_app.config.get('FLOW_BYPASS_MODE', False):
-                logger.info(f"⚠️ MODO BYPASS ACTIVADO - Procesando pago {medio_pago} sin Flow API")
+                logger.info(f"MODO BYPASS ACTIVADO - Procesando pago {medio_pago} sin Flow API")
                 
                 # Obtener la cuota para poder procesarla
                 from app.models import Prestamo, Cuota
@@ -146,7 +146,7 @@ def registrar_pago():
                 
                 return jsonify({
                     'success': True,
-                    'message': f'✅ Pago {medio_pago} procesado correctamente (Modo Prueba)',
+                    'message': f'Pago {medio_pago} procesado correctamente (Modo Prueba)',
                     'modo_prueba': True,
                     **resultado
                 }), 201

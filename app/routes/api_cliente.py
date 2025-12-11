@@ -127,11 +127,7 @@ def buscar_cliente_por_dni_api(dni):
     cliente_dict['tiene_prestamo_activo'] = prestamo_activo is not None
     
     if prestamo_activo:
-        cliente_dict['prestamo_activo'] = {
-            'prestamo_id': prestamo_activo.prestamo_id,
-            'monto_total': float(prestamo_activo.monto_total),
-            'estado': prestamo_activo.estado.value
-        }
+        cliente_dict['prestamo_activo'] = prestamo_activo.to_dict()
     
     return jsonify(cliente_dict), 200
 
