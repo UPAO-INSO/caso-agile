@@ -50,19 +50,6 @@ badge %} {% block content %}
 
       <!-- Columna Derecha -->
       <div class="space-y-4">
-        <div>
-          <label class="text-sm font-medium text-gray-500">Teléfono</label>
-          <p class="text-lg text-gray-900">
-            {{ cliente.telefono or 'No registrado' }}
-          </p>
-        </div>
-
-        <div>
-          <label class="text-sm font-medium text-gray-500">Dirección</label>
-          <p class="text-lg text-gray-900">
-            {{ cliente.direccion or 'No registrada' }}
-          </p>
-        </div>
 
         <div>
           <label class="text-sm font-medium text-gray-500">Estado PEP</label>
@@ -83,13 +70,6 @@ badge %} {% block content %}
         <i class="fa-solid fa-money-bill-wave mr-2"></i>
         Ver Préstamos
       </a>
-
-      <button
-        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-      >
-        <i class="fa-solid fa-pen-to-square mr-2"></i>
-        Editar Cliente
-      </button>
 
       <a
         href="{{ url_for('clientes_view.listar_clientes_view') }}"
