@@ -121,6 +121,8 @@ class PagoService:
                 medio_pago_enum = MedioPagoEnum[medio_pago]
             except KeyError:
                 return None, f"Medio de pago inválido: {medio_pago}", 400
+            
+            es_efectivo = medio_pago_enum == MedioPagoEnum.EFECTIVO
 
             fecha_pago = fecha_pago or date.today()
 
@@ -132,11 +134,20 @@ class PagoService:
             if not cuotas_pendientes:
                 return None, "No hay cuotas pendientes para este préstamo", 400
 
+            # ← NUEVO: Obtener la cuota específica que se está pagando
+            cuota_seleccionada = Cuota.query.get(cuota_id)
+            if not cuota_seleccionada:
+                return None, f"Cuota con ID {cuota_id} no encontrada", 404
+            
+            # Verificar que la cuota pertenece al préstamo
+            if cuota_seleccionada.prestamo_id != prestamo_id:
+                return None, "La cuota no pertenece al préstamo especificado", 400
+
             # Monto total de deuda a aplicar (saldo + mora)
             total_deuda = sum((Decimal(c.saldo_pendiente or 0) + Decimal(c.mora_acumulada or 0)) for c in cuotas_pendientes)
 
-            # Calcular deuda de la cuota seleccionada
-            deuda_cuota = Decimal(cuota.saldo_pendiente or 0) + Decimal(cuota.mora_acumulada or 0)
+            # Calcular deuda de la cuota seleccionada ← CORREGIDO: usar cuota_seleccionada
+            deuda_cuota = Decimal(cuota_seleccionada.saldo_pendiente or 0) + Decimal(cuota_seleccionada.mora_acumulada or 0)
             
             # Validar que monto_pagado no exceda la deuda de la cuota
             # EXCEPCIÓN: Si es efectivo y la diferencia es por redondeo (máximo 0.09), permitirlo
@@ -150,7 +161,7 @@ class PagoService:
                 return None, f"El monto a pagar (S/ {monto_pagado}) no puede ser mayor a la deuda de la cuota (S/ {deuda_cuota:.2f})", 400
             
             # Validar monto_dado si es efectivo
-            if medio_pago_enum == MedioPagoEnum.EFECTIVO:
+            if es_efectivo:
                 if monto_dado is None or monto_dado <= 0:
                     return None, "Para pagos en efectivo debe ingresar el monto dado (billetes entregados)", 400
                 
@@ -172,7 +183,7 @@ class PagoService:
             monto_contable = monto_entregado
             
             # Si es pago en EFECTIVO: aplicar redondeo a lo que se registrará en caja
-            if medio_pago_enum == MedioPagoEnum.EFECTIVO:
+            if es_efectivo:
                 # Aplicar redondeo al monto que se registrará en caja (según Ley)
                 monto_pagado_registrado = PagoService.aplicar_redondeo(monto_entregado)
                 # El monto que realmente se aplicará a la deuda es como máximo la deuda
@@ -188,8 +199,7 @@ class PagoService:
                 monto_pagado_registrado = monto_entregado
                 monto_contable = min(monto_pagado_registrado, total_deuda)
 
-            # Aplicar pago a la cuota seleccionada únicamente
-            # Sin restricción de mora mínima: cualquier monto se acepta
+            # Aplicar pago a las cuotas pendientes en orden
             monto_restante = monto_contable
             detalles_pago = []
             monto_mora_total = Decimal('0.00')
@@ -225,17 +235,15 @@ class PagoService:
 
             try:
                 prestamo = Prestamo.query.get(prestamo_id)
-                # Enviar voucher de pago por email deberia
+                # Enviar voucher de pago por email
                 from app.services.email_service import EmailService
                 cliente = prestamo.cliente if prestamo else None
-                cuota = Cuota.query.get(cuota_id)
-                if cliente and prestamo and cuota and nuevo_pago:
-                    EmailService.enviar_voucher_pago(cliente, prestamo, cuota, nuevo_pago)
+                if cliente and prestamo and cuota_seleccionada and nuevo_pago:
+                    EmailService.enviar_voucher_pago(cliente, prestamo, cuota_seleccionada, nuevo_pago)
             except Exception as email_exc:
                 logger.error(f"Error al enviar voucher de pago: {email_exc}", exc_info=True)
 
             # Preparar respuesta
-            # monto_pagado_registrado: lo que queda en caja (tras redondeo), monto_contable: lo aplicado a la deuda
             respuesta = {
                 'success': True,
                 'message': f'Pago registrado exitosamente',
@@ -250,7 +258,7 @@ class PagoService:
             }
 
             # Agregar información de redondeo si aplica
-            if medio_pago_enum == MedioPagoEnum.EFECTIVO and ajuste_redondeo != 0:
+            if es_efectivo and ajuste_redondeo != 0:
                 respuesta['redondeo'] = {
                     'aplicado': True,
                     'ley': 'Ley N° 29571',
@@ -263,10 +271,10 @@ class PagoService:
             # Si el cliente entregó más dinero que lo registrado en caja, registrar el vuelto como egreso
             try:
                 from app.services.caja_service import CajaService
-                vuelto = monto_entregado - monto_pagado_registrado
-                if vuelto and vuelto > 0:
-                    CajaService.registrar_egreso(vuelto, f'Vuelto por pago #{nuevo_pago.pago_id}', pago_id=nuevo_pago.pago_id)
-                    respuesta['vuelto_registrado'] = float(vuelto)
+                vuelto_calculado = monto_entregado - monto_pagado_registrado
+                if vuelto_calculado and vuelto_calculado > 0:
+                    CajaService.registrar_egreso(vuelto_calculado, f'Vuelto por pago #{nuevo_pago.pago_id}', pago_id=nuevo_pago.pago_id)
+                    respuesta['vuelto_registrado'] = float(vuelto_calculado)
             except Exception as exc:
                 logger.error(f"Error registrando vuelto: {exc}", exc_info=True)
 

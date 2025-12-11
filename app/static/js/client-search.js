@@ -32,40 +32,27 @@ async function searchClient() {
     const response = await fetch(`/api/v1/clientes/dni/${dni}`);
 
     if (response.status === 404) {
+      // Cliente no existe en DB, consultar RENIEC
       await consultarYRegistrarCliente(dni);
     } else if (response.ok) {
+      // Cliente existe en DB
       const cliente = await response.json();
       window.currentClient = cliente;
 
-      try {
-        const prestamoResponse = await fetch(
-          `/api/v1/clientes/verificar_prestamo/${cliente.cliente_id}`
+      // El endpoint ya devuelve tiene_prestamo_activo y prestamo_activo
+      displayClientInfo(cliente, {
+        tiene_prestamo_activo: cliente.tiene_prestamo_activo,
+        prestamo: cliente.prestamo_activo,
+      });
+
+      if (cliente.tiene_prestamo_activo) {
+        showAlert(
+          "Este cliente ya tiene un préstamo activo. No se puede otorgar otro crédito.",
+          "warning"
         );
-
-        if (prestamoResponse.ok) {
-          const prestamoData = await prestamoResponse.json();
-
-          displayClientInfo(cliente, prestamoData);
-
-          if (prestamoData.tiene_prestamo_activo) {
-            showAlert(
-              "Este cliente ya tiene un préstamo activo. No se puede otorgar otro crédito.",
-              "warning"
-            );
-            // Deshabilitar el formulario de préstamo
-            disableLoanForm(true);
-          } else {
-            showAlert("Cliente encontrado", "success");
-            // Habilitar el formulario de préstamo
-            disableLoanForm(false);
-          }
-        } else {
-          showAlert("Cliente encontrado", "success");
-          disableLoanForm(false);
-        }
-      } catch (error) {
-        console.warn("No se pudo verificar préstamo activo:", error);
-        showAlert("Cliente encontrado", "success");
+        disableLoanForm(true);
+      } else {
+        showAlert("Cliente encontrado en base de datos", "success");
         disableLoanForm(false);
       }
     } else {
@@ -159,8 +146,6 @@ async function consultarYRegistrarCliente(dni) {
   }
 }
 
-function fetchPrestamoActivo(clienteId) {}
-
 /**
  * Mostrar información del cliente en la interfaz
  */
@@ -173,6 +158,11 @@ function displayClientInfo(
   const dniElement = document.getElementById("client-dni");
   if (dniElement) {
     dniElement.textContent = cliente.dni;
+  }
+
+  const emailElement = document.getElementById("email");
+  if (emailElement && cliente.correo_electronico) {
+    emailElement.textContent = cliente.correo_electronico;
   }
 
   const nameElement = document.getElementById("client-name");
@@ -193,9 +183,17 @@ function displayClientInfo(
 
   const loanNotice = document.getElementById("loan-active-notice");
   const loanDetailsText = document.getElementById("loan-details-text");
-  if (loanNotice && prestamoData && prestamoData.tiene_prestamo_activo) {
-    loanNotice.classList.add("show");
-    if (loanDetailsText && prestamoData.tiene_prestamo_activo) {
+
+  if (
+    loanNotice &&
+    prestamoData &&
+    prestamoData.tiene_prestamo_activo &&
+    prestamoData.prestamo
+  ) {
+    loanNotice.classList.remove("hidden");
+    loanNotice.style.display = "block";
+
+    if (loanDetailsText) {
       const fechaOtorgamiento = new Date(
         prestamoData.prestamo.f_otorgamiento
       ).toLocaleDateString("es-PE");
@@ -207,7 +205,8 @@ function displayClientInfo(
       `;
     }
   } else if (loanNotice) {
-    loanNotice.classList.remove("show");
+    loanNotice.classList.add("hidden");
+    loanNotice.style.display = "none";
   }
 
   const statusBadge = document.querySelector(".status-badge");
@@ -255,83 +254,6 @@ function disableLoanForm(disable) {
   }
 }
 
-function showClientRegisteredModal(cliente) {
-  const modalOverlay = document.createElement("div");
-  modalOverlay.className = "modal-overlay";
-  modalOverlay.id = "client-registered-modal";
-
-  const nombreCompleto = `${cliente.nombre_completo || ""}`;
-
-  modalOverlay.innerHTML = `
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeClientModal()">✕</button>
-      
-      <div class="modal-icon modal-icon--success">
-        ✓
-      </div>
-      
-      <h2 class="modal-title">Cliente Registrado Exitosamente</h2>
-      
-      <p class="modal-message">
-        El cliente ha sido registrado en el sistema correctamente.
-      </p>
-      
-      <div class="modal-details">
-        <div class="modal-detail-row">
-          <span class="modal-detail-label">DNI</span>
-          <span class="modal-detail-value">${cliente.dni}</span>
-        </div>
-        
-        <div class="modal-detail-row">
-          <span class="modal-detail-label">Nombre Completo</span>
-          <span class="modal-detail-value">${nombreCompleto}</span>
-        </div>
-        
-        <div class="modal-detail-row">
-          <span class="modal-detail-label">Estado PEP</span>
-          <span class="modal-detail-value">${cliente.pep ? "Sí" : "No"}</span>
-        </div>
-        
-        <div class="modal-detail-row">
-          <span class="modal-detail-label">Fecha de Registro</span>
-          <span class="modal-detail-value">${new Date().toLocaleDateString(
-            "es-PE"
-          )}</span>
-        </div>
-      </div>
-      
-      <button class="modal-button" onclick="closeClientModal()">
-        Continuar
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(modalOverlay);
-
-  setTimeout(() => {
-    modalOverlay.classList.add("active");
-  }, 10);
-
-  modalOverlay.addEventListener("click", function (e) {
-    if (e.target === modalOverlay) {
-      closeClientModal();
-    }
-  });
-}
-
-/**
- * Cerrar modal de cliente registrado
- */
-function closeClientModal() {
-  const modal = document.getElementById("client-registered-modal");
-  if (modal) {
-    modal.classList.remove("active");
-    setTimeout(() => {
-      modal.remove();
-    }, 300);
-  }
-}
-
 /**
  * Validar monto del préstamo (simulación de validación SBS)
  */
@@ -361,7 +283,6 @@ function validarMonto() {
         declaracionContainer.classList.add("hidden");
       }
     }
-    validarCronogramaButton();
     return;
   }
 
@@ -411,9 +332,6 @@ function validarMonto() {
 
     actualizarEstadoBoton();
   }
-
-  // Validar botón de cronograma
-  validarCronogramaButton();
 }
 
 /**
@@ -439,215 +357,11 @@ function actualizarEstadoBoton() {
   }
 }
 
-function validarCronogramaButton() {
-  const cronogramaButton = document.getElementById("cronograma-button");
-  const montoInput = document.getElementById("monto");
-  const cuotasInput = document.getElementById("cuotas");
-  const teaInput = document.getElementById("interes_tea");
-
-  if (!cronogramaButton) return;
-
-  const monto = parseFloat(montoInput?.value || 0);
-  const cuotas = parseInt(cuotasInput?.value || 0);
-  const tea = parseFloat(teaInput?.value || 0);
-
-  // Solo habilitar/deshabilitar el botón, sin limpiar campos ni mostrar alertas
-  if (monto >= 300 && cuotas >= 3 && tea > 0) {
-    cronogramaButton.disabled = false;
-  } else {
-    cronogramaButton.disabled = true;
-  }
-}
-async function verCronogramaPagos() {
-  const montoInput = document.getElementById("monto");
-  const cuotasInput = document.getElementById("cuotas");
-  const teaInput = document.getElementById("interes_tea");
-
-  const monto = parseFloat(montoInput?.value || 0);
-  const cuotas = parseInt(cuotasInput?.value || 0);
-  const tea = parseFloat(teaInput?.value || 0);
-
-  if (!monto || !cuotas) {
-    showAlert("Ingrese monto y número de cuotas", "error");
-    return;
-  }
-
-  if (!tea || tea <= 0) {
-    showAlert("Ingrese una tasa de interés (TEA) válida", "error");
-    return;
-  }
-
-  if (!window.currentClient) {
-    showAlert("No hay cliente seleccionado", "error");
-    return;
-  }
-
-  // Abrir modal
-  const modal = document.getElementById("modalCronograma");
-  const modalMonto = document.getElementById("cronograma-monto");
-  const modalCuotas = document.getElementById("cronograma-cuotas");
-  const modalTea = document.getElementById("cronograma-tea");
-  const tableBody = document.getElementById("cronograma-table-body");
-
-  if (!modal || !tableBody) {
-    showAlert("Error: No se encontró el modal de cronograma", "error");
-    return;
-  }
-
-  modal.style.display = "flex";
-
-  // Actualizar información del modal
-  if (modalMonto) modalMonto.textContent = `S/ ${monto.toFixed(2)}`;
-  if (modalCuotas) modalCuotas.textContent = `${cuotas} meses`;
-  if (modalTea) modalTea.textContent = `${tea.toFixed(2)}% TEA`;
-
-  // Mostrar loading
-  tableBody.innerHTML = `
-    <tr>
-      <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-        <p>Generando cronograma...</p>
-      </td>
-    </tr>
-  `;
-
-  try {
-    // Calcular cronograma localmente (simulación) usando TEA ingresado
-    const teaDecimal = tea / 100; // Convertir porcentaje a decimal (ej: 10 -> 0.10)
-
-    // Convertir TEA a TEM usando la fórmula correcta: TEM = (1 + TEA)^(1/12) - 1
-    const tasaMensual = Math.pow(1 + teaDecimal, 1 / 12) - 1;
-
-    const cuotaMensual =
-      (monto * (tasaMensual * Math.pow(1 + tasaMensual, cuotas))) /
-      (Math.pow(1 + tasaMensual, cuotas) - 1);
-
-    let saldo = monto;
-    let html = "";
-    // Tomar la fecha seleccionada por el usuario en el input
-    const fOtorgamientoInput = document.getElementById("f_otorgamiento");
-    let fechaInicio;
-    let fechaOtorgamientoValor = fOtorgamientoInput ? fOtorgamientoInput.value : "";
-    console.log("Fecha de otorgamiento seleccionada:", fechaOtorgamientoValor);
-    if (fechaOtorgamientoValor) {
-      // Validar formato YYYY-MM-DD
-      const partes = fechaOtorgamientoValor.split("-");
-      if (partes.length === 3) {
-        fechaInicio = new Date(partes[0], partes[1] - 1, partes[2]);
-      } else {
-        showAlert("La fecha de otorgamiento es inválida", "error");
-        return;
-      }
-    } else {
-      // Si no hay fecha seleccionada, usar hoy
-      const hoy = new Date();
-      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-    }
-
-    for (let i = 1; i <= cuotas; i++) {
-      const interes = saldo * tasaMensual;
-      const capital = cuotaMensual - interes;
-      saldo = Math.max(0, saldo - capital);
-
-      // Calcular fecha de vencimiento: mismo día del mes, sumando meses
-      const fechaVencimiento = new Date(fechaInicio);
-      fechaVencimiento.setMonth(fechaVencimiento.getMonth() + i);
-
-      // Si el mes siguiente no tiene el mismo día, JS ajusta al último día del mes automáticamente
-
-      // Estilo alternado para filas
-      const rowClass = i % 2 === 0 ? "bg-gray-50" : "bg-white";
-
-      html += `
-        <tr class="${rowClass} hover:bg-blue-50 transition-colors">
-          <td class="px-4 py-3 text-center">
-            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
-              ${i}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-gray-700">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-              <span class="font-medium">${fechaVencimiento.toLocaleDateString(
-                "es-PE",
-                {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                }
-              )}</span>
-            </div>
-          </td>
-          <td class="px-4 py-3 text-right">
-            <span class="text-gray-900 font-bold text-base">S/ ${cuotaMensual.toFixed(
-              2
-            )}</span>
-          </td>
-          <td class="px-4 py-3 text-right">
-            <span class="text-blue-600 font-semibold">S/ ${capital.toFixed(
-              2
-            )}</span>
-          </td>
-          <td class="px-4 py-3 text-right">
-            <span class="text-amber-600 font-semibold">S/ ${interes.toFixed(
-              2
-            )}</span>
-          </td>
-          <td class="px-4 py-3 text-right">
-            <span class="inline-block px-3 py-1 rounded-full text-sm font-bold ${
-              saldo === 0
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-700"
-            }">
-              S/ ${saldo.toFixed(2)}
-            </span>
-          </td>
-        </tr>
-      `;
-    }
-
-    tableBody.innerHTML = html;
-  } catch (error) {
-    console.error("Error al generar cronograma:", error);
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="px-4 py-8 text-center text-red-600">
-          <p class="font-semibold">Error al generar el cronograma</p>
-          <p class="text-sm text-gray-600 mt-2">${error.message}</p>
-        </td>
-      </tr>
-    `;
-  }
-}
-
 /**
- * Cerrar modal de cronograma
+ * Crear nuevo préstamo
  */
-function cerrarModalCronograma() {
-  const modal = document.getElementById("modalCronograma");
-  if (modal) {
-    modal.style.display = "none";
-  }
-}
-
-function imprimirDeclaracionJurada() {
-  if (!window.currentClient) {
-    showAlert("No hay cliente seleccionado", "error");
-    return;
-  }
-
-  showAlert("Generando Declaración Jurada para imprimir...", "info");
-
-  setTimeout(() => {
-    window.print();
-  }, 500);
-}
-
 async function crearNuevoPrestamo(event) {
   event.preventDefault();
-
   if (!window.currentClient) {
     showAlert("No hay cliente seleccionado", "error");
     return;
@@ -667,6 +381,7 @@ async function crearNuevoPrestamo(event) {
   const montoNumerico = parseFloat(monto);
   const cuotasNumerico = parseInt(cuotas);
   const teaNumerico = parseFloat(interes_tea);
+
   if (montoNumerico < 300) {
     showAlert("El monto mínimo es S/ 300.00", "error");
     return;
@@ -699,9 +414,6 @@ async function crearNuevoPrestamo(event) {
 
   const UIT = 5350;
   const esPep = window.currentClient.pep;
-  const declaracionContainer = document.getElementById(
-    "declaracion-jurada-container"
-  );
   const checkbox = document.getElementById("declaracion-jurada-check");
 
   const requiereDeclaracion = esPep || montoNumerico > UIT;
@@ -895,8 +607,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const cuotasInput = document.getElementById("cuotas");
   if (cuotasInput) {
-    cuotasInput.addEventListener("input", validarCronogramaButton);
-
     // Validar cuotas mínimas cuando el usuario sale del campo
     cuotasInput.addEventListener("blur", function () {
       const cuotas = parseInt(cuotasInput.value);
@@ -904,11 +614,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (cuotas < 0) {
           showAlert("El número de cuotas no puede ser negativo", "error");
           cuotasInput.value = "";
-          cuotasInput.focus();
-        } else if (cuotas > 0 && cuotas < 3) {
+        } else if (cuotas < 3) {
           showAlert("El número mínimo de cuotas es 3", "error");
           cuotasInput.value = "";
-          cuotasInput.focus();
         }
       }
     });
@@ -916,39 +624,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const teaInput = document.getElementById("interes_tea");
   if (teaInput) {
-    teaInput.addEventListener("input", validarCronogramaButton);
-
     // Validar TEA cuando el usuario sale del campo
     teaInput.addEventListener("blur", function () {
       const tea = parseFloat(teaInput.value);
       if (teaInput.value && !isNaN(tea)) {
         if (tea < 0) {
           showAlert("La tasa de interés no puede ser negativa", "error");
-          teaInput.value = "";
-          teaInput.focus();
+          teaInput.value = "10";
+        } else if (tea <= 0) {
+          showAlert("La tasa de interés debe ser mayor a 0%", "error");
+          teaInput.value = "10";
         } else if (tea > 100) {
           showAlert("La tasa de interés no puede ser mayor a 100%", "error");
-          teaInput.value = "";
-          teaInput.focus();
-        } else if (tea === 0) {
-          showAlert("La tasa de interés debe ser mayor a 0%", "error");
-          teaInput.value = "";
-          teaInput.focus();
+          teaInput.value = "10";
         }
       }
     });
   }
 
   const checkbox = document.getElementById("declaracion-jurada-check");
-
   if (checkbox) {
-    checkbox.addEventListener("change", function () {
-      actualizarEstadoBoton();
-    });
+    checkbox.addEventListener("change", actualizarEstadoBoton);
   }
-
-  // Validar el estado inicial del botón de cronograma al cargar la página
-  validarCronogramaButton();
 });
 
 console.log("client-search.js loaded");

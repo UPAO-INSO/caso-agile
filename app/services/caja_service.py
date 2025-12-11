@@ -413,10 +413,18 @@ class CajaService:
 
     @staticmethod
     def abrir_caja(fecha: date) -> bool:
-        """Reabre la caja (elimina el estado de cierre en memoria)."""
+        """Reabre la caja (elimina el estado de cierre en memoria).
+        
+        Returns:
+            True siempre - la caja queda abierta después de esta operación
+        """
         key = fecha.isoformat()
-        if key in CERRADAS:
+        estaba_cerrada = key in CERRADAS
+        if estaba_cerrada:
             del CERRADAS[key]
-            return True
-        return False
+            logger.info(f"Caja abierta para fecha {fecha} - estaba cerrada")
+        else:
+            logger.info(f"Caja abierta para fecha {fecha} - ya estaba abierta")
+        # Siempre retorna True porque el resultado es: caja abierta
+        return True
 
