@@ -1,4 +1,4 @@
-# 🏦 Sistema de Préstamos Bancarios - Flask App
+# Sistema de Préstamos Bancarios - Flask App
 
 > **Versión refactorizada**: Application Factory Pattern + Service Layer  
 > **Stack**: Flask 3.1 + SQLAlchemy 2.0 + Pydantic 2.0 + TailwindCSS
@@ -7,20 +7,20 @@ Aplicación web para gestión de préstamos bancarios con validación de PEP (Pe
 
 ---
 
-## ✨ Características
+## Características
 
-- ✅ **Registro de clientes** con validación DNI/RENIEC
-- ✅ **Gestión de préstamos** con sistema de amortización francés
-- ✅ **Validación PEP** automática contra dataset oficial
-- ✅ **Declaraciones juradas** para montos > UIT o clientes PEP
-- ✅ **Cronogramas de pago** con cálculo automático de cuotas
-- ✅ **Envío de emails** con PDFs adjuntos
-- ✅ **API REST** + vistas HTML
-- ✅ **Arquitectura modular** con Service Layer Pattern
+- **Registro de clientes** con validación DNI/RENIEC
+- **Gestión de préstamos** con sistema de amortización francés
+- **Validación PEP** automática contra dataset oficial
+- **Declaraciones juradas** para montos > UIT o clientes PEP
+- **Cronogramas de pago** con cálculo automático de cuotas
+- **Envío de emails** con PDFs adjuntos
+- **API REST** + vistas HTML
+- **Arquitectura modular** con Service Layer Pattern
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ### Application Factory Pattern
 
@@ -50,7 +50,7 @@ app/
 ├── extensions.py           # Flask extensions (db, mail, migrate)
 ├── config.py              # Configuration classes
 ├── routes.py              # Root routes
-├── services/              # ⭐ Business logic
+├── services/              # Business logic
 │   ├── email_service.py
 │   ├── pdf_service.py
 │   ├── financial_service.py
@@ -71,13 +71,13 @@ app/
 ├── static/                # CSS, JS, assets
 └── templates/             # Jinja2 templates
 
-instance/                   # ⚠️ Configuración sensible (no versionada)
+instance/                   # Configuración sensible (no versionada)
 └── config.py
 ```
 
 ---
 
-## 🛠️ Tecnologías
+## Tecnologías
 
 ### Backend
 
@@ -102,7 +102,7 @@ instance/                   # ⚠️ Configuración sensible (no versionada)
 
 ---
 
-## 📋 Requisitos
+## Requisitos
 
 - [Python 3.10+](https://www.python.org/downloads/)
 - [PostgreSQL 13+](https://www.postgresql.org/download/)
@@ -113,7 +113,7 @@ instance/                   # ⚠️ Configuración sensible (no versionada)
 
 ---
 
-## 🗄️ Base de Datos y Migraciones
+## Base de Datos y Migraciones
 
 ### Para Nuevos Desarrolladores
 
@@ -166,11 +166,11 @@ flask db history
 ./reset_db.sh
 ```
 
-📖 **Guía completa**: Ver [migrations/README.md](migrations/README.md)
+**Guía completa**: Ver [migrations/README.md](migrations/README.md)
 
 ---
 
-## 🚀 Instalación del proyecto
+## Instalación del proyecto
 
 1. **Clonar el repositorio**
    ```bash
