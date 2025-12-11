@@ -138,8 +138,22 @@ class FinancialService:
             
             # Generar cada cuota
             for i in range(1, N + 1):
-                # Fecha: Cada 30 días exactos
-                fecha_vencimiento = f_otorgamiento + timedelta(days=30 * i)
+                # Fecha: mismo día del mes, sumando meses
+                # Si el mes siguiente no tiene el mismo día, Python ajusta al último día del mes automáticamente
+                year = f_otorgamiento.year
+                month = f_otorgamiento.month + i
+                day = f_otorgamiento.day
+                # Ajustar año y mes
+                while month > 12:
+                    year += 1
+                    month -= 12
+                try:
+                    fecha_vencimiento = f_otorgamiento.replace(year=year, month=month, day=day)
+                except ValueError:
+                    # Si el mes no tiene ese día (ej: 31 de febrero), usar el último día del mes
+                    from calendar import monthrange
+                    last_day = monthrange(year, month)[1]
+                    fecha_vencimiento = f_otorgamiento.replace(year=year, month=month, day=last_day)
                 
                 # Calcular interés sobre saldo pendiente
                 interes = (saldo * tem).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
