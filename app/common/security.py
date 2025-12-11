@@ -383,13 +383,34 @@ def add_security_headers(response):
     
     # Content Security Policy (ajustar según necesidades)
     response.headers['Content-Security-Policy'] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://kit.fontawesome.com; "
-        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://ka-f.fontawesome.com; "
-        "img-src 'self' data: https:; "
-        "font-src 'self' data: https://ka-f.fontawesome.com; "
-        "connect-src 'self' https://ka-f.fontawesome.com;"
-    )
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+    "https://cdn.tailwindcss.com "
+    "https://kit.fontawesome.com "
+    "https://www.flow.cl "
+    "https://sandbox.flow.cl "
+    "https://*.flow.cl; "
+    "style-src 'self' 'unsafe-inline' "
+    "https://cdn.tailwindcss.com "
+    "https://ka-f.fontawesome.com "
+    "https://www.flow.cl "
+    "https://sandbox.flow.cl; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' data: https://ka-f.fontawesome.com; "
+    "connect-src 'self' "
+    "https://ka-f.fontawesome.com "
+    "https://www.flow.cl "
+    "https://sandbox.flow.cl "
+    "https://api.flow.cl "
+    "https://*.flow.cl; "
+    "frame-src 'self' "
+    "https://www.flow.cl "
+    "https://sandbox.flow.cl "
+    "https://*.flow.cl; "
+    "form-action 'self' "
+    "https://www.flow.cl "
+    "https://sandbox.flow.cl;"
+)
     
     # Referrer Policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
