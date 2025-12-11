@@ -125,17 +125,18 @@ def flow_confirmation():
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 
-@flow_bp.route('/return', methods=['GET'])
+@flow_bp.route('/return', methods=['GET', 'POST'])
 def flow_return():
     """
     URL de retorno después del pago
-    Flow redirige aquí: ?token=XXX
+    Flow redirige aquí: ?token=XXX (GET o POST)
     """
     try:
-        token = request.args.get('token')
+        # Flow puede enviar el token por GET o POST
+        token = request.args.get('token') or request.form.get('token')
         
         if not token:
-            return redirect(url_for('main.index') + '?error=token_missing')
+            return redirect(url_for('main.home') + '?error=token_missing')
         
         logger.info(f"Usuario retornado de Flow: token={token}")
         
@@ -144,7 +145,7 @@ def flow_return():
         
         if error:
             logger.error(f"Error al consultar estado: {error}")
-            return redirect(url_for('main.index') + f'?error={error}')
+            return redirect(url_for('main.home') + f'?error={error}')
         
         # Extraer prestamo_id del optional
         optional = payment_data.get('optional', {})
@@ -157,20 +158,20 @@ def flow_return():
         if flow_status == 1:  # Pagado
             # Redirigir a página de préstamo con mensaje de éxito
             if prestamo_id:
-                return redirect(url_for('prestamos_bp.ver_prestamo', prestamo_id=prestamo_id) + '?pago_exitoso=1&metodo=flow')
+                return redirect(url_for('prestamos_view.ver_prestamo_view', prestamo_id=prestamo_id) + '?pago_exitoso=1&metodo=flow')
             else:
-                return redirect(url_for('main.index') + '?pago_exitoso=1')
+                return redirect(url_for('main.home') + '?pago_exitoso=1')
         elif flow_status == 2:  # Rechazado
             if prestamo_id:
-                return redirect(url_for('prestamos_bp.ver_prestamo', prestamo_id=prestamo_id) + '?pago_rechazado=1')
+                return redirect(url_for('prestamos_view.ver_prestamo_view', prestamo_id=prestamo_id) + '?pago_rechazado=1')
             else:
-                return redirect(url_for('main.index') + '?pago_rechazado=1')
+                return redirect(url_for('main.home') + '?pago_rechazado=1')
         else:  # Pendiente
             if prestamo_id:
-                return redirect(url_for('prestamos_bp.ver_prestamo', prestamo_id=prestamo_id) + '?pago_pendiente=1')
+                return redirect(url_for('prestamos_view.ver_prestamo_view', prestamo_id=prestamo_id) + '?pago_pendiente=1')
             else:
-                return redirect(url_for('main.index') + '?pago_pendiente=1')
+                return redirect(url_for('main.home') + '?pago_pendiente=1')
             
     except Exception as e:
         logger.error(f"Error en return de Flow: {e}", exc_info=True)
-        return redirect(url_for('main.index') + '?error=server_error')
+        return redirect(url_for('main.home') + '?error=server_error')

@@ -12,11 +12,6 @@ from app.models.apertura_caja import AperturaCaja
 
 logger = logging.getLogger(__name__)
 
-# → Estado en memoria de cierres de caja (clave: fecha.isoformat())
-# Nota: Esta implementación en memoria es intencionalmente simple para
-# permitir la funcionalidad sin tocar el esquema de base de datos.
-CERRADAS = {}
-
 # → Servicio para gestión de cuadre de caja
 class CajaService:
 # → Obtiene el resumen diario de caja para una fecha específica
@@ -359,72 +354,3 @@ class CajaService:
         except Exception as exc:
             logger.error(f"Error en obtener_apertura_por_fecha: {exc}", exc_info=True)
             raise
-
-    @staticmethod
-    def esta_caja_abierta(fecha: date) -> bool:
-        """True si existe una apertura para la fecha y no está marcada como cerrada."""
-        try:
-            apertura = db.session.query(AperturaCaja).filter(AperturaCaja.fecha == fecha).first()
-            if not apertura:
-                return False
-            # Verificar estado en memoria de cierre
-            return fecha.isoformat() not in CERRADAS
-        except Exception as exc:
-            logger.error(f"Error en esta_caja_abierta: {exc}", exc_info=True)
-            return False
-
-    @staticmethod
-    def cerrar_caja(fecha: date, monto_real: Decimal, usuario_id: Optional[int] = None) -> Dict:
-        """Cierra la caja para la fecha dada. Calcula diferencia y registra una incidencia en memoria si aplica.
-
-        Returns: dict con detalles: fecha, monto_esperado, monto_real, diferencia, incidencia (None|'SOBRA'|'FALTA')
-        """
-        try:
-            resumen = CajaService.obtener_resumen_diario(fecha)
-            apertura = db.session.query(AperturaCaja).filter(AperturaCaja.fecha == fecha).first()
-            monto_inicial = Decimal(str(apertura.monto)) if apertura else Decimal('0')
-            monto_esperado = Decimal(str(resumen['resumen']['total_recaudado'] or 0)) + monto_inicial - Decimal(str(resumen['resumen'].get('total_egresos', 0) or 0))
-
-            diferencia = Decimal(str(monto_real)) - Decimal(str(monto_esperado))
-
-            incidencia = None
-            if abs(diferencia) >= Decimal('0.01'):
-                incidencia = 'SOBRA' if diferencia > 0 else 'FALTA'
-
-            CERRADAS[fecha.isoformat()] = {
-                'fecha': fecha.isoformat(),
-                'monto_esperado': float(monto_esperado),
-                'monto_real': float(monto_real),
-                'diferencia': float(diferencia),
-                'incidencia': incidencia,
-                'usuario_id': usuario_id
-            }
-
-            return CERRADAS[fecha.isoformat()]
-
-        except Exception as exc:
-            logger.error(f"Error en cerrar_caja: {exc}", exc_info=True)
-            raise
-
-    @staticmethod
-    def obtener_estado_cierre(fecha: date) -> Optional[Dict]:
-        """Devuelve el estado de cierre en memoria para la fecha si existe."""
-        return CERRADAS.get(fecha.isoformat())
-
-    @staticmethod
-    def abrir_caja(fecha: date) -> bool:
-        """Reabre la caja (elimina el estado de cierre en memoria).
-        
-        Returns:
-            True siempre - la caja queda abierta después de esta operación
-        """
-        key = fecha.isoformat()
-        estaba_cerrada = key in CERRADAS
-        if estaba_cerrada:
-            del CERRADAS[key]
-            logger.info(f"Caja abierta para fecha {fecha} - estaba cerrada")
-        else:
-            logger.info(f"Caja abierta para fecha {fecha} - ya estaba abierta")
-        # Siempre retorna True porque el resultado es: caja abierta
-        return True
-
