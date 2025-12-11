@@ -62,9 +62,8 @@ services:
       - FLOW_API_KEY=${FLOW_API_KEY}
       - FLOW_API_URL_SANDBOX=${FLOW_API_URL_SANDBOX}
       - FLOW_API_URL_PROD=${FLOW_API_URL_PROD}
-      - FLOW_SANDBOX_MODE=false
-      - FLOW_BYPASS_MODE=false
-      - PUBLIC_URL=${PUBLIC_URL}
+      - FLOW_SANDBOX_MODE=${FLOW_SANDBOX_MODE:-'False'}
+      - FLOW_BYPASS_MODE=${FLOW_BYPASS_MODE:-'False'}
     depends_on:
       postgres:
         condition: service_healthy
