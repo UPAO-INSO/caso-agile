@@ -387,7 +387,7 @@ def registrar_pago_interactivo():
             print(f"      Cuota {detalle['cuota_numero']}: {detalle['concepto']} - S/ {detalle['monto']:,.2f}")
         
     except Exception as e:
-        print(f"\n   ❌ Error al registrar pago: {e}")
+        print(f"\n   Error al registrar pago: {e}")
 
 
 def listar_prestamos():

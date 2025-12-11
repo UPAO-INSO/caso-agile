@@ -65,8 +65,6 @@ services:
       - FLOW_SANDBOX_MODE=false
       - FLOW_BYPASS_MODE=false
       - PUBLIC_URL=${PUBLIC_URL}
-      - FLOW_API_KEY=${FLOW_API_KEY}
-      - FLOW_SECRET_KEY=${FLOW_SECRET_KEY}
     depends_on:
       postgres:
         condition: service_healthy
