@@ -1,7 +1,7 @@
 import logging
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, List
 from app.common.extensions import db
 from app.models import Cuota, Prestamo
 
@@ -11,42 +11,114 @@ class MoraService:
     """Servicio para calcular y aplicar mora a las cuotas"""
 
     TASA_MORA_MENSUAL = Decimal('0.01')  # 1% mensual
-    DIAS_POR_MES = 30
+    DIAS_POR_MES = 30  # Solo para última cuota (fallback)
+
+    @staticmethod
+    def esta_vencida(fecha_vencimiento: date) -> bool:
+        """
+        Verifica si una cuota está vencida.
+        
+        REGLA: La cuota vence DESPUÉS del día de vencimiento, no el mismo día.
+        Ejemplo: Si vence 09/01:
+        - 08/01: NO vencida
+        - 09/01: NO vencida (mismo día)
+        - 10/01: SÍ vencida
+        """
+        return date.today() > fecha_vencimiento
 
     @staticmethod
     def calcular_dias_atraso(fecha_vencimiento: date) -> int:
         """
         Calcula los días de atraso desde la fecha de vencimiento.
-        
-        Args:
-            fecha_vencimiento: Fecha de vencimiento de la cuota
-            
-        Returns:
-            Número de días de atraso (0 si no está atrasada)
+        Solo cuenta si ya pasó el día de vencimiento.
         """
-        dias_atraso = (date.today() - fecha_vencimiento).days
-        return max(0, dias_atraso)
+        if not MoraService.esta_vencida(fecha_vencimiento):
+            return 0
+        return (date.today() - fecha_vencimiento).days
 
     @staticmethod
-    def calcular_meses_atraso(fecha_vencimiento: date) -> int:
+    def obtener_siguiente_cuota(cuota: 'Cuota') -> Optional['Cuota']:
         """
-        Calcula los meses de atraso (considerando 30 días = 1 mes).
+        Obtiene la siguiente cuota del mismo préstamo.
+        """
+        return Cuota.query.filter_by(
+            prestamo_id=cuota.prestamo_id,
+            numero_cuota=cuota.numero_cuota + 1
+        ).first()
+
+    @staticmethod
+    def obtener_cuotas_desde(cuota: 'Cuota') -> List['Cuota']:
+        """
+        Obtiene todas las cuotas desde la cuota dada hasta la última (inclusive).
+        """
+        return Cuota.query.filter(
+            Cuota.prestamo_id == cuota.prestamo_id,
+            Cuota.numero_cuota >= cuota.numero_cuota
+        ).order_by(Cuota.numero_cuota).all()
+
+    @staticmethod
+    def calcular_meses_atraso_por_cuotas(cuota: 'Cuota', desde_cuota: 'Cuota' = None) -> int:
+        """
+        Calcula los meses de atraso basándose en las fechas de vencimiento de cuotas.
+        
+        LÓGICA:
+        - Un "mes" = cuando pasa una fecha de vencimiento de cuota (hoy > fecha_vencimiento).
+        - Meses de atraso = cuántas fechas de vencimiento (desde la cuota de referencia) ya pasaron.
         
         Args:
-            fecha_vencimiento: Fecha de vencimiento de la cuota
-            
-        Returns:
-            Número de meses de atraso
+            cuota: Cuota a evaluar
+            desde_cuota: Cuota desde donde empezar a contar (para pagos parciales).
+                         Si es None, se usa la misma cuota.
+        
+        Ejemplo SIN pago parcial:
+        - Cuota 1 vence 09/Ene, Cuota 2 vence 09/Feb, Cuota 3 vence 09/Mar
+        - Hoy = 10/Ene: Cuota 1 → 1 mes (solo su fecha venció)
+        - Hoy = 10/Feb: Cuota 1 → 2 meses (vencieron 09/Ene y 09/Feb)
+        
+        Ejemplo CON pago parcial (desde_cuota = Cuota 2):
+        - Hoy = 10/Feb: Cuota 1 → 1 mes (cuenta desde Cuota 2)
+        - Hoy = 10/Mar: Cuota 1 → 2 meses (vencieron 09/Feb y 09/Mar)
         """
-        dias_atraso = MoraService.calcular_dias_atraso(fecha_vencimiento)
-
-        # Si no hay atraso, no hay meses de mora
-        if dias_atraso <= 0:
+        hoy = date.today()
+        cuota_referencia = desde_cuota or cuota
+        
+        # Si la cuota de referencia no está vencida, no hay atraso
+        if not MoraService.esta_vencida(cuota_referencia.fecha_vencimiento):
             return 0
-
-        meses_atraso = ((dias_atraso - 1) // MoraService.DIAS_POR_MES) + 1
+        
+        # Obtener todas las cuotas desde la cuota de referencia
+        cuotas_desde_referencia = MoraService.obtener_cuotas_desde(cuota_referencia)
+        
+        if not cuotas_desde_referencia:
+            return 0
+        
+        # Contar cuántas fechas de vencimiento ya pasaron (hoy > fecha_vencimiento)
+        meses_atraso = 0
+        
+        for c in cuotas_desde_referencia:
+            if hoy > c.fecha_vencimiento:
+                meses_atraso += 1
+            else:
+                break
+        
+        # Si es la última cuota y ya pasó su vencimiento, calcular meses adicionales
+        # basándose en 30 días desde la última fecha de vencimiento
+        if meses_atraso == len(cuotas_desde_referencia) and meses_atraso > 0:
+            ultima_cuota = cuotas_desde_referencia[-1]
+            dias_extra = (hoy - ultima_cuota.fecha_vencimiento).days
+            
+            if dias_extra > 0:
+                # Meses adicionales después de la última cuota
+                meses_extra = (dias_extra - 1) // MoraService.DIAS_POR_MES
+                meses_atraso += meses_extra
+        
+        logger.debug(
+            f"Cuota {cuota.cuota_id} (#{cuota.numero_cuota}): "
+            f"{meses_atraso} mes(es) de atraso (desde cuota #{cuota_referencia.numero_cuota})"
+        )
+        
         return meses_atraso
-    
+
     @staticmethod
     def es_pago_parcial(cuota: 'Cuota') -> bool:
         """
@@ -58,19 +130,16 @@ class MoraService:
         saldo_pendiente = cuota.saldo_pendiente or Decimal('0.00')
         
         return monto_pagado > 0 and saldo_pendiente > 0
-    
+
     @staticmethod
     def mora_congelada_por_pago_parcial(cuota: 'Cuota') -> bool:
         """
         Verifica si la mora está congelada debido a un pago parcial.
         
         REGLA DE NEGOCIO:
-        - Si hay pago parcial en esta cuota, la mora se congela HASTA que 
-          llegue la fecha de vencimiento de la SIGUIENTE cuota.
-        - Si ya pasó la fecha de vencimiento de la siguiente cuota, 
-          la mora SÍ se aplica.
-        - Si es la última cuota (no hay siguiente), se usa la lógica normal
-          basada en 30 días desde su fecha de vencimiento.
+        - Si hay pago parcial, la mora se congela HASTA que pase la fecha 
+          de vencimiento de la SIGUIENTE cuota (hoy > siguiente.fecha_vencimiento).
+        - Si ya pasó, la mora se aplica desde la siguiente cuota.
         
         Returns:
             True si la mora está congelada, False si debe aplicarse
@@ -83,62 +152,40 @@ class MoraService:
         siguiente_cuota = MoraService.obtener_siguiente_cuota(cuota)
         
         if siguiente_cuota:
-            # Hay siguiente cuota: comparar con su fecha de vencimiento
             hoy = date.today()
             
-            if hoy < siguiente_cuota.fecha_vencimiento:
-                # Aún no llega la fecha de vencimiento de la siguiente cuota
-                # → Mora CONGELADA
+            # Mora congelada si hoy <= fecha de vencimiento de la siguiente cuota
+            if hoy <= siguiente_cuota.fecha_vencimiento:
                 logger.info(
                     f"Mora CONGELADA para cuota {cuota.cuota_id} (pago parcial): "
-                    f"Hoy={hoy} < Venc. siguiente cuota={siguiente_cuota.fecha_vencimiento}"
+                    f"Hoy={hoy} <= Venc. siguiente cuota={siguiente_cuota.fecha_vencimiento}"
                 )
                 return True
             else:
-                # Ya pasó la fecha de vencimiento de la siguiente cuota
-                # → Mora debe aplicarse
                 logger.info(
                     f"Mora ACTIVA para cuota {cuota.cuota_id} (pago parcial): "
-                    f"Hoy={hoy} >= Venc. siguiente cuota={siguiente_cuota.fecha_vencimiento}"
+                    f"Hoy={hoy} > Venc. siguiente cuota={siguiente_cuota.fecha_vencimiento}"
                 )
                 return False
         else:
-            # Es la última cuota del préstamo: usar lógica normal de 30 días
-            # No congelar mora si ya pasaron los 30 días de tolerancia
+            # Es la última cuota: aplicar lógica normal de 30 días
             logger.info(
                 f"Cuota {cuota.cuota_id} es la última del préstamo. "
                 f"Aplicando lógica normal de mora."
             )
             return False
-    
-    @staticmethod
-    def obtener_siguiente_cuota(cuota: 'Cuota') -> Optional['Cuota']:
-        """
-        Obtiene la siguiente cuota del mismo préstamo.
-        """
-        return Cuota.query.filter_by(
-            prestamo_id=cuota.prestamo_id,
-            numero_cuota=cuota.numero_cuota + 1
-        ).first()
 
-    staticmethod
-    def calcular_mora_cuota(
-        monto_a_aplicar: Decimal,
-        fecha_vencimiento: date,
-        numero_meses_atraso: int = None
-    ) -> Decimal:
+    @staticmethod
+    def calcular_mora_cuota(monto_a_aplicar: Decimal, numero_meses_atraso: int) -> Decimal:
         """
         Calcula la mora de una cuota.
         
-        La mora es 1% FIJO del monto, sin importar cuántos meses hayan pasado.
+        Mora = monto × 1% × número de meses de atraso
         """
-        if numero_meses_atraso is None:
-            numero_meses_atraso = MoraService.calcular_meses_atraso(fecha_vencimiento)
-        
         if numero_meses_atraso <= 0:
             return Decimal('0.00')
         
-        mora = monto_a_aplicar * MoraService.TASA_MORA_MENSUAL
+        mora = monto_a_aplicar * MoraService.TASA_MORA_MENSUAL * numero_meses_atraso
         return mora.quantize(Decimal('0.01'))
 
     @staticmethod
@@ -147,20 +194,18 @@ class MoraService:
         Actualiza la mora de una cuota basada en su estado.
         
         REGLAS:
-        1. Si la cuota NO está vencida → mora = 0
-        2. Si tiene pago parcial Y aún no vence la siguiente cuota → mora = 0 (CONGELADA)
-        3. Si tiene pago parcial Y ya venció la siguiente cuota → mora = 1% del SALDO PENDIENTE
-        4. Si no tiene pago (saldo completo) y está vencida → mora = 1% del saldo pendiente
+        1. Si la cuota NO está vencida (hoy <= fecha_vencimiento) → mora = 0
+        2. Si tiene pago parcial Y hoy <= venc. siguiente cuota → mora = 0 (CONGELADA)
+        3. Si tiene pago parcial Y hoy > venc. siguiente cuota → mora = 1% × meses DESDE la siguiente cuota
+        4. Si NO tiene pago parcial y está vencida → mora = 1% × meses desde esta cuota
         """
         try:
             cuota = Cuota.query.get(cuota_id)
             if not cuota:
                 return Decimal('0.00'), f"Cuota {cuota_id} no encontrada"
 
-            meses_atraso = MoraService.calcular_meses_atraso(cuota.fecha_vencimiento)
-
-            # REGLA 1: Si no está vencida (ni siquiera 1 día), no hay mora
-            if meses_atraso <= 0:
+            # REGLA 1: Si no está vencida, no hay mora
+            if not MoraService.esta_vencida(cuota.fecha_vencimiento):
                 cuota.mora_acumulada = Decimal('0.00')
                 db.session.commit()
                 return Decimal('0.00'), "Cuota no está vencida"
@@ -169,13 +214,30 @@ class MoraService:
             if MoraService.mora_congelada_por_pago_parcial(cuota):
                 cuota.mora_acumulada = Decimal('0.00')
                 db.session.commit()
-                return Decimal('0.00'), "Mora congelada por pago parcial (esperando vencimiento de siguiente cuota)"
+                return Decimal('0.00'), "Mora congelada por pago parcial"
 
             # REGLA 3 y 4: Calcular mora sobre saldo pendiente
             if cuota.saldo_pendiente and cuota.saldo_pendiente > 0:
+                
+                # Determinar desde qué cuota contar los meses
+                desde_cuota = cuota  # Por defecto, desde esta cuota
+                
+                if MoraService.es_pago_parcial(cuota):
+                    # REGLA 3: Pago parcial descongelado → contar desde la siguiente cuota
+                    siguiente_cuota = MoraService.obtener_siguiente_cuota(cuota)
+                    if siguiente_cuota:
+                        desde_cuota = siguiente_cuota
+                
+                # Calcular meses de atraso desde la cuota de referencia
+                meses_atraso = MoraService.calcular_meses_atraso_por_cuotas(cuota, desde_cuota)
+                
+                if meses_atraso <= 0:
+                    cuota.mora_acumulada = Decimal('0.00')
+                    db.session.commit()
+                    return Decimal('0.00'), "Sin meses de atraso"
+                
                 mora_nueva = MoraService.calcular_mora_cuota(
                     cuota.saldo_pendiente,
-                    cuota.fecha_vencimiento,
                     meses_atraso
                 )
                 
@@ -186,18 +248,14 @@ class MoraService:
                 
                 logger.info(
                     f"Mora actualizada para cuota {cuota_id}: "
-                    f"Mora={mora_nueva}, Saldo={cuota.saldo_pendiente}"
+                    f"Mora={mora_nueva}, Saldo={cuota.saldo_pendiente}, "
+                    f"Meses={meses_atraso}, Desde cuota #{desde_cuota.numero_cuota}"
                 )
                 
-                return mora_nueva, f"Mora calculada: {mora_nueva}"
+                return mora_nueva, f"Mora: {mora_nueva} ({meses_atraso} mes(es))"
             else:
                 # Cuota completamente pagada
                 mora_historica = cuota.mora_generada or Decimal('0.00')
-                
-                logger.info(
-                    f"Cuota {cuota_id} pagada. Mora histórica: {mora_historica}"
-                )
-                
                 return mora_historica, f"Mora histórica: {mora_historica}"
 
         except Exception as exc:
@@ -218,10 +276,22 @@ class MoraService:
             for cuota in cuotas:
                 mora, mensaje = MoraService.actualizar_mora_cuota(cuota.cuota_id)
                 total_mora += mora
+                
+                # Calcular meses para mostrar en respuesta
+                desde_cuota = cuota
+                if MoraService.es_pago_parcial(cuota):
+                    siguiente = MoraService.obtener_siguiente_cuota(cuota)
+                    if siguiente:
+                        desde_cuota = siguiente
+                
+                meses_atraso = MoraService.calcular_meses_atraso_por_cuotas(cuota, desde_cuota)
+                
                 mora_por_cuota[cuota.numero_cuota] = {
                     'mora': float(mora),
                     'mensaje': mensaje,
-                    'es_pago_parcial': MoraService.es_pago_parcial(cuota)
+                    'es_pago_parcial': MoraService.es_pago_parcial(cuota),
+                    'meses_atraso': meses_atraso,
+                    'mora_congelada': MoraService.mora_congelada_por_pago_parcial(cuota)
                 }
 
             logger.info(f"Mora actualizada para préstamo {prestamo_id}: Total={total_mora}")
