@@ -163,7 +163,14 @@ class PagoService:
             deuda_cuota = Decimal(cuota.saldo_pendiente or 0) + Decimal(cuota.mora_acumulada or 0)
             
             # Validar que monto_pagado no exceda la deuda de la cuota
-            if Decimal(str(monto_pagado)) > deuda_cuota:
+            # EXCEPCIÓN: Si es efectivo y la diferencia es por redondeo (máximo 0.09), permitirlo
+            monto_pagado_decimal = Decimal(str(monto_pagado))
+            diferencia_pago = monto_pagado_decimal - deuda_cuota
+            
+            es_pago_completo = abs(monto_pagado_decimal - deuda_cuota) < Decimal('0.10')
+            es_redondeo_valido = es_efectivo and diferencia_pago > 0 and diferencia_pago <= Decimal('0.09')
+            
+            if monto_pagado_decimal > deuda_cuota and not es_redondeo_valido:
                 return None, f"El monto a pagar (S/ {monto_pagado}) no puede ser mayor a la deuda de la cuota (S/ {deuda_cuota:.2f})", 400
             
             # Validar monto_dado si es efectivo
