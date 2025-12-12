@@ -12,11 +12,6 @@ from app.models.apertura_caja import AperturaCaja
 
 logger = logging.getLogger(__name__)
 
-# → Estado en memoria de cierres de caja (clave: fecha.isoformat())
-# Nota: Esta implementación en memoria es intencionalmente simple para
-# permitir la funcionalidad sin tocar el esquema de base de datos.
-CERRADAS = {}
-
 # → Servicio para gestión de cuadre de caja
 class CajaService:
 # → Obtiene el resumen diario de caja para una fecha específica
