@@ -6,6 +6,7 @@ from flask import jsonify, request, render_template, session
 from app.common.auth_decorators import login_required
 from app.routes import caja_bp
 from app.services.caja_service import CajaService
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +15,23 @@ logger = logging.getLogger(__name__)
 @caja_bp.route('/cuadre', methods=['GET'])
 @login_required
 def cuadre_caja():
-    """Vista principal del cuadre de caja"""
+    """Vista principal del cuadre de caja - REGISTRA AUTOMÁTICAMENTE S/ 400 AL CARGAR"""
+    fecha_hoy = date.today()
+    
+    # AUTOMÁTICO: Registrar apertura de 400 si no existe para hoy
+    try:
+        apertura_existente = CajaService.obtener_apertura_por_fecha(fecha_hoy)
+        
+        if not apertura_existente:
+            # No existe apertura para hoy → crear con S/ 400
+            CajaService.registrar_apertura(fecha_hoy, Decimal('400'), usuario_id=None)
+            logger.info(f"✅ Apertura automática de S/ 400 registrada para {fecha_hoy}")
+    except Exception as e:
+        logger.warning(f"No se pudo registrar apertura automática: {e}")
+    
     return render_template('pages/caja/cuadre.html', 
                          title='Cuadre de Caja',
-                         fecha_hoy=date.today())
+                         fecha_hoy=fecha_hoy)
 
 # → Obtiene el resumen de caja por fecha
 @caja_bp.route('/resumen/diario', methods=['GET'])
