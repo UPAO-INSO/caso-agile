@@ -382,17 +382,12 @@ async function crearNuevoPrestamo(event) {
   const cuotasNumerico = parseInt(cuotas);
   const teaNumerico = parseFloat(interes_tea);
 
-  if (montoNumerico < 300) {
-    showAlert("El monto mínimo es S/ 300.00", "error");
-    return;
-  }
-
   if (montoNumerico < 0) {
     showAlert("El monto no puede ser negativo", "error");
     return;
   }
 
-  if (cuotasNumerico < 3) {
+  if (cuotasNumerico < 2) {
     showAlert("El número mínimo de cuotas es 3", "error");
     return;
   }
@@ -596,11 +591,7 @@ document.addEventListener("DOMContentLoaded", function () {
           showAlert("El monto no puede ser negativo", "error");
           montoInput.value = "";
           montoInput.focus();
-        } else if (monto > 0 && monto < 300) {
-          showAlert("El monto mínimo es S/ 300.00", "error");
-          montoInput.value = "";
-          montoInput.focus();
-        }
+        } 
       }
     });
   }
