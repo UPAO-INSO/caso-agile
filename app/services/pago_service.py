@@ -179,23 +179,28 @@ class PagoService:
             
             # Interpretar monto_pagado como monto entregado por el cliente
             monto_entregado = Decimal(str(monto_pagado))
+            monto_pagado_registrado = Decimal('0.00')
             ajuste_redondeo = Decimal('0.00')
             monto_contable = monto_entregado
             
             # Si es pago en EFECTIVO: aplicar redondeo a lo que se registrará en caja
+            
             if es_efectivo:
-                # Aplicar redondeo al monto que se registrará en caja (según Ley)
-                monto_pagado_registrado = PagoService.aplicar_redondeo(monto_entregado)
-                # El monto que realmente se aplicará a la deuda es como máximo la deuda
+                monto_entregado = Decimal(str(monto_dado))
+                
+                monto_pagado_registrado = PagoService.aplicar_redondeo(Decimal(str(monto_pagado)))
+                
                 monto_contable = min(monto_pagado_registrado, total_deuda)
+                
                 ajuste_redondeo = (monto_pagado_registrado - monto_contable)
 
                 logger.info(
                     f"Pago EFECTIVO - Deuda: S/ {total_deuda}, Cliente entregó: S/ {monto_entregado}, "
-                    f"Caja registra: S/ {monto_pagado_registrado}, Ajuste: S/ {ajuste_redondeo}"
+                    f"A pagar (redondeado): S/ {monto_pagado_registrado}, "
+                    f"Caja registra: S/ {monto_contable}, Ajuste: S/ {ajuste_redondeo}"
                 )
             else:
-                # Pagos digitales/tarjeta: no redondeo, monto aplicado es min(entregado, deuda)
+                monto_entregado = Decimal(str(monto_pagado))
                 monto_pagado_registrado = monto_entregado
                 monto_contable = min(monto_pagado_registrado, total_deuda)
 
@@ -217,6 +222,11 @@ class PagoService:
                 )
                 monto_mora_total += mora_pagada
 
+            
+            vuelto = monto_entregado - monto_pagado_registrado
+            logger.info(f"Vuelto calculado FINAL: {vuelto} (Entregado: {monto_entregado} - Pagado: {monto_pagado_registrado})")
+
+            
             # Registrar el pago principal
             nuevo_pago, error_pago = registrar_pago(
                 cuota_id=cuota_id,
@@ -225,6 +235,7 @@ class PagoService:
                 ajuste_redondeo=ajuste_redondeo,
                 fecha_pago=fecha_pago,
                 comprobante_referencia=comprobante_referencia,
+                vuelto=vuelto,
                 observaciones=observaciones,
                 medio_pago=medio_pago_enum,
                 monto_mora=monto_mora_total
@@ -271,10 +282,16 @@ class PagoService:
             # Si el cliente entregó más dinero que lo registrado en caja, registrar el vuelto como egreso
             try:
                 from app.services.caja_service import CajaService
-                vuelto_calculado = monto_entregado - monto_pagado_registrado
-                if vuelto_calculado and vuelto_calculado > 0:
-                    CajaService.registrar_egreso(vuelto_calculado, f'Vuelto por pago #{nuevo_pago.pago_id}', pago_id=nuevo_pago.pago_id)
-                    respuesta['vuelto_registrado'] = float(vuelto_calculado)
+                if es_efectivo:
+                    vuelto_calculado = monto_entregado - monto_pagado_registrado
+                    logger.warn(f"Vuelto: {vuelto_calculado}")
+                    if vuelto_calculado > 0:
+                        CajaService.registrar_egreso(
+                            vuelto_calculado, 
+                            f'Vuelto por pago #{nuevo_pago.pago_id}', 
+                            pago_id=nuevo_pago.pago_id
+                        )
+                        respuesta['vuelto_registrado'] = float(vuelto_calculado)
             except Exception as exc:
                 logger.error(f"Error registrando vuelto: {exc}", exc_info=True)
 
